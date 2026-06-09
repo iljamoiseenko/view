@@ -4,5 +4,11 @@ dist
 .env
 server/.env
 server/database.sqlite
+server/*.sqlite
+server/*.db
+server/*.db-shm
+server/*.db-wal
 server/uploads/*
 !server/uploads/.gitkeep
+.idea/
+.DS_Store
