@@ -1,0 +1,121 @@
+.login-page {
+  min-height: calc(100vh - 60px);
+  background: var(--dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.login-box {
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.login-box__logo {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: var(--text);
+  margin-bottom: 24px;
+}
+
+.login-box__title {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.login-box__sub {
+  font-size: 14px;
+  color: var(--text-3);
+  margin-bottom: 28px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+}
+
+.login-error {
+  font-size: 13px;
+  color: var(--error);
+  font-weight: 500;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+}
+
+.login-submit {
+  justify-content: center;
+  padding: 13px;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.login-hint {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 16px;
+  text-align: center;
+}
+
+/* Demo section */
+.login-demo {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.login-demo__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+
+.login-demo__btn {
+  padding: 8px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  background: var(--bg);
+  cursor: pointer;
+  text-align: left;
+  transition: var(--transition);
+}
+.login-demo__btn:hover {
+  border-color: var(--dark);
+  color: var(--text);
+}

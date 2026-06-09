@@ -1,0 +1,180 @@
+.pcard {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.pcard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 0 2px var(--dark), 0 18px 40px rgba(0,0,0,0.14);
+}
+
+.pcard__img-wrap {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: var(--bg-3);
+  overflow: hidden;
+}
+
+.pcard__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.55s ease;
+}
+
+.pcard:hover .pcard__img { transform: scale(1.06); }
+
+/* Overlay */
+.pcard__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 28%,
+    rgba(0,0,0,0.45) 60%,
+    rgba(0,0,0,0.88) 100%
+  );
+}
+
+/* Top badges */
+.pcard__top {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.pcard__today {
+  background: #fff;
+  color: #000;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 3px;
+}
+
+.pcard__live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--live);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 3px;
+}
+
+.pcard__live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  animation: pcard-pulse 1.3s ease-in-out infinite;
+}
+
+@keyframes pcard-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.6); }
+}
+
+/* Bottom info */
+.pcard__bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 14px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pcard__meta-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pcard__city {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pcard__sep { color: rgba(255,255,255,0.2); font-size: 10px; }
+
+.pcard__name {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.pcard__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+  gap: 8px;
+}
+
+.pcard__stats { display: flex; align-items: center; gap: 10px; }
+
+.pcard__stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+}
+
+.pcard__events {
+  font-size: 10px;
+  font-weight: 700;
+  color: #000;
+  background: #fff;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* ── Marks ── */
+.pcard__marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.pcard__mark {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.18);
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  text-transform: uppercase;
+}

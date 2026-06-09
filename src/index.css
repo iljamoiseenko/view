@@ -1,0 +1,220 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* ── Black & White palette ─────────────────────── */
+  --bg:          #FFFFFF;
+  --bg-2:        #F7F7F7;
+  --bg-3:        #EFEFEF;
+  --bg-4:        #E3E3E3;
+  --dark:        #0A0A0A;
+
+  --accent:      #0A0A0A;   /* black as accent */
+  --accent-dark: #333333;
+  --accent-text: #FFFFFF;
+
+  --text:        #0A0A0A;
+  --text-2:      #555555;
+  --text-3:      #999999;
+
+  --border:      #E8E8E8;
+  --border-dark: #C8C8C8;
+  --white:       #FFFFFF;
+
+  --live:   #EF4444;   /* only red is allowed — for live/now signals */
+  --success: #16a34a;
+  --error:   #EF4444;
+  --warning: #F59E0B;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   14px;
+  --radius-xl:   22px;
+  --radius-pill: 100px;
+
+  --transition: 0.16s ease;
+  --font: 'Onest', -apple-system, sans-serif;
+
+  /* ── Vivid accent — swap in one line ──────────────
+     acid green: #AAFF00   hot pink: #FF2D6B          */
+  --vivid: #fc18f8;
+  --vivid-text: #0A0A0A;   /* text on vivid bg */
+}
+
+@font-face {
+  font-family: 'Matemasie';
+  src: url('/fonts/Matemasie/Matemasie-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: var(--font); border: none; background: none; }
+input, select, textarea { font-family: var(--font); }
+img { display: block; max-width: 100%; }
+
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+.main-content { flex: 1; }
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 10px 24px;
+}
+
+@media (max-width: 640px) {
+  .container { padding: 0 16px; }
+}
+
+/* ── Buttons ─────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  transition: var(--transition);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--dark);
+  color: #fff;
+  border: 2px solid var(--dark);
+}
+.btn-primary:hover { background: #333; border-color: #333; }
+
+.btn-dark {
+  background: var(--dark);
+  color: #fff;
+  border: 2px solid var(--dark);
+}
+.btn-dark:hover { background: #333; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--text);
+  border: 1.5px solid var(--border-dark);
+}
+.btn-outline:hover { border-color: var(--dark); }
+
+.btn-danger {
+  background: var(--error);
+  color: #fff;
+  border: none;
+}
+.btn-danger:hover { background: #dc2626; }
+
+.btn-sm { padding: 7px 14px; font-size: 13px; }
+.btn-lg { padding: 14px 28px; font-size: 16px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+/* ── Badges ──────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge-restaurant,
+.badge-cafe,
+.badge-bar,
+.badge-coffee,
+.badge-pub,
+.badge-lounge {
+  background: var(--vivid);
+  color: #fff;
+  backdrop-filter: blur(6px);
+}
+
+.badge-event-live_music,
+.badge-event-dj,
+.badge-event-jazz,
+.badge-event-wine,
+.badge-event-beer,
+.badge-event-master_class,
+.badge-event-theme_night,
+.badge-event-cocktail,
+.badge-event-other {
+  background: rgba(0,0,0,0.72);
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+
+/* ── Form inputs ─────────────────────────────── */
+.input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  appearance: none;
+}
+.input:focus {
+  border-color: var(--dark);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+}
+.input::placeholder { color: var(--text-3); }
+.input--error { border-color: var(--error); }
+.textarea { resize: vertical; min-height: 90px; }
+
+/* ── Scrollbar ───────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg-4); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-dark); }
+
+/* ── Utilities ───────────────────────────────── */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  text-align: center;
+  gap: 12px;
+}
+.empty-state__icon { font-size: 48px; }
+.empty-state h3 { font-size: 20px; font-weight: 800; color: var(--text); }
+.empty-state p { font-size: 15px; color: var(--text-2); max-width: 320px; }
+.empty-state .btn { margin-top: 8px; }
+
+.text-white {
+    color: var(--bg);
+}

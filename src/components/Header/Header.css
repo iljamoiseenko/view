@@ -1,0 +1,164 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+
+.header__inner {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  height: 56px;
+}
+
+/* Logo */
+.header__logo {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dark);
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: color var(--transition);
+  font-family: 'Matemasie', sans-serif;
+}
+.header__logo:hover { color: var(--vivid); }
+
+/* Nav */
+.header__nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+
+.header__link {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-3);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: var(--transition);
+}
+.header__link:hover { color: var(--dark); }
+.header__link.active { color: var(--dark); font-weight: 700; }
+
+/* Mobile-only items hidden on desktop */
+.header__link--mobile-login,
+.header__link--mobile-logout { display: none; }
+
+/* Right side */
+.header__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+/* Login button */
+.header__login-btn {
+  white-space: nowrap;
+}
+
+/* User */
+.header__user { display: flex; align-items: center; gap: 10px; }
+.header__user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.header__logout {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: color var(--transition);
+  padding: 0;
+}
+.header__logout:hover { color: var(--dark); }
+
+/* Burger */
+.header__burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  flex-shrink: 0;
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.header__burger span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--dark);
+  border-radius: 2px;
+  transition: var(--transition);
+}
+.header__burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.header__burger.open span:nth-child(2) { opacity: 0; }
+.header__burger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .header__inner {
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    position: relative;
+    gap: 0;
+  }
+
+  .header__burger { display: flex; }
+
+  /* Hide desktop right side, show it inside nav when open */
+  .header__right { display: none; }
+
+  .header__nav {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    order: 2;
+    padding: 8px 0 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 10px;
+  }
+
+  .header__nav--open { display: flex; }
+
+  .header__link {
+    width: 100%;
+    padding: 10px 4px;
+    font-size: 15px;
+    border-radius: 0;
+  }
+
+  /* Show mobile-only items in mobile nav */
+  .header__link--mobile-login,
+  .header__link--mobile-logout {
+    display: block;
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    color: var(--text-2);
+    font-weight: 600;
+  }
+}

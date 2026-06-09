@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "view-app",
+      "cwd": "/Users/iljamoiseenko/Iprojects/claude-test/goout",
+      "runtimeExecutable": "/Users/iljamoiseenko/.nvm/versions/node/v20.15.0/bin/node",
+      "runtimeArgs": ["./node_modules/.bin/vite", "--port", "5175"],
+      "port": 5175
+    }
+  ]
+}
