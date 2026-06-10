@@ -47,7 +47,7 @@
 /* ── 2-column layout ── */
 .home__hero-inner {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 2fr 1fr;
   gap: 56px;
   align-items: center;
   padding-top: 56px;
@@ -76,6 +76,7 @@
   line-height: 0.98;
   letter-spacing: -0.04em;
   text-transform: uppercase;
+  padding: 20px 0;
 }
 
 .home__hero-sub {

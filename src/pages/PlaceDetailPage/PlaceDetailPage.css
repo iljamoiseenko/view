@@ -329,6 +329,6 @@
   .detail__events-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 580px) {
-  .detail__events-grid { grid-template-columns: 1fr; }
+  .detail__events-grid { grid-template-columns: repeat(2, 1fr); }
   .detail__info-label { width: 90px; }
 }

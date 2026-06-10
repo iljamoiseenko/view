@@ -318,11 +318,24 @@ export default function VenueAdminPage() {
                   </div>
                   <div className="va-field">
                     <label className="va-label">Кухня</label>
-                    <input className="input" list="va-cuisine" value={placeForm.cuisine || ''}
-                      onChange={e => setField('cuisine', e.target.value)} />
-                    <datalist id="va-cuisine">
-                      {CUISINE_LIST.map(c => <option key={c} value={c} />)}
-                    </datalist>
+                    {(() => {
+                      const knownCuisines = CUISINE_LIST.filter(c => c !== 'Інше')
+                      const isCustom = placeForm.cuisine && !knownCuisines.includes(placeForm.cuisine)
+                      const selectVal = isCustom ? 'Інше' : (placeForm.cuisine || '')
+                      return <>
+                        <select className="input" value={selectVal}
+                          onChange={e => setField('cuisine', e.target.value === 'Інше' ? '__custom__' : e.target.value)}>
+                          <option value="">— Оберіть —</option>
+                          {CUISINE_LIST.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        {(selectVal === 'Інше' || placeForm.cuisine === '__custom__') && (
+                          <input className="input" style={{marginTop:6}}
+                            placeholder="Введіть свій варіант"
+                            value={isCustom ? placeForm.cuisine : ''}
+                            onChange={e => setField('cuisine', e.target.value)} />
+                        )}
+                      </>
+                    })()}
                   </div>
                   <div className="va-field">
                     <label className="va-label">Години роботи</label>

@@ -299,7 +299,7 @@
 /* ── Save toast ──────────────────────────────────────── */
 .va-toast {
   position: fixed;
-  bottom: 28px;
+  top: 72px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -316,7 +316,7 @@
   animation: va-toast-in 0.22s ease;
 }
 @keyframes va-toast-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 

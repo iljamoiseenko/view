@@ -12,6 +12,9 @@ import SuperAdminPage from './pages/SuperAdmin/SuperAdminPage'
 import VenueAdminPage from './pages/VenueAdmin/VenueAdminPage'
 import RegisterPage from './pages/RegisterPage/RegisterPage'
 import SpecialPage from './pages/SpecialPage/SpecialPage'
+import AboutPage from './pages/AboutPage/AboutPage'
+import CollectionsPage from './pages/CollectionsPage/CollectionsPage'
+import ScrollToTop from './components/ScrollToTop'
 
 export default function App() {
   return (
@@ -19,6 +22,7 @@ export default function App() {
       <AuthProvider>
         <AppProvider>
           <div className="app">
+            <ScrollToTop />
             <Header />
             <main className="main-content">
               <Routes>
@@ -29,6 +33,8 @@ export default function App() {
                 <Route path="/special/:slug" element={<SpecialPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/collections" element={<CollectionsPage />} />
 
                 {/* Super admin */}
                 <Route path="/admin" element={

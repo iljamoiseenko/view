@@ -160,7 +160,7 @@ export default function HomePage() {
         <div className="container home__hero-inner">
           <div className="home__hero-left">
             <h1 className="home__hero-title">
-              які<br/>в тебе<br/>плани?
+              твій<br/>план<br/>на сьогодні
             </h1>
             <p className="home__hero-sub">Знайди де провести час —&nbsp;зараз</p>
           </div>

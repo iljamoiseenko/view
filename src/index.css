@@ -80,7 +80,7 @@ img { display: block; max-width: 100%; }
 }
 
 @media (max-width: 640px) {
-  .container { padding: 0 16px; }
+  .container { padding: 10px 16px; }
 }
 
 /* ── Buttons ─────────────────────────────────── */
