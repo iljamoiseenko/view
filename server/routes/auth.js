@@ -3,9 +3,20 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const db = require('../db')
 const { requireAuth, JWT_SECRET } = require('../middleware/auth')
-const { sendNewUserNotification } = require('../mailer')
+const crypto = require('crypto')
+const { sendNewUserNotification, sendPasswordReset } = require('../mailer')
 
 const router = express.Router()
+
+// Ensure reset token columns exist (migration)
+;(function migrate() {
+  const cols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
+  if (!cols.includes('reset_token')) {
+    db.prepare('ALTER TABLE users ADD COLUMN reset_token TEXT').run()
+    db.prepare('ALTER TABLE users ADD COLUMN reset_expires INTEGER').run()
+    console.log('[db] Migration: added reset_token / reset_expires columns')
+  }
+})()
 
 function makeToken(user) {
   return jwt.sign(
@@ -92,6 +103,49 @@ router.post('/register', (req, res) => {
     user: publicUser(user),
     place: createdPlace ? { ...createdPlace, photos: JSON.parse(createdPlace.photos), tags: JSON.parse(createdPlace.tags), workingHours: createdPlace.working_hours } : null,
   })
+})
+
+// POST /api/auth/forgot-password
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body
+  if (!email) return res.status(400).json({ error: 'Email required' })
+
+  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase().trim())
+  // Always respond with success to avoid email enumeration
+  if (!user) return res.json({ ok: true })
+
+  const token = crypto.randomBytes(32).toString('hex')
+  const expires = Date.now() + 60 * 60 * 1000 // 1 hour
+
+  db.prepare('UPDATE users SET reset_token = ?, reset_expires = ? WHERE id = ?').run(token, expires, user.id)
+
+  const baseUrl = process.env.APP_URL || 'https://viewtoday.site'
+  const resetLink = `${baseUrl}/reset-password?token=${token}`
+
+  try {
+    await sendPasswordReset({ toEmail: user.email, resetLink })
+  } catch (err) {
+    console.error('[mailer] Failed to send password reset:', err.message)
+  }
+
+  res.json({ ok: true })
+})
+
+// POST /api/auth/reset-password
+router.post('/reset-password', (req, res) => {
+  const { token, password } = req.body
+  if (!token || !password) return res.status(400).json({ error: 'Token and password required' })
+  if (password.length < 6) return res.status(400).json({ error: 'Пароль має бути мінімум 6 символів' })
+
+  const user = db.prepare('SELECT * FROM users WHERE reset_token = ?').get(token)
+  if (!user || !user.reset_expires || user.reset_expires < Date.now()) {
+    return res.status(400).json({ error: 'Посилання недійсне або вже закінчилось' })
+  }
+
+  const hash = bcrypt.hashSync(password, 10)
+  db.prepare('UPDATE users SET password_hash = ?, reset_token = NULL, reset_expires = NULL WHERE id = ?').run(hash, user.id)
+
+  res.json({ ok: true })
 })
 
 // GET /api/auth/me

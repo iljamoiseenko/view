@@ -67,4 +67,29 @@ async function sendNewUserNotification({ userName, userEmail, placeName, city })
   console.log(`[mailer] Notification sent → ${process.env.NOTIFY_EMAIL}`)
 }
 
-module.exports = { sendNewUserNotification }
+async function sendPasswordReset({ toEmail, resetLink }) {
+  if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+    console.log('[mailer] Skipped password reset — MAIL_USER/MAIL_PASS not set')
+    return
+  }
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; color: #111;">
+      <h2 style="margin:0 0 16px; font-size:20px;">Відновлення пароля VIEW</h2>
+      <p style="font-size:14px; color:#444; margin:0 0 24px;">Ви запросили відновлення пароля. Натисніть кнопку нижче — посилання діє <strong>1 годину</strong>.</p>
+      <a href="${resetLink}" style="display:inline-block; background:#0A0A0A; color:#fff; text-decoration:none; padding:12px 28px; border-radius:8px; font-size:14px; font-weight:700;">Відновити пароль</a>
+      <p style="font-size:12px; color:#999; margin:24px 0 0;">Якщо ви не запитували скидання — просто проігноруйте цей лист.</p>
+    </div>
+  `
+
+  await getTransporter().sendMail({
+    from: `"VIEW" <${process.env.MAIL_USER}>`,
+    to: toEmail,
+    subject: 'VIEW: відновлення пароля',
+    html,
+  })
+
+  console.log(`[mailer] Password reset sent → ${toEmail}`)
+}
+
+module.exports = { sendNewUserNotification, sendPasswordReset }

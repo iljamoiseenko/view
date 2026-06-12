@@ -70,24 +70,10 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="login-hint">
-          Не маєте акаунту? <a href="/register" style={{color:'inherit', textDecoration:'underline'}}>Зареєструватися</a>
-        </p>
-
-        <div className="login-demo">
-          <p className="login-demo__title">Тестові акаунти</p>
-          <button className="login-demo__btn" type="button"
-            onClick={() => { setEmail('admin@goout.ua'); setPassword('Admin2024') }}>
-            Суперадмін
-          </button>
-          <button className="login-demo__btn" type="button"
-            onClick={() => { setEmail('modna@goout.ua'); setPassword('venue123') }}>
-            Заклад (Trial)
-          </button>
-          <button className="login-demo__btn" type="button"
-            onClick={() => { setEmail('skybar@goout.ua'); setPassword('venue123') }}>
-            Заклад (Active)
-          </button>
+        <div className="login-footer-links">
+          <a href="/forgot-password" className="login-forgot">Забув пароль?</a>
+          <span className="login-footer-sep">·</span>
+          <a href="/register" className="login-forgot">Зареєструватися</a>
         </div>
       </div>
     </div>

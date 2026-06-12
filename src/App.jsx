@@ -14,6 +14,8 @@ import RegisterPage from './pages/RegisterPage/RegisterPage'
 import SpecialPage from './pages/SpecialPage/SpecialPage'
 import AboutPage from './pages/AboutPage/AboutPage'
 import CollectionsPage from './pages/CollectionsPage/CollectionsPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage'
 import ScrollToTop from './components/ScrollToTop'
 
 export default function App() {
@@ -33,6 +35,8 @@ export default function App() {
                 <Route path="/special/:slug" element={<SpecialPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/collections" element={<CollectionsPage />} />
 
