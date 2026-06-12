@@ -13,7 +13,8 @@ if (!isProd) {
 }
 
 app.use(express.json())
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+const uploadsPath = process.env.UPLOADS_PATH || path.join(__dirname, '..', 'data', 'uploads')
+app.use('/uploads', express.static(uploadsPath))
 
 app.use('/api/auth', require('./routes/auth'))
 app.use('/api/places', require('./routes/places'))

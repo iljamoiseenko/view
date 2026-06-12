@@ -6,7 +6,7 @@ const { requireAuth } = require('../middleware/auth')
 const router = express.Router()
 
 const storage = multer.diskStorage({
-  destination: path.join(__dirname, '../uploads'),
+  destination: process.env.UPLOADS_PATH || path.join(__dirname, '../../data/uploads'),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase()
     cb(null, Date.now() + '-' + Math.random().toString(36).slice(2) + ext)

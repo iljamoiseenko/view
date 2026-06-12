@@ -23,7 +23,7 @@ export const PLACE_TYPES = {
 export const MARKS = [
   { slug: 'summer_terrace', label: 'Літня тераса', icon: '🌿', color: '#16a34a', bg: '#dcfce7' },
   { slug: 'football',       label: 'Показ футболу', icon: '⚽', color: '#2563eb', bg: '#dbeafe' },
-  { slug: 'swimming',       label: 'Де поплавати',  icon: '🏊', color: '#0891b2', bg: '#cffafe' },
+  { slug: 'swimming',       label: 'Басейн',  icon: '🏊', color: '#0891b2', bg: '#cffafe' },
 ]
 
 export const EVENT_TYPES = {
