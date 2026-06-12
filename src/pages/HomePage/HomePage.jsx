@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useApp } from '../../context/AppContext'
-import { EVENT_TYPES } from '../../data/initialData'
+import { EVENT_TYPES, MARKS } from '../../data/initialData'
 import PlaceCard from '../../components/PlaceCard/PlaceCard'
 import EventCard from '../../components/EventCard/EventCard'
 import TodayStrip from '../../components/TodayStrip/TodayStrip'
@@ -96,6 +96,7 @@ export default function HomePage() {
     if (typeFilter  !== 'all')     r = r.filter(p => p.type === typeFilter)
     if (quickFilter === 'today')   r = r.filter(p => placesWithToday.has(p.id))
     if (quickFilter === 'now')     r = r.filter(p => placesWithNow.has(p.id))
+    if (MARKS.find(m => m.slug === quickFilter)) r = r.filter(p => Array.isArray(p.marks) && p.marks.includes(quickFilter))
     if (search.trim()) {
       const q = search.toLowerCase()
       r = r.filter(p =>
@@ -231,6 +232,15 @@ export default function HomePage() {
                     >
                       З подіями сьогодні
                     </button>
+                    {MARKS.map(m => (
+                      <button
+                        key={m.slug}
+                        className={`home__quick-btn ${quickFilter === m.slug ? 'active' : ''}`}
+                        onClick={() => setQuickFilter(q => q === m.slug ? 'all' : m.slug)}
+                      >
+                        {m.icon} {m.label}
+                      </button>
+                    ))}
                   </div>
                   <div className="home__filter-divider" />
                   {TYPE_FILTERS.map(f => (
