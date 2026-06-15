@@ -1,25 +1,31 @@
 const nodemailer = require('nodemailer')
+const dns = require('dns')
 
 let transporter = null
 
-function getTransporter() {
-  // Recreate if not yet created — picks up env vars that might have loaded late
-  if (!transporter) {
-    console.log(`[mailer] Creating transporter. MAIL_USER=${process.env.MAIL_USER}, MAIL_PASS set=${!!process.env.MAIL_PASS}`)
-    transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      family: 4,
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-    })
-  }
+async function createTransporter() {
+  // Resolve smtp.gmail.com to IPv4 explicitly to avoid IPv6 issues on Railway EU
+  const host = await new Promise((resolve, reject) =>
+    dns.resolve4('smtp.gmail.com', (err, addrs) => err ? reject(err) : resolve(addrs[0]))
+  )
+  console.log(`[mailer] Resolved smtp.gmail.com → ${host}. MAIL_USER=${process.env.MAIL_USER}, MAIL_PASS set=${!!process.env.MAIL_PASS}`)
+  return nodemailer.createTransport({
+    host,
+    port: 465,
+    secure: true,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
+    tls: { servername: 'smtp.gmail.com' },
+    auth: {
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASS,
+    },
+  })
+}
+
+async function getTransporter() {
+  if (!transporter) transporter = await createTransporter()
   return transporter
 }
 
@@ -65,7 +71,8 @@ async function sendNewUserNotification({ userName, userEmail, placeName, city })
     </div>
   `
 
-  const info = await getTransporter().sendMail({
+  const t = await getTransporter()
+  const info = await t.sendMail({
     from: `"VIEW" <${process.env.MAIL_USER}>`,
     to: process.env.NOTIFY_EMAIL || process.env.MAIL_USER,
     subject,
@@ -90,7 +97,8 @@ async function sendPasswordReset({ toEmail, resetLink }) {
     </div>
   `
 
-  const info = await getTransporter().sendMail({
+  const t = await getTransporter()
+  const info = await t.sendMail({
     from: `"VIEW" <${process.env.MAIL_USER}>`,
     to: toEmail,
     subject: 'VIEW: відновлення пароля',
