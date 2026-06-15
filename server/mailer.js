@@ -10,7 +10,10 @@ function getTransporter() {
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
-      family: 4, // force IPv4
+      family: 4,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
       auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS,
