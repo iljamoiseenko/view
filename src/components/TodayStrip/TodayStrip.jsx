@@ -27,21 +27,22 @@ export default function TodayStrip() {
   const navigate = useNavigate()
   const [swiperRef, setSwiperRef] = useState(null)
 
-  const cityPlaceIds = useMemo(
-    () => new Set(filteredPlaces.map(p => p.id)),
-    [filteredPlaces]
+  // Published place IDs (all cities) — used to filter out orphan events
+  const publishedPlaceIds = useMemo(
+    () => new Set(places.filter(p => p.published).map(p => p.id)),
+    [places]
   )
 
   const todayEvents = useMemo(() =>
     events
-      .filter(e => e.date === TODAY && cityPlaceIds.has(e.placeId))
+      .filter(e => e.date === TODAY && publishedPlaceIds.has(e.placeId))
       .sort((a, b) => {
         const aNow = isHappeningNow(a.time) ? 0 : 1
         const bNow = isHappeningNow(b.time) ? 0 : 1
         if (aNow !== bNow) return aNow - bNow
         return (a.time || '').localeCompare(b.time || '')
       }),
-    [events, cityPlaceIds]
+    [events, publishedPlaceIds]
   )
 
   const placeById = useMemo(() => {
