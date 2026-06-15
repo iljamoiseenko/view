@@ -7,7 +7,10 @@ function getTransporter() {
   if (!transporter) {
     console.log(`[mailer] Creating transporter. MAIL_USER=${process.env.MAIL_USER}, MAIL_PASS set=${!!process.env.MAIL_PASS}`)
     transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      family: 4, // force IPv4
       auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS,
