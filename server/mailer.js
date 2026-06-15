@@ -3,7 +3,9 @@ const nodemailer = require('nodemailer')
 let transporter = null
 
 function getTransporter() {
+  // Recreate if not yet created — picks up env vars that might have loaded late
   if (!transporter) {
+    console.log(`[mailer] Creating transporter. MAIL_USER=${process.env.MAIL_USER}, MAIL_PASS set=${!!process.env.MAIL_PASS}`)
     transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -57,14 +59,14 @@ async function sendNewUserNotification({ userName, userEmail, placeName, city })
     </div>
   `
 
-  await getTransporter().sendMail({
+  const info = await getTransporter().sendMail({
     from: `"VIEW" <${process.env.MAIL_USER}>`,
     to: process.env.NOTIFY_EMAIL || process.env.MAIL_USER,
     subject,
     html,
   })
 
-  console.log(`[mailer] Notification sent → ${process.env.NOTIFY_EMAIL}`)
+  console.log(`[mailer] Notification sent → ${process.env.NOTIFY_EMAIL} messageId=${info.messageId}`)
 }
 
 async function sendPasswordReset({ toEmail, resetLink }) {
@@ -82,14 +84,14 @@ async function sendPasswordReset({ toEmail, resetLink }) {
     </div>
   `
 
-  await getTransporter().sendMail({
+  const info = await getTransporter().sendMail({
     from: `"VIEW" <${process.env.MAIL_USER}>`,
     to: toEmail,
     subject: 'VIEW: відновлення пароля',
     html,
   })
 
-  console.log(`[mailer] Password reset sent → ${toEmail}`)
+  console.log(`[mailer] Password reset sent → ${toEmail} messageId=${info.messageId}`)
 }
 
 module.exports = { sendNewUserNotification, sendPasswordReset }

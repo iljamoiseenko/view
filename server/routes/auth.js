@@ -148,6 +148,20 @@ router.post('/reset-password', (req, res) => {
   res.json({ ok: true })
 })
 
+// GET /api/auth/test-mail — тимчасовий endpoint для перевірки пошти
+router.get('/test-mail', async (req, res) => {
+  const { sendPasswordReset } = require('../mailer')
+  try {
+    await sendPasswordReset({
+      toEmail: process.env.NOTIFY_EMAIL || process.env.MAIL_USER,
+      resetLink: 'https://viewtoday.site/reset-password?token=test123',
+    })
+    res.json({ ok: true, to: process.env.NOTIFY_EMAIL || process.env.MAIL_USER })
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message, code: err.code })
+  }
+})
+
 // GET /api/auth/me
 router.get('/me', requireAuth, (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id)
