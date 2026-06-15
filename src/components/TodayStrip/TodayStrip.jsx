@@ -138,7 +138,7 @@ export default function TodayStrip() {
                     >
                       <div className="ts-card__img-wrap">
                         {ev.image
-                          ? <img className="ts-card__img" src={ev.image} alt={ev.title} />
+                          ? <img className="ts-card__img" src={ev.image} alt={ev.title} loading="lazy" />
                           : <div className="ts-card__img ts-card__img--empty" />
                         }
                         <div className="ts-card__img-overlay" />
