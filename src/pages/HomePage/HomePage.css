@@ -328,7 +328,7 @@
 }
 
 @media (max-width: 960px)  { .home__events-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
-@media (max-width: 480px)  { .home__events-grid { grid-template-columns: 1fr; gap: 10px; } }
+@media (max-width: 480px)  { .home__events-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
 
 /* Responsive hero */
 @media (max-width: 860px) {
