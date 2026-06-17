@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useApp } from '../../context/AppContext'
-import { CITIES, PLACE_TYPES } from '../../data/initialData'
 import './RegisterPage.css'
 
 const PERKS = [
@@ -18,9 +17,6 @@ export default function RegisterPage() {
   const navigate = useNavigate()
 
   const [f, setF] = useState({
-    venueName: '',
-    city: 'Харків',
-    type: 'restaurant',
     email: '',
     password: '',
     confirm: '',
@@ -34,17 +30,17 @@ export default function RegisterPage() {
     e.preventDefault()
     setError('')
 
-    if (!f.venueName.trim()) return setError('Введіть назву закладу')
     if (f.password.length < 6) return setError('Пароль мінімум 6 символів')
     if (f.password !== f.confirm) return setError('Паролі не співпадають')
 
     setLoading(true)
+    const emailName = f.email.trim().split('@')[0]
     try {
       await registerUser({
         email: f.email.trim(),
         password: f.password,
-        name: f.venueName.trim(),
-        place: { name: f.venueName.trim(), type: f.type, city: f.city },
+        name: emailName,
+        place: { name: 'Мій заклад', type: 'restaurant', city: 'Харків' },
       })
       await reload()
       navigate('/venue')
@@ -94,42 +90,6 @@ export default function RegisterPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="rp-form" noValidate>
-
-              {/* Venue info */}
-              <div className="rp-section-label">Заклад</div>
-
-              <div className="rp-field">
-                <label className="rp-label">Назва *</label>
-                <input
-                  className="input"
-                  required
-                  value={f.venueName}
-                  onChange={e => set('venueName', e.target.value)}
-                  placeholder="Наприклад: Кав'ярня «Центр»"
-                />
-              </div>
-
-              <div className="rp-row">
-                <div className="rp-field">
-                  <label className="rp-label">Місто</label>
-                  <select className="input" value={f.city} onChange={e => set('city', e.target.value)}>
-                    {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="rp-field">
-                  <label className="rp-label">Тип</label>
-                  <select className="input" value={f.type} onChange={e => set('type', e.target.value)}>
-                    {Object.entries(PLACE_TYPES).map(([k, v]) => (
-                      <option key={k} value={k}>{v}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="rp-divider" />
-
-              {/* Account info */}
-              <div className="rp-section-label">Акаунт</div>
 
               <div className="rp-field">
                 <label className="rp-label">Email *</label>
