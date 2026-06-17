@@ -15,7 +15,7 @@ const EMPTY_EVENT = {
   placeId: '', title: '', description: '', date: '',
   time: '19:00', type: 'live_music', price: 0, image: '',
 }
-const EMPTY_ACCOUNT = { name: '', email: '', password: '', placeId: '' }
+const EMPTY_ACCOUNT = { name: '', username: '', password: '', placeId: '' }
 const EMPTY_BANNER = {
   title: '', subtitle: '', image: '', linkSlug: MARKS[0]?.slug || '',
   bgColor: '#1a1a1a', sortOrder: 0,
@@ -220,12 +220,12 @@ function AccountForm({ places, onSave, onClose }) {
   return (
     <form onSubmit={e => { e.preventDefault(); onSave(f) }} className="sa-form">
       <div className="sa-grid">
-        <div className="sa-col2"><label className="sa-label">Назва / ім'я *</label>
-          <input className="input" required value={f.name} onChange={e => set('name', e.target.value)} /></div>
-        <div className="sa-col2"><label className="sa-label">Email *</label>
-          <input className="input" type="email" required value={f.email} onChange={e => set('email', e.target.value)} /></div>
+        <div className="sa-col2"><label className="sa-label">Назва закладу *</label>
+          <input className="input" required value={f.name} onChange={e => set('name', e.target.value)} placeholder="Кав'ярня Центр" /></div>
+        <div className="sa-col2"><label className="sa-label">Логін *</label>
+          <input className="input" required value={f.username} onChange={e => set('username', e.target.value)} placeholder="kaviarnya_tsentr" /></div>
         <div className="sa-col2"><label className="sa-label">Пароль *</label>
-          <input className="input" required value={f.password} onChange={e => set('password', e.target.value)} minLength={6} /></div>
+          <input className="input" required value={f.password} onChange={e => set('password', e.target.value)} minLength={6} placeholder="мін. 6 символів" /></div>
         <div className="sa-col2"><label className="sa-label">Прив'язати до закладу</label>
           <select className="input" value={f.placeId} onChange={e => set('placeId', e.target.value)}>
             <option value="">— Вибрати заклад —</option>
@@ -548,15 +548,14 @@ export default function SuperAdminPage() {
             <div className="sa-table-wrap">
               <table className="sa-table">
                 <thead><tr>
-                  <th>Назва / email</th><th>Заклад</th><th>Статус</th><th>Дії</th>
+                  <th>Назва</th><th>Логін</th><th>Пароль</th><th>Заклад</th><th>Статус</th><th>Дії</th>
                 </tr></thead>
                 <tbody>
                   {venueUsers.map(u => (
                     <tr key={u.id}>
-                      <td>
-                        <span className="sa-main">{u.name}</span>
-                        <span className="sa-sub">{u.email}</span>
-                      </td>
+                      <td><span className="sa-main">{u.name}</span></td>
+                      <td><code style={{fontSize:13}}>{u.username || u.email}</code></td>
+                      <td><code style={{fontSize:13, color: u.plainPass ? 'var(--text)' : 'var(--text-3)'}}>{u.plainPass || '—'}</code></td>
                       <td className="sa-muted">{getPlaceName(u.placeId)}</td>
                       <td>
                         <button className={`sa-toggle ${u.isActive ? 'sa-toggle--active' : 'sa-toggle--inactive'}`} onClick={() => handleToggleActive(u)}>

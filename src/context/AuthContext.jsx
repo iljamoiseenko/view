@@ -16,8 +16,8 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false))
   }, [])
 
-  const login = async (email, password) => {
-    const { token, user } = await api.post('/auth/login', { email, password })
+  const login = async (username, password) => {
+    const { token, user } = await api.post('/auth/login', { username, password })
     setToken(token)
     setCurrentUser(user)
     return user
@@ -28,8 +28,8 @@ export function AuthProvider({ children }) {
     setCurrentUser(null)
   }
 
-  const registerUser = async ({ email, password, name, place }) => {
-    const { token, user, place: createdPlace } = await api.post('/auth/register', { email, password, name, place })
+  const registerUser = async ({ username, password, name, place }) => {
+    const { token, user, place: createdPlace } = await api.post('/auth/register', { username, password, name, place })
     setToken(token)
     setCurrentUser(user)
     return { success: true, user, place: createdPlace }

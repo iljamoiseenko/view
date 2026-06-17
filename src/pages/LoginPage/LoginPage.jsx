@@ -6,7 +6,7 @@ import './LoginPage.css'
 export default function LoginPage() {
   const { login, currentUser } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,7 +20,7 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      const user = await login(email, password)
+      const user = await login(username, password)
       navigate(user.role === 'superadmin' ? '/admin' : '/venue', { replace: true })
     } catch (err) {
       setError(err.message || 'Невірний email або пароль')
@@ -38,15 +38,15 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="login-field">
-            <label className="login-label">Email</label>
+            <label className="login-label">Логін</label>
             <input
               className={`input ${error ? 'input--error' : ''}`}
-              type="email"
-              placeholder="your@email.ua"
-              value={email}
-              onChange={e => { setEmail(e.target.value); setError('') }}
+              type="text"
+              placeholder="your_login"
+              value={username}
+              onChange={e => { setUsername(e.target.value); setError('') }}
               required
-              autoComplete="email"
+              autoComplete="username"
             />
           </div>
 

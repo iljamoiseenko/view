@@ -76,6 +76,18 @@ if (!placesCols.includes('marks')) {
   console.log('[db] Migration: added `marks` column to places')
 }
 
+const usersCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
+if (!usersCols.includes('username')) {
+  db.prepare('ALTER TABLE users ADD COLUMN username TEXT').run()
+  // Seed existing users: use email prefix as username
+  db.prepare("UPDATE users SET username = LOWER(SUBSTR(email, 1, INSTR(email, '@') - 1)) WHERE username IS NULL").run()
+  console.log('[db] Migration: added `username` column')
+}
+if (!usersCols.includes('plain_pass')) {
+  db.prepare('ALTER TABLE users ADD COLUMN plain_pass TEXT').run()
+  console.log('[db] Migration: added `plain_pass` column')
+}
+
 function addDays(n) {
   const d = new Date()
   d.setDate(d.getDate() + n)

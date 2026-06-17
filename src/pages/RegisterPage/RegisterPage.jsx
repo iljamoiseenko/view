@@ -16,11 +16,7 @@ export default function RegisterPage() {
   const { reload } = useApp()
   const navigate = useNavigate()
 
-  const [f, setF] = useState({
-    email: '',
-    password: '',
-    confirm: '',
-  })
+  const [f, setF] = useState({ username: '', password: '', confirm: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -29,18 +25,17 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-
+    if (!f.username.trim()) return setError('Введіть логін')
     if (f.password.length < 6) return setError('Пароль мінімум 6 символів')
     if (f.password !== f.confirm) return setError('Паролі не співпадають')
 
     setLoading(true)
-    const emailName = f.email.trim().split('@')[0]
     try {
       await registerUser({
-        email: f.email.trim(),
+        username: f.username.trim(),
         password: f.password,
-        name: emailName,
-        place: { name: 'Мій заклад', type: 'restaurant', city: 'Харків' },
+        name: f.username.trim(),
+        place: { type: 'restaurant', city: 'Харків' },
       })
       await reload()
       navigate('/venue')
@@ -92,14 +87,15 @@ export default function RegisterPage() {
             <form onSubmit={handleSubmit} className="rp-form" noValidate>
 
               <div className="rp-field">
-                <label className="rp-label">Email *</label>
+                <label className="rp-label">Логін *</label>
                 <input
                   className="input"
-                  type="email"
+                  type="text"
                   required
-                  value={f.email}
-                  onChange={e => set('email', e.target.value)}
-                  placeholder="hello@myvenue.ua"
+                  value={f.username}
+                  onChange={e => set('username', e.target.value)}
+                  placeholder="my_venue"
+                  autoComplete="username"
                 />
               </div>
 

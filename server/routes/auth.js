@@ -30,6 +30,7 @@ function publicUser(user) {
   return {
     id: user.id,
     email: user.email,
+    username: user.username,
     role: user.role,
     name: user.name,
     placeId: user.place_id,
@@ -37,14 +38,15 @@ function publicUser(user) {
   }
 }
 
-// POST /api/auth/login
+// POST /api/auth/login  — accepts username or email
 router.post('/login', (req, res) => {
-  const { email, password } = req.body
-  if (!email || !password) return res.status(400).json({ error: 'Email and password required' })
+  const { username, email, password } = req.body
+  const login = (username || email || '').toLowerCase().trim()
+  if (!login || !password) return res.status(400).json({ error: 'Логін і пароль обовʼязкові' })
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase().trim())
+  const user = db.prepare('SELECT * FROM users WHERE username = ? OR email = ?').get(login, login)
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-    return res.status(401).json({ error: 'Невірний email або пароль' })
+    return res.status(401).json({ error: 'Невірний логін або пароль' })
   }
   if (!user.is_active) {
     return res.status(403).json({ error: 'Акаунт заблоковано' })
@@ -54,48 +56,46 @@ router.post('/login', (req, res) => {
 })
 
 // POST /api/auth/register
-// Accepts optional `place` object to create venue + account atomically
 router.post('/register', (req, res) => {
-  const { email, password, name, place } = req.body
-  if (!email || !password || !name) return res.status(400).json({ error: 'Email, password and name required' })
+  const { username, password, name, place } = req.body
+  if (!username || !password) return res.status(400).json({ error: 'Логін і пароль обовʼязкові' })
   if (password.length < 6) return res.status(400).json({ error: 'Пароль має бути мінімум 6 символів' })
 
-  const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase().trim())
-  if (exists) return res.status(409).json({ error: 'Цей email вже зареєстровано' })
+  const clean = username.toLowerCase().trim()
+  const exists = db.prepare('SELECT id FROM users WHERE username = ?').get(clean)
+  if (exists) return res.status(409).json({ error: 'Цей логін вже зайнятий' })
 
   const now = new Date().toISOString()
   const userId = 'u' + Date.now()
   const hash = bcrypt.hashSync(password, 10)
+  const displayName = name?.trim() || clean
 
   let placeId = null
   let createdPlace = null
 
   const register = db.transaction(() => {
-    if (place && place.name) {
-      placeId = 'p' + Date.now()
-      db.prepare(`
-        INSERT INTO places (id, name, type, city, address, description, cuisine, phone, working_hours, website, photos, tags, rating)
-        VALUES (?, ?, ?, ?, ?, '', '', '', '', '', '[]', '[]', NULL)
-      `).run(placeId, place.name.trim(), place.type || 'restaurant', place.city || 'Харків', place.address || '')
-      createdPlace = db.prepare('SELECT * FROM places WHERE id = ?').get(placeId)
-    }
+    placeId = 'p' + Date.now()
+    db.prepare(`
+      INSERT INTO places (id, name, type, city, address, description, cuisine, phone, working_hours, website, photos, tags, rating)
+      VALUES (?, ?, ?, ?, ?, '', '', '', '', '', '[]', '[]', NULL)
+    `).run(placeId, 'Мій заклад', place?.type || 'restaurant', place?.city || 'Харків', '')
+    createdPlace = db.prepare('SELECT * FROM places WHERE id = ?').get(placeId)
 
     db.prepare(`
-      INSERT INTO users (id, email, password_hash, role, name, place_id, is_active, created_at)
-      VALUES (?, ?, ?, 'venue', ?, ?, 1, ?)
-    `).run(userId, email.toLowerCase().trim(), hash, name.trim(), placeId, now)
+      INSERT INTO users (id, email, username, password_hash, plain_pass, role, name, place_id, is_active, created_at)
+      VALUES (?, ?, ?, ?, ?, 'venue', ?, ?, 1, ?)
+    `).run(userId, clean, clean, hash, password, displayName, placeId, now)
   })
 
   register()
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId)
 
-  // Fire-and-forget — registration succeeds even if email fails
   sendNewUserNotification({
-    userName: name.trim(),
-    userEmail: email.toLowerCase().trim(),
-    placeName: createdPlace?.name || null,
-    city: place?.city || null,
+    userName: displayName,
+    userEmail: clean,
+    placeName: 'Мій заклад',
+    city: place?.city || 'Харків',
   }).catch(err => console.error('[mailer] Failed to send notification:', err.message))
 
   res.status(201).json({
