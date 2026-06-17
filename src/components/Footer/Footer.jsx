@@ -3,7 +3,7 @@ import './Footer.css'
 
 export default function Footer() {
   return (
-    <footer className="footer test">
+    <footer className="footer">
       <div className="container footer__inner">
 
         {/* Logo + copy */}
