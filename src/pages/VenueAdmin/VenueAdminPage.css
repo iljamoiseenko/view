@@ -181,6 +181,43 @@
 
 .va-add-photo { margin-top: 4px; }
 
+.va-photo-main-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius-sm);
+  padding: 0 8px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  margin-top: 6px;
+}
+
+.va-photo-set-main {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-3);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 8px;
+  height: 32px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition);
+  margin-top: 6px;
+}
+.va-photo-set-main:hover {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fcd34d;
+}
+
 /* ── PhotoInput component ────────────────────────────── */
 .va-photo-input { display: flex; flex-direction: column; gap: 8px; }
 

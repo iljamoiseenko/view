@@ -183,6 +183,13 @@ export default function VenueAdminPage() {
     setField('photos', p)
   }
 
+  const setMainPhoto = (i) => {
+    if (i === 0) return
+    const p = [...(placeForm.photos || [])]
+    const [main] = p.splice(i, 1)
+    setField('photos', [main, ...p])
+  }
+
   const handleSavePlace = async (e) => {
     e.preventDefault()
     const firstPublish = !place.published
@@ -395,6 +402,15 @@ export default function VenueAdminPage() {
                           placeholder="Вставте URL або завантажте файл"
                         />
                       </div>
+                      {i === 0 ? (
+                        <span className="va-photo-main-badge">★ Головна</span>
+                      ) : (
+                        <button type="button" className="va-photo-set-main"
+                          onClick={() => setMainPhoto(i)}
+                          title="Зробити головною">
+                          ☆ Головна
+                        </button>
+                      )}
                       {(placeForm.photos || []).length > 1 && (
                         <button type="button" className="va-rm-photo"
                           onClick={() => setField('photos', placeForm.photos.filter((_, j) => j !== i))}>
