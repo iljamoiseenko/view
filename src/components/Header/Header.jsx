@@ -43,7 +43,7 @@ export default function Header() {
               <button className="header__logout" onClick={handleLogout}>Вийти</button>
             </div>
           ) : (
-            <Link to="/login" className="btn btn-dark btn-sm header__login-btn">Увійти</Link>
+            <Link to="/login" className="btn btn-dark btn-sm header__login-btn">Для закладів</Link>
           )}
         </div>
 
