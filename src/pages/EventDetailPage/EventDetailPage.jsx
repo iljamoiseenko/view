@@ -39,34 +39,28 @@ export default function EventDetailPage() {
         </button>
       </div>
 
-      {/* ── Hero image ── */}
-      <div className="container">
-        <div className="edetail__hero">
-          <img
-            src={event.image || 'https://picsum.photos/seed/event_default/1200/600'}
-            alt={event.title}
-            className="edetail__hero-img"
-          />
-          <div className="edetail__hero-overlay" />
-          <div className="edetail__hero-badges">
-            <span className={`badge badge-event-${event.type}`}>
-              {EVENT_TYPES[event.type] || event.type}
-            </span>
-          </div>
-          <div className="edetail__hero-price">
-            {event.price === 0
-              ? <span className="edetail__price free">FREE</span>
-              : <span className="edetail__price">{event.price} грн</span>
-            }
-          </div>
-        </div>
-      </div>
-
-      {/* ── Content ── */}
+      {/* ── 2-column layout ── */}
       <div className="container edetail__layout">
 
-        {/* LEFT: main info */}
-        <div className="edetail__main">
+        {/* LEFT: poster */}
+        <div className="edetail__gallery">
+          <div className="edetail__poster">
+            <img
+              src={event.image || 'https://picsum.photos/seed/event_default/600/800'}
+              alt={event.title}
+              className="edetail__poster-img"
+            />
+            <div className="edetail__poster-badge">
+              <span className={`badge badge-event-${event.type}`}>
+                {EVENT_TYPES[event.type] || event.type}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT: info */}
+        <div className="edetail__info">
+
           <div className="edetail__date-row">
             <span className="edetail__date">{dateStr}</span>
             <span className="edetail__sep">·</span>
@@ -75,13 +69,17 @@ export default function EventDetailPage() {
 
           <h1 className="edetail__title">{event.title}</h1>
 
+          <div className="edetail__price-row">
+            {event.price === 0
+              ? <span className="edetail__price free">FREE</span>
+              : <span className="edetail__price">{event.price} грн</span>
+            }
+          </div>
+
           {event.description && (
             <p className="edetail__desc">{event.description}</p>
           )}
-        </div>
 
-        {/* RIGHT: venue card */}
-        <div className="edetail__sidebar">
           {place && (
             <Link to={`/place/${place.id}`} className="edetail__venue">
               <div className="edetail__venue-img-wrap">
@@ -110,8 +108,8 @@ export default function EventDetailPage() {
               </div>
             </Link>
           )}
-        </div>
 
+        </div>
       </div>
     </div>
   )
