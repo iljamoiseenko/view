@@ -6,6 +6,7 @@ import Header from './components/Header/Header'
 import Footer from './components/Footer/Footer'
 import HomePage from './pages/HomePage/HomePage'
 import PlaceDetailPage from './pages/PlaceDetailPage/PlaceDetailPage'
+import EventDetailPage from './pages/EventDetailPage/EventDetailPage'
 import EventsPage from './pages/EventsPage/EventsPage'
 import LoginPage from './pages/LoginPage/LoginPage'
 import SuperAdminPage from './pages/SuperAdmin/SuperAdminPage'
@@ -31,6 +32,7 @@ export default function App() {
                 {/* Public */}
                 <Route path="/" element={<HomePage />} />
                 <Route path="/place/:id" element={<PlaceDetailPage />} />
+                <Route path="/event/:id" element={<EventDetailPage />} />
                 <Route path="/events" element={<EventsPage />} />
                 <Route path="/special/:slug" element={<SpecialPage />} />
                 <Route path="/login" element={<LoginPage />} />

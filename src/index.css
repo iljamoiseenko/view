@@ -147,10 +147,40 @@ img { display: block; max-width: 100%; }
 .badge-bar,
 .badge-coffee,
 .badge-pub,
-.badge-lounge {
+.badge-lounge,
+.badge-food_court,
+.badge-fast_food,
+.badge-bakery,
+.badge-dessert,
+.badge-hookah {
   background: var(--vivid);
   color: #fff;
-  backdrop-filter: blur(6px);
+}
+
+.badge-rooftop {
+  background: #0369a1;
+  color: #fff;
+}
+
+.badge-wine_bar {
+  background: #7c2d12;
+  color: #fff;
+}
+
+.badge-cocktail_bar {
+  background: #581c87;
+  color: #fff;
+}
+
+.badge-theater,
+.badge-exhibition {
+  background: #1c1c1c;
+  color: #fff;
+}
+
+.badge-other {
+  background: var(--bg-3);
+  color: var(--text-2);
 }
 
 .badge-event-live_music,

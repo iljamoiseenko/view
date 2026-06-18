@@ -11,7 +11,7 @@ export default function EventCard({ event }) {
   const date = new Date(event.date)
 
   return (
-    <div className="ecard">
+    <Link to={`/event/${event.id}`} className="ecard" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
       <div className="ecard__img-wrap">
         <img
           src={event.image || 'https://picsum.photos/seed/event_default/800/400'}
@@ -49,6 +49,6 @@ export default function EventCard({ event }) {
           </span>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
