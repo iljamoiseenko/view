@@ -30,6 +30,28 @@ router.get('/:id', (req, res) => {
   res.json(parsePlace(row))
 })
 
+// POST /api/places/geocode-missing  — superadmin only, backfills lat/lng for places that don't have it yet
+router.post('/geocode-missing', requireAuth, requireRole('superadmin'), async (req, res) => {
+  const rows = db.prepare('SELECT id, address, city FROM places WHERE address IS NOT NULL AND address != \'\' AND (lat IS NULL OR lng IS NULL)').all()
+
+  let updated = 0
+  const failed = []
+
+  for (const row of rows) {
+    const coords = await geocodeAddress(row.address, row.city)
+    if (coords) {
+      db.prepare('UPDATE places SET lat = ?, lng = ? WHERE id = ?').run(coords.lat, coords.lng, row.id)
+      updated++
+    } else {
+      failed.push({ id: row.id, address: row.address })
+    }
+    // Respect Nominatim's usage policy (max 1 request/sec)
+    await new Promise(r => setTimeout(r, 1100))
+  }
+
+  res.json({ total: rows.length, updated, failed })
+})
+
 // PUT /api/places/:id  — venue can only update their own place
 router.put('/:id', requireAuth, async (req, res) => {
   const { id } = req.params

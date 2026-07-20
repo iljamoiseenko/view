@@ -305,13 +305,15 @@ function BannerForm({ initial, onSave, onClose }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function SuperAdminPage() {
   const { currentUser, logout } = useAuth()
-  const { places, events, banners, addPlace, updatePlace, deletePlace, addEvent, updateEvent, deleteEvent, addBanner, updateBanner, deleteBanner } = useApp()
+  const { places, events, banners, addPlace, updatePlace, deletePlace, addEvent, updateEvent, deleteEvent, addBanner, updateBanner, deleteBanner, reload } = useApp()
   const navigate = useNavigate()
 
   const [tab, setTab] = useState('places')
   const [modal, setModal] = useState(null)
   const [confirm, setConfirm] = useState(null)
   const [venueUsers, setVenueUsers] = useState([])
+  const [geocoding, setGeocoding] = useState(false)
+  const [geocodeResult, setGeocodeResult] = useState(null)
 
   useEffect(() => {
     api.get('/users').then(users => setVenueUsers(users.filter(u => u.role === 'venue'))).catch(() => {})
@@ -364,6 +366,20 @@ export default function SuperAdminPage() {
 
   const getPlaceName = (pid) => places.find(p => p.id === pid)?.name || '—'
 
+  const handleGeocodeMissing = async () => {
+    setGeocoding(true)
+    setGeocodeResult(null)
+    try {
+      const result = await api.post('/places/geocode-missing', {})
+      setGeocodeResult(result)
+      await reload()
+    } catch {
+      setGeocodeResult({ error: true })
+    } finally {
+      setGeocoding(false)
+    }
+  }
+
   return (
     <div className="sa-page">
       <div className="sa-topbar">
@@ -404,7 +420,21 @@ export default function SuperAdminPage() {
           <div className="sa-section">
             <div className="sa-section__head">
               <h2>Заклади</h2>
-              <button className="btn btn-dark btn-sm" onClick={() => setModal({ type: 'place', data: null })}>+ Додати</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {geocodeResult && !geocodeResult.error && (
+                  <span style={{ fontSize: 13, color: 'var(--text-2)' }}>
+                    Готово: {geocodeResult.updated}/{geocodeResult.total} знайдено на карті
+                    {geocodeResult.failed?.length > 0 && `, ${geocodeResult.failed.length} не вдалося`}
+                  </span>
+                )}
+                {geocodeResult?.error && (
+                  <span style={{ fontSize: 13, color: 'var(--vivid)' }}>Помилка геокодування</span>
+                )}
+                <button className="btn btn-outline btn-sm" onClick={handleGeocodeMissing} disabled={geocoding}>
+                  {geocoding ? 'Проставляємо координати…' : 'Проставити координати на карті'}
+                </button>
+                <button className="btn btn-dark btn-sm" onClick={() => setModal({ type: 'place', data: null })}>+ Додати</button>
+              </div>
             </div>
             <div className="sa-table-wrap">
               <table className="sa-table">
