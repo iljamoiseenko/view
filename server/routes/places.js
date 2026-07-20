@@ -1,6 +1,7 @@
 const express = require('express')
 const db = require('../db')
 const { requireAuth, requireRole } = require('../middleware/auth')
+const { geocodeAddress } = require('../geocode')
 
 const router = express.Router()
 
@@ -30,7 +31,7 @@ router.get('/:id', (req, res) => {
 })
 
 // PUT /api/places/:id  — venue can only update their own place
-router.put('/:id', requireAuth, (req, res) => {
+router.put('/:id', requireAuth, async (req, res) => {
   const { id } = req.params
   const user = req.user
 
@@ -38,10 +39,18 @@ router.put('/:id', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
-  const existing = db.prepare('SELECT id FROM places WHERE id = ?').get(id)
+  const existing = db.prepare('SELECT * FROM places WHERE id = ?').get(id)
   if (!existing) return res.status(404).json({ error: 'Place not found' })
 
   const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, marks, rating } = req.body
+
+  // Re-geocode only if the address or city actually changed
+  let coords = null
+  const addressChanged = address !== undefined && address !== existing.address
+  const cityChanged = city !== undefined && city !== existing.city
+  if (addressChanged || cityChanged) {
+    coords = await geocodeAddress(address ?? existing.address, city ?? existing.city)
+  }
 
   db.prepare(`
     UPDATE places SET
@@ -58,6 +67,8 @@ router.put('/:id', requireAuth, (req, res) => {
       tags = COALESCE(?, tags),
       marks = COALESCE(?, marks),
       rating = COALESCE(?, rating),
+      lat = COALESCE(?, lat),
+      lng = COALESCE(?, lng),
       published = 1
     WHERE id = ?
   `).run(
@@ -68,6 +79,8 @@ router.put('/:id', requireAuth, (req, res) => {
     tags !== undefined ? JSON.stringify(tags) : null,
     marks !== undefined ? JSON.stringify(marks) : null,
     rating ?? null,
+    coords?.lat ?? null,
+    coords?.lng ?? null,
     id
   )
 
@@ -76,15 +89,17 @@ router.put('/:id', requireAuth, (req, res) => {
 })
 
 // POST /api/places  — superadmin only
-router.post('/', requireAuth, requireRole('superadmin'), (req, res) => {
+router.post('/', requireAuth, requireRole('superadmin'), async (req, res) => {
   const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, marks, rating } = req.body
   if (!name || !type || !city || !address) return res.status(400).json({ error: 'name, type, city, address required' })
 
+  const coords = await geocodeAddress(address, city)
+
   const id = 'p' + Date.now()
   db.prepare(`
-    INSERT INTO places (id, name, type, city, address, description, cuisine, phone, working_hours, website, photos, tags, marks, rating)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, name, type, city, address, description ?? '', cuisine ?? '', phone ?? '', workingHours ?? '', website ?? '', JSON.stringify(photos ?? []), JSON.stringify(tags ?? []), JSON.stringify(marks ?? []), rating ?? null)
+    INSERT INTO places (id, name, type, city, address, description, cuisine, phone, working_hours, website, photos, tags, marks, rating, lat, lng)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, name, type, city, address, description ?? '', cuisine ?? '', phone ?? '', workingHours ?? '', website ?? '', JSON.stringify(photos ?? []), JSON.stringify(tags ?? []), JSON.stringify(marks ?? []), rating ?? null, coords?.lat ?? null, coords?.lng ?? null)
 
   const created = db.prepare('SELECT * FROM places WHERE id = ?').get(id)
   res.status(201).json(parsePlace(created))

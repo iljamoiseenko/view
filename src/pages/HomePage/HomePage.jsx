@@ -8,7 +8,8 @@ import BannerSlider from '../../components/BannerSlider/BannerSlider'
 import Pagination from '../../components/Pagination/Pagination'
 import './HomePage.css'
 
-const PER_PAGE = 8
+const PLACES_PER_PAGE = 16
+const EVENTS_PER_PAGE = 8
 
 const TYPE_FILTERS = [
   { value: 'all',        label: 'Всі' },
@@ -110,8 +111,8 @@ export default function HomePage() {
 
   // Paginated venues
   const displayedPlaces = useMemo(() => {
-    const start = (placePage - 1) * PER_PAGE
-    return allFilteredPlaces.slice(start, start + PER_PAGE)
+    const start = (placePage - 1) * PLACES_PER_PAGE
+    return allFilteredPlaces.slice(start, start + PLACES_PER_PAGE)
   }, [allFilteredPlaces, placePage])
 
   // Filtered events (full list)
@@ -126,8 +127,8 @@ export default function HomePage() {
 
   // Paginated events
   const displayedEvents = useMemo(() => {
-    const start = (eventPage - 1) * PER_PAGE
-    return allFilteredEvents.slice(start, start + PER_PAGE)
+    const start = (eventPage - 1) * EVENTS_PER_PAGE
+    return allFilteredEvents.slice(start, start + EVENTS_PER_PAGE)
   }, [allFilteredEvents, eventPage])
 
   const scrollToListing = () => {
@@ -278,7 +279,7 @@ export default function HomePage() {
                   <Pagination
                     total={allFilteredPlaces.length}
                     page={placePage}
-                    perPage={PER_PAGE}
+                    perPage={PLACES_PER_PAGE}
                     onChange={handlePageChange(setPlacePage)}
                   />
                 </>
@@ -342,7 +343,7 @@ export default function HomePage() {
                   <Pagination
                     total={allFilteredEvents.length}
                     page={eventPage}
-                    perPage={PER_PAGE}
+                    perPage={EVENTS_PER_PAGE}
                     onChange={handlePageChange(setEventPage)}
                   />
                 </>

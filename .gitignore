@@ -10,5 +10,6 @@ server/*.db-shm
 server/*.db-wal
 server/uploads/*
 !server/uploads/.gitkeep
+data/
 .idea/
 .DS_Store

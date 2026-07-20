@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { PLACE_TYPES } from '../../data/initialData'
 import EventCard from '../../components/EventCard/EventCard'
+import PlaceMap from '../../components/PlaceMap/PlaceMap'
 import './PlaceDetailPage.css'
 
 export default function PlaceDetailPage() {
@@ -126,6 +127,8 @@ export default function PlaceDetailPage() {
               {place.tags.map(t => <span key={t} className="detail__tag">#{t}</span>)}
             </div>
           )}
+
+          <PlaceMap lat={place.lat} lng={place.lng} name={place.name} address={place.address} />
         </div>
       </div>
 

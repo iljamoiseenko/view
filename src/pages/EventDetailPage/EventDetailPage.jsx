@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { EVENT_TYPES, PLACE_TYPES } from '../../data/initialData'
+import PlaceMap from '../../components/PlaceMap/PlaceMap'
 import './EventDetailPage.css'
 
 const MONTHS_FULL = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня']
@@ -107,6 +108,10 @@ export default function EventDetailPage() {
                 )}
               </div>
             </Link>
+          )}
+
+          {place && (
+            <PlaceMap lat={place.lat} lng={place.lng} name={place.name} address={place.address} />
           )}
 
         </div>

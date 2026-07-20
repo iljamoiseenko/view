@@ -6,7 +6,7 @@ import PlaceCard from '../../components/PlaceCard/PlaceCard'
 import Pagination from '../../components/Pagination/Pagination'
 import './SpecialPage.css'
 
-const PER_PAGE = 8
+const PER_PAGE = 16
 const TODAY = new Date().toISOString().slice(0, 10)
 
 function isHappeningNow(time) {

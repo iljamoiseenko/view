@@ -26,7 +26,7 @@
 /* ── 2-column layout ──────────────────────────────── */
 .detail__layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 400px 1fr;
   gap: 52px;
   align-items: start;
   padding-bottom: 64px;
@@ -44,7 +44,7 @@
 .detail__main-photo {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 4 / 5;
   overflow: hidden;
   border-radius: var(--radius-md);
   cursor: zoom-in;
@@ -109,8 +109,8 @@
 
 .detail__thumb {
   flex-shrink: 0;
-  width: 72px;
-  height: 56px;
+  width: 64px;
+  height: 80px;
   border-radius: var(--radius-sm);
   overflow: hidden;
   border: 2px solid transparent;
@@ -325,7 +325,7 @@
     grid-template-columns: 1fr;
     gap: 28px;
   }
-  .detail__gallery { position: static; }
+  .detail__gallery { position: static; max-width: 420px; margin: 0 auto; width: 100%; }
   .detail__events-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 580px) {

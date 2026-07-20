@@ -75,6 +75,11 @@ if (!placesCols.includes('marks')) {
   db.prepare("ALTER TABLE places ADD COLUMN marks TEXT NOT NULL DEFAULT '[]'").run()
   console.log('[db] Migration: added `marks` column to places')
 }
+if (!placesCols.includes('lat')) {
+  db.prepare('ALTER TABLE places ADD COLUMN lat REAL').run()
+  db.prepare('ALTER TABLE places ADD COLUMN lng REAL').run()
+  console.log('[db] Migration: added `lat`/`lng` columns to places')
+}
 
 const usersCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
 if (!usersCols.includes('username')) {
