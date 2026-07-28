@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext'
 import { PLACE_TYPES } from '../../data/initialData'
 import EventCard from '../../components/EventCard/EventCard'
 import PlaceMap from '../../components/PlaceMap/PlaceMap'
+import { mapsUrl } from '../../utils/maps'
 import './PlaceDetailPage.css'
 
 export default function PlaceDetailPage() {
@@ -87,11 +88,24 @@ export default function PlaceDetailPage() {
             <p className="detail__desc">{place.description}</p>
           )}
 
+          {place.bookingEnabled && place.bookingPhone && (
+            <a href={`tel:${place.bookingPhone}`} className="btn btn-dark detail__book-btn">
+              Забронювати
+            </a>
+          )}
+
           <div className="detail__info-list">
             {place.address && (
               <div className="detail__info-row">
                 <span className="detail__info-label">Адреса</span>
-                <span className="detail__info-val">{place.address}</span>
+                <a
+                  href={mapsUrl({ lat: place.lat, lng: place.lng, address: `${place.address}, ${place.city}` })}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="detail__info-val detail__link"
+                >
+                  {place.address}
+                </a>
               </div>
             )}
             {place.workingHours && (

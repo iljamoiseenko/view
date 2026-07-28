@@ -115,21 +115,31 @@
   white-space: pre-line;
 }
 
+/* ── Actions ── */
+.edetail__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 /* ── Venue card ── */
+.edetail__venue-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.edetail__venue-card:hover {
+  border-color: var(--dark);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
 .edetail__venue {
   display: flex;
   align-items: center;
   gap: 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
   text-decoration: none;
-  transition: border-color var(--transition), box-shadow var(--transition);
   padding: 12px;
-}
-.edetail__venue:hover {
-  border-color: var(--dark);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
 
 .edetail__venue-img-wrap {
@@ -185,7 +195,14 @@
   gap: 5px;
   font-size: 12px;
   color: var(--text-3);
+  text-decoration: none;
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 0;
+  padding-top: 10px;
+  transition: color var(--transition);
 }
+.edetail__venue-address:hover { color: var(--text); text-decoration: underline; }
 
 /* ── Responsive ── */
 @media (max-width: 860px) {

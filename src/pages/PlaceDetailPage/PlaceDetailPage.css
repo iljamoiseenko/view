@@ -159,6 +159,12 @@
   color: var(--text-2);
 }
 
+.detail__book-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  text-decoration: none;
+}
+
 /* Info list */
 .detail__info-list {
   display: flex;

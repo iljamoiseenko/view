@@ -80,6 +80,11 @@ if (!placesCols.includes('lat')) {
   db.prepare('ALTER TABLE places ADD COLUMN lng REAL').run()
   console.log('[db] Migration: added `lat`/`lng` columns to places')
 }
+if (!placesCols.includes('booking_enabled')) {
+  db.prepare('ALTER TABLE places ADD COLUMN booking_enabled INTEGER NOT NULL DEFAULT 0').run()
+  db.prepare('ALTER TABLE places ADD COLUMN booking_phone TEXT').run()
+  console.log('[db] Migration: added `booking_enabled`/`booking_phone` columns to places')
+}
 
 const usersCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
 if (!usersCols.includes('username')) {

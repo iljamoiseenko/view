@@ -18,6 +18,7 @@ const DATE_TABS = [
   { value: 'today',    label: 'Сьогодні' },
   { value: 'tomorrow', label: 'Завтра' },
   { value: 'week',     label: 'Тиждень' },
+  { value: 'past',     label: 'Минулі' },
 ]
 
 const DAYS_UK   = ['Неділя','Понеділок','Вівторок','Середа','Четвер',"П'ятниця",'Субота']
@@ -41,11 +42,17 @@ export default function EventsPage() {
     if (dateFilter === 'today')    r = r.filter(e => e.date === today)
     else if (dateFilter === 'tomorrow') r = r.filter(e => e.date === tomorrow)
     else if (dateFilter === 'week') r = r.filter(e => e.date >= today && e.date <= weekEnd)
+    else if (dateFilter === 'past') r = r.filter(e => e.date < today)
     else r = r.filter(e => e.date >= today)
 
     if (typeFilter !== 'all') r = r.filter(e => e.type === typeFilter)
 
-    return r.sort((a, b) => a.date !== b.date ? a.date.localeCompare(b.date) : a.time.localeCompare(b.time))
+    return r.sort((a, b) => {
+      if (dateFilter === 'past') {
+        return a.date !== b.date ? b.date.localeCompare(a.date) : b.time.localeCompare(a.time)
+      }
+      return a.date !== b.date ? a.date.localeCompare(b.date) : a.time.localeCompare(b.time)
+    })
   }, [events, dateFilter, typeFilter, today, tomorrow, weekEnd])
 
   // Paginate

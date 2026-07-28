@@ -2,6 +2,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { EVENT_TYPES, PLACE_TYPES } from '../../data/initialData'
 import PlaceMap from '../../components/PlaceMap/PlaceMap'
+import { mapsUrl } from '../../utils/maps'
+import { buildEventTimes, addToDeviceCalendar } from '../../utils/calendar'
 import './EventDetailPage.css'
 
 const MONTHS_FULL = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня']
@@ -26,6 +28,12 @@ export default function EventDetailPage() {
 
   const date = new Date(event.date)
   const dateStr = `${date.getDate()} ${MONTHS_FULL[date.getMonth()]} · ${WEEKDAYS[date.getDay()]}`
+
+  const handleAddToCalendar = () => {
+    const { start, end } = buildEventTimes(event.date, event.time)
+    const location = place ? [place.name, place.address].filter(Boolean).join(', ') : ''
+    addToDeviceCalendar({ title: event.title, description: event.description, location, start, end })
+  }
 
   return (
     <div className="edetail">
@@ -77,37 +85,55 @@ export default function EventDetailPage() {
             }
           </div>
 
+          <div className="edetail__actions">
+            <button className="btn btn-dark" onClick={handleAddToCalendar}>
+              Додати в календар
+            </button>
+            {place?.bookingEnabled && place?.bookingPhone && (
+              <a href={`tel:${place.bookingPhone}`} className="btn btn-outline">
+                Забронювати
+              </a>
+            )}
+          </div>
+
           {event.description && (
             <p className="edetail__desc">{event.description}</p>
           )}
 
           {place && (
-            <Link to={`/place/${place.id}`} className="edetail__venue">
-              <div className="edetail__venue-img-wrap">
-                <img
-                  src={place.photos?.[0] || 'https://picsum.photos/seed/default/400/300'}
-                  alt={place.name}
-                  className="edetail__venue-img"
-                />
-              </div>
-              <div className="edetail__venue-info">
-                <span className="edetail__venue-label">Місце проведення</span>
-                <span className="edetail__venue-name">{place.name}</span>
-                <span className="edetail__venue-meta">
-                  {PLACE_TYPES[place.type] || place.type}
-                  {place.city && ` · ${place.city}`}
-                </span>
-                {place.address && (
-                  <span className="edetail__venue-address">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
-                    {place.address}
+            <div className="edetail__venue-card">
+              <Link to={`/place/${place.id}`} className="edetail__venue">
+                <div className="edetail__venue-img-wrap">
+                  <img
+                    src={place.photos?.[0] || 'https://picsum.photos/seed/default/400/300'}
+                    alt={place.name}
+                    className="edetail__venue-img"
+                  />
+                </div>
+                <div className="edetail__venue-info">
+                  <span className="edetail__venue-label">Місце проведення</span>
+                  <span className="edetail__venue-name">{place.name}</span>
+                  <span className="edetail__venue-meta">
+                    {PLACE_TYPES[place.type] || place.type}
+                    {place.city && ` · ${place.city}`}
                   </span>
-                )}
-              </div>
-            </Link>
+                </div>
+              </Link>
+              {place.address && (
+                <a
+                  href={mapsUrl({ lat: place.lat, lng: place.lng, address: `${place.address}, ${place.city}` })}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="edetail__venue-address"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  {place.address}
+                </a>
+              )}
+            </div>
           )}
 
           {place && (

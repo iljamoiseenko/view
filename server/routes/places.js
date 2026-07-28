@@ -14,6 +14,10 @@ function parsePlace(row) {
     workingHours: row.working_hours,
     working_hours: undefined,
     published: row.published === 1,
+    bookingEnabled: row.booking_enabled === 1,
+    booking_enabled: undefined,
+    bookingPhone: row.booking_phone,
+    booking_phone: undefined,
   }
 }
 
@@ -64,7 +68,7 @@ router.put('/:id', requireAuth, async (req, res) => {
   const existing = db.prepare('SELECT * FROM places WHERE id = ?').get(id)
   if (!existing) return res.status(404).json({ error: 'Place not found' })
 
-  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, marks, rating } = req.body
+  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, marks, rating, bookingEnabled, bookingPhone } = req.body
 
   // Re-geocode only if the address or city actually changed
   let coords = null
@@ -91,6 +95,8 @@ router.put('/:id', requireAuth, async (req, res) => {
       rating = COALESCE(?, rating),
       lat = COALESCE(?, lat),
       lng = COALESCE(?, lng),
+      booking_enabled = COALESCE(?, booking_enabled),
+      booking_phone = COALESCE(?, booking_phone),
       published = 1
     WHERE id = ?
   `).run(
@@ -103,6 +109,8 @@ router.put('/:id', requireAuth, async (req, res) => {
     rating ?? null,
     coords?.lat ?? null,
     coords?.lng ?? null,
+    bookingEnabled !== undefined ? (bookingEnabled ? 1 : 0) : null,
+    bookingPhone !== undefined ? bookingPhone : null,
     id
   )
 
@@ -112,16 +120,16 @@ router.put('/:id', requireAuth, async (req, res) => {
 
 // POST /api/places  — superadmin only
 router.post('/', requireAuth, requireRole('superadmin'), async (req, res) => {
-  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, marks, rating } = req.body
+  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, marks, rating, bookingEnabled, bookingPhone } = req.body
   if (!name || !type || !city || !address) return res.status(400).json({ error: 'name, type, city, address required' })
 
   const coords = await geocodeAddress(address, city)
 
   const id = 'p' + Date.now()
   db.prepare(`
-    INSERT INTO places (id, name, type, city, address, description, cuisine, phone, working_hours, website, photos, tags, marks, rating, lat, lng)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, name, type, city, address, description ?? '', cuisine ?? '', phone ?? '', workingHours ?? '', website ?? '', JSON.stringify(photos ?? []), JSON.stringify(tags ?? []), JSON.stringify(marks ?? []), rating ?? null, coords?.lat ?? null, coords?.lng ?? null)
+    INSERT INTO places (id, name, type, city, address, description, cuisine, phone, working_hours, website, photos, tags, marks, rating, lat, lng, booking_enabled, booking_phone)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, name, type, city, address, description ?? '', cuisine ?? '', phone ?? '', workingHours ?? '', website ?? '', JSON.stringify(photos ?? []), JSON.stringify(tags ?? []), JSON.stringify(marks ?? []), rating ?? null, coords?.lat ?? null, coords?.lng ?? null, bookingEnabled ? 1 : 0, bookingPhone ?? null)
 
   const created = db.prepare('SELECT * FROM places WHERE id = ?').get(id)
   res.status(201).json(parsePlace(created))

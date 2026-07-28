@@ -363,6 +363,29 @@ export default function VenueAdminPage() {
                 </div>
               </div>
 
+              {/* ── Group: Бронювання ── */}
+              <div className="va-form-section">
+                <div className="va-form-section__title">Бронювання</div>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={!!placeForm.bookingEnabled}
+                    onChange={e => setField('bookingEnabled', e.target.checked)}
+                  />
+                  <span className="toggle-switch__track" />
+                  <span className="toggle-switch__label">Приймати бронювання по телефону</span>
+                </label>
+                {placeForm.bookingEnabled && (
+                  <div className="va-field" style={{ marginTop: 14, maxWidth: 320 }}>
+                    <label className="va-label">Номер для бронювання *</label>
+                    <input className="input" type="tel" required={!!placeForm.bookingEnabled}
+                      value={placeForm.bookingPhone || ''}
+                      onChange={e => setField('bookingPhone', e.target.value)}
+                      placeholder="+380 XX XXX-XX-XX" />
+                  </div>
+                )}
+              </div>
+
               {/* ── Group: Відмітки ── */}
               <div className="va-form-section">
                 <div className="va-form-section__title">Відмітки закладу</div>

@@ -13,3 +13,4 @@ server/uploads/*
 data/
 .idea/
 .DS_Store
+backups/

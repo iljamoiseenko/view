@@ -144,6 +144,20 @@ function PlaceForm({ initial, onSave, onClose }) {
           <textarea className="input textarea" rows={3} required value={f.description} onChange={e => set('description', e.target.value)} /></div>
         <div className="sa-col2"><label className="sa-label">Теги (через кому)</label>
           <input className="input" value={f.tags} onChange={e => set('tags', e.target.value)} placeholder="піца, вино, романтика" /></div>
+        {/* Booking */}
+        <div className="sa-col2">
+          <label className="sa-label">Бронювання</label>
+          <label className="toggle-switch">
+            <input type="checkbox" checked={!!f.bookingEnabled} onChange={e => set('bookingEnabled', e.target.checked)} />
+            <span className="toggle-switch__track" />
+            <span className="toggle-switch__label">Приймати бронювання по телефону</span>
+          </label>
+          {f.bookingEnabled && (
+            <input className="input" type="tel" required style={{ marginTop: 10, maxWidth: 320 }}
+              value={f.bookingPhone || ''} onChange={e => set('bookingPhone', e.target.value)}
+              placeholder="Номер для бронювання: +380 XX XXX-XX-XX" />
+          )}
+        </div>
         {/* Marks */}
         <div className="sa-col2">
           <label className="sa-label">Відмітки закладу</label>
