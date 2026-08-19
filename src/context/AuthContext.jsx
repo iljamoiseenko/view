@@ -35,8 +35,10 @@ export function AuthProvider({ children }) {
     return { success: true, user, place: createdPlace }
   }
 
+  const updateCurrentUser = (patch) => setCurrentUser(u => u ? { ...u, ...patch } : u)
+
   return (
-    <AuthContext.Provider value={{ currentUser, loading, login, logout, registerUser }}>
+    <AuthContext.Provider value={{ currentUser, loading, login, logout, registerUser, updateCurrentUser }}>
       {children}
     </AuthContext.Provider>
   )

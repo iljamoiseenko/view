@@ -7,7 +7,7 @@ export function AppProvider({ children }) {
   const [places, setPlaces] = useState([])
   const [events, setEvents] = useState([])
   const [banners, setBanners] = useState([])
-  const [selectedCity, setSelectedCity] = useState('Харків')
+  const [selectedCity, setSelectedCity] = useState('Усі міста')
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {

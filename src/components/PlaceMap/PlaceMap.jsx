@@ -1,6 +1,8 @@
+import { useLanguage } from '../../context/LanguageContext'
 import './PlaceMap.css'
 
 export default function PlaceMap({ lat, lng, name, address }) {
+  const { t } = useLanguage()
   if (lat == null || lng == null) return null
 
   const label = encodeURIComponent(name || address || `${lat},${lng}`)
@@ -9,7 +11,7 @@ export default function PlaceMap({ lat, lng, name, address }) {
     <div className="place-map">
       <iframe
         className="place-map__canvas"
-        title={name || 'Мапа'}
+        title={name || 'Map'}
         src={`https://maps.google.com/maps?q=${lat},${lng}(${label})&z=16&output=embed`}
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
@@ -20,7 +22,7 @@ export default function PlaceMap({ lat, lng, name, address }) {
         target="_blank"
         rel="noreferrer"
       >
-        Прокласти маршрут
+        {t('placeDetail.routeButton')}
       </a>
     </div>
   )

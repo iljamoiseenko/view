@@ -173,6 +173,8 @@
 .sa-toggle--active { border-color: #BBF7D0; background: #F0FDF4; color: #166534; }
 .sa-toggle--inactive { border-color: #FECACA; background: #FFF1F2; color: #991B1B; }
 
+.sa-tier-select { width: auto; min-width: 110px; padding: 6px 10px; font-size: 13px; }
+
 /* Modal */
 .sa-overlay {
   position: fixed; inset: 0;
@@ -301,6 +303,12 @@
 .toggle-switch input:checked + .toggle-switch__track::after { transform: translateX(18px); }
 .toggle-switch__label { font-size: 13px; font-weight: 700; color: var(--text); }
 
+.va-amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+}
+
 /* ── Marks checkboxes ── */
 .sa-marks {
   display: flex;
@@ -336,6 +344,8 @@
   border-radius: var(--radius-pill);
   white-space: nowrap;
 }
+
+.sa-row--boosted { background: var(--vivid-bg, #fff1f2); }
 
 /* ── Image input ── */
 .sa-img-input { display: flex; flex-direction: column; gap: 8px; }

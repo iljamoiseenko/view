@@ -36,23 +36,30 @@
 .va-logout:hover { color: #fff; }
 
 /* ── Layout ──────────────────────────────────────────── */
-.va-body { display: flex; flex-direction: column; gap: 24px; }
+.va-body { display: flex; align-items: flex-start; gap: 24px; }
+.va-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
 
-/* ── Tabs ────────────────────────────────────────────── */
-.va-tabs {
+/* ── Nav (left sidebar) ──────────────────────────────── */
+.va-nav {
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 5px;
-  width: fit-content;
+  padding: 6px;
+  width: 220px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 76px;
+  z-index: 10;
 }
-.va-tab {
+.va-nav-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 7px;
-  padding: 8px 20px;
+  padding: 10px 14px;
   border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
@@ -61,18 +68,86 @@
   border: none;
   cursor: pointer;
   transition: var(--transition);
+  text-align: left;
+  width: 100%;
 }
-.va-tab:hover { color: var(--text); background: var(--bg-2); }
-.va-tab.active { background: var(--dark); color: #fff; }
-.va-tab__count {
+.va-nav-item:hover { color: var(--text); background: var(--bg-2); }
+.va-nav-item.active { background: var(--dark); color: #fff; }
+.va-nav-item__count {
   background: rgba(255,255,255,0.15);
   font-size: 11px;
   padding: 1px 6px;
   border-radius: var(--radius-pill);
 }
-.va-tab:not(.active) .va-tab__count {
+.va-nav-item:not(.active) .va-nav-item__count {
   background: var(--bg-3);
   color: var(--text-3);
+}
+
+@media (max-width: 768px) {
+  .va-body { flex-direction: column; }
+  .va-nav {
+    flex-direction: row;
+    width: 100%;
+    position: static;
+    overflow-x: auto;
+  }
+  .va-nav-item { width: auto; white-space: nowrap; }
+}
+
+/* ── Boost card ──────────────────────────────────────── */
+.va-boost-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: var(--dark);
+  border-radius: var(--radius-lg);
+  padding: 20px 28px;
+  margin-bottom: 24px;
+}
+.va-boost-card__title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.va-boost-card__hint {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 6px;
+}
+.va-boost-card__quota {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vivid);
+}
+.va-boost-card__locked {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+}
+.va-boost-card__error {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f87171;
+  margin-top: 4px;
+}
+.va-boost-card__action { flex-shrink: 0; }
+.va-boost-card__active {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--vivid-text);
+  background: var(--vivid);
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .va-boost-card { flex-direction: column; align-items: flex-start; }
 }
 
 /* ── Section card ────────────────────────────────────── */
@@ -101,6 +176,28 @@
   font-weight: 700;
   color: var(--success);
 }
+
+/* ── Account sub-tabs ────────────────────────────────── */
+.va-subtabs {
+  display: flex;
+  gap: 4px;
+  padding: 16px 28px 0;
+}
+.va-subtab {
+  padding: 9px 4px;
+  margin-right: 24px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: var(--transition);
+}
+.va-subtab:hover { color: var(--text); }
+.va-subtab.active { color: var(--vivid); border-bottom-color: var(--vivid); }
 
 /* ── Form sections ───────────────────────────────────── */
 .va-form-section {
@@ -278,7 +375,21 @@
 .va-photo-upload-btn:hover { border-color: var(--dark); color: var(--text); }
 .va-photo-upload-btn:disabled { opacity: 0.5; cursor: wait; }
 
+/* ── Amenities ────────────────────────────────────────── */
+.va-amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+}
+
 /* ── Toggle switch ───────────────────────────────────── */
+.va-account-error {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--error);
+  margin-top: 14px;
+}
+
 .toggle-switch {
   display: inline-flex;
   align-items: center;
@@ -380,8 +491,8 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  background: var(--dark);
-  color: #fff;
+  background: var(--vivid);
+  color: var(--vivid-text);
   font-size: 13px;
   font-weight: 600;
   padding: 12px 22px;
@@ -401,6 +512,118 @@
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: flex-end;
+}
+
+/* ── Subscription plans (Shopify-style pricing tiles) ─── */
+.va-plans-sub {
+  font-size: 13px;
+  color: var(--text-3);
+  max-width: 560px;
+  line-height: 1.6;
+}
+
+.va-plans {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 20px 28px 28px;
+}
+
+.va-plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px 24px;
+  transition: var(--transition);
+}
+.va-plan-card.popular {
+  border-color: var(--dark);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+}
+.va-plan-card.current {
+  border-color: var(--vivid);
+}
+
+.va-plan-card__badge {
+  position: absolute;
+  top: -12px;
+  left: 24px;
+  background: var(--dark);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+}
+.va-plan-card__badge--current { background: var(--vivid); color: var(--vivid-text); }
+
+.va-plan-card__name {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.va-plan-card__price {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.va-plan-card__price-amount {
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--dark);
+}
+.va-plan-card__price-period {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.va-plan-card__features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  margin: 4px 0;
+}
+.va-plan-card__features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+.va-plan-card__check {
+  color: #16a34a;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.va-plan-card__btn { width: 100%; justify-content: center; }
+
+.va-plans-notice {
+  margin: 0 28px 24px;
+  font-size: 13px;
+  color: var(--text-3);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+
+@media (max-width: 900px) {
+  .va-plans { grid-template-columns: 1fr; }
 }
 
 /* ── Empty / Table ───────────────────────────────────── */

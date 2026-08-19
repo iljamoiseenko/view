@@ -1,11 +1,14 @@
 import { memo } from 'react'
 import { Link } from 'react-router-dom'
-import { PLACE_TYPES, MARKS } from '../../data/initialData'
+import { useLanguage } from '../../context/LanguageContext'
+import { getPlaceTypeLabel } from '../../utils/placeType'
 import './PlaceCard.css'
 
 const PlaceCard = memo(function PlaceCard({ place, todayEventCount = 0, hasNow = false }) {
+  const { t } = useLanguage()
   const todayEvents = { length: todayEventCount }
   const nowEvents   = { length: hasNow ? 1 : 0 }
+  const isTop = !!(place.topUntil && place.topUntil > Date.now())
 
   return (
     <Link to={`/place/${place.id}`} className="pcard">
@@ -18,15 +21,31 @@ const PlaceCard = memo(function PlaceCard({ place, todayEventCount = 0, hasNow =
         />
         <div className="pcard__overlay" />
 
+        {/* Top ribbon */}
+        {isTop && (
+          <div className="pcard__ribbon">
+            <div className="pcard__ribbon-track">
+              <span className="pcard__ribbon-text">
+                {Array.from({ length: 6 }).map((_, i) => <span key={i}>{t('common.topBadge')}&nbsp;&nbsp;•&nbsp;&nbsp;</span>)}
+              </span>
+              <span className="pcard__ribbon-text" aria-hidden="true">
+                {Array.from({ length: 6 }).map((_, i) => <span key={i}>{t('common.topBadge')}&nbsp;&nbsp;•&nbsp;&nbsp;</span>)}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Top badges */}
         <div className="pcard__top">
-          <span className={`badge badge-${place.type}`}>
-            {PLACE_TYPES[place.type] || place.type}
-          </span>
+          <div className="pcard__top-left">
+            <span className={`badge badge-${place.type}`}>
+              {getPlaceTypeLabel(place, t)}
+            </span>
+          </div>
           {nowEvents.length > 0 ? (
             <span className="pcard__live">
               <span className="pcard__live-dot" />
-              Зараз
+              {t('common.now')}
             </span>
           ) : todayEvents.length > 0 ? (
             <span className="pcard__today">TODAY</span>
@@ -41,23 +60,10 @@ const PlaceCard = memo(function PlaceCard({ place, todayEventCount = 0, hasNow =
             {place.cuisine && <span className="pcard__city">{place.cuisine}</span>}
           </div>
           <h3 className="pcard__name">{place.name}</h3>
-          {/* Marks badges */}
-          {Array.isArray(place.marks) && place.marks.length > 0 && (
-            <div className="pcard__marks">
-              {place.marks.map(slug => {
-                const mark = MARKS.find(m => m.slug === slug)
-                return mark ? (
-                  <span key={slug} className="pcard__mark">
-                    {mark.icon} {mark.label}
-                  </span>
-                ) : null
-              })}
-            </div>
-          )}
           {todayEvents.length > 0 && (
             <div className="pcard__footer">
               <span className="pcard__events">
-                {todayEvents.length} {todayEvents.length === 1 ? 'подія' : 'події'} сьогодні
+                {t('common.eventsToday', todayEvents.length)}
               </span>
             </div>
           )}

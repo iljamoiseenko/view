@@ -2,32 +2,30 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useApp } from '../../context/AppContext'
+import { useLanguage } from '../../context/LanguageContext'
+import { CITIES } from '../../data/initialData'
 import './RegisterPage.css'
-
-const PERKS = [
-  'Сторінка закладу в каталозі міста',
-  'Публікація подій і заходів',
-  'Редагування профілю у реальному часі',
-  'Статистика переглядів',
-]
 
 export default function RegisterPage() {
   const { registerUser } = useAuth()
   const { reload } = useApp()
+  const { t } = useLanguage()
   const navigate = useNavigate()
 
-  const [f, setF] = useState({ username: '', password: '', confirm: '' })
+  const [f, setF] = useState({ username: '', password: '', confirm: '', city: CITIES[0] })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const perks = [t('register.perk1'), t('register.perk2'), t('register.perk3'), t('register.perk4')]
 
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    if (!f.username.trim()) return setError('Введіть логін')
-    if (f.password.length < 6) return setError('Пароль мінімум 6 символів')
-    if (f.password !== f.confirm) return setError('Паролі не співпадають')
+    if (!f.username.trim()) return setError(t('register.errLogin'))
+    if (f.password.length < 6) return setError(t('register.errPasswordLen'))
+    if (f.password !== f.confirm) return setError(t('register.errPasswordMatch'))
 
     setLoading(true)
     try {
@@ -35,12 +33,12 @@ export default function RegisterPage() {
         username: f.username.trim(),
         password: f.password,
         name: f.username.trim(),
-        place: { type: 'restaurant', city: 'Харків' },
+        place: { type: 'restaurant', city: f.city },
       })
       await reload()
       navigate('/venue')
     } catch (err) {
-      setError(err.message || 'Помилка реєстрації')
+      setError(err.message || t('register.errDefault'))
     } finally {
       setLoading(false)
     }
@@ -55,13 +53,13 @@ export default function RegisterPage() {
           <Link to="/" className="rp-logo">VIEW</Link>
 
           <div className="rp-hero-body">
-            <p className="rp-hero-label">Для власників закладів</p>
+            <p className="rp-hero-label">{t('register.forOwners')}</p>
             <h1 className="rp-hero-title">
-              Розкажи місту<br />про свій заклад
+              {t('register.heroTitleLine1')}<br />{t('register.heroTitleLine2')}
             </h1>
 
             <ul className="rp-perks">
-              {PERKS.map(p => (
+              {perks.map(p => (
                 <li key={p} className="rp-perk">
                   <span className="rp-perk__check">✓</span>
                   {p}
@@ -71,8 +69,8 @@ export default function RegisterPage() {
           </div>
 
           <p className="rp-hero-footer">
-            Вже є акаунт?{' '}
-            <Link to="/login" className="rp-hero-footer__link">Увійти</Link>
+            {t('register.haveAccount')}{' '}
+            <Link to="/login" className="rp-hero-footer__link">{t('register.login')}</Link>
           </p>
         </div>
 
@@ -80,46 +78,58 @@ export default function RegisterPage() {
         <div className="rp-form-wrap">
           <div className="rp-form-card">
             <div className="rp-form-head">
-              <h2 className="rp-form-title">Реєстрація</h2>
-              <p className="rp-form-sub">Заповніть інформацію про заклад</p>
+              <h2 className="rp-form-title">{t('register.formTitle')}</h2>
+              <p className="rp-form-sub">{t('register.formSub')}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="rp-form" noValidate>
 
               <div className="rp-field">
-                <label className="rp-label">Логін *</label>
+                <label className="rp-label">{t('register.login_')} *</label>
                 <input
                   className="input"
                   type="text"
                   required
                   value={f.username}
                   onChange={e => set('username', e.target.value)}
-                  placeholder="my_venue"
+                  placeholder={t('register.loginPlaceholder')}
                   autoComplete="username"
                 />
               </div>
 
+              <div className="rp-field">
+                <label className="rp-label">{t('register.city')} *</label>
+                <select
+                  className="input"
+                  required
+                  value={f.city}
+                  onChange={e => set('city', e.target.value)}
+                >
+                  {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
               <div className="rp-row">
                 <div className="rp-field">
-                  <label className="rp-label">Пароль *</label>
+                  <label className="rp-label">{t('register.password')} *</label>
                   <input
                     className="input"
                     type="password"
                     required
                     value={f.password}
                     onChange={e => set('password', e.target.value)}
-                    placeholder="Мін. 6 символів"
+                    placeholder={t('register.passwordPlaceholder')}
                   />
                 </div>
                 <div className="rp-field">
-                  <label className="rp-label">Підтвердити</label>
+                  <label className="rp-label">{t('register.confirm')}</label>
                   <input
                     className="input"
                     type="password"
                     required
                     value={f.confirm}
                     onChange={e => set('confirm', e.target.value)}
-                    placeholder="Повторіть пароль"
+                    placeholder={t('register.confirmPlaceholder')}
                   />
                 </div>
               </div>
@@ -132,13 +142,13 @@ export default function RegisterPage() {
                 disabled={loading}
               >
                 {loading
-                  ? <><span className="rp-spinner" /> Створюємо акаунт...</>
-                  : 'Створити аккаунт'
+                  ? <><span className="rp-spinner" /> {t('register.submitting')}</>
+                  : t('register.submit')
                 }
               </button>
 
               <p className="rp-terms">
-                Реєструючись, ви погоджуєтесь з умовами використання сервісу.
+                {t('register.terms')}
               </p>
             </form>
           </div>

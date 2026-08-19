@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useApp } from '../../context/AppContext'
-import { EVENT_TYPES, MARKS } from '../../data/initialData'
+import { useLanguage } from '../../context/LanguageContext'
 import PlaceCard from '../../components/PlaceCard/PlaceCard'
 import EventCard from '../../components/EventCard/EventCard'
 import TodayStrip from '../../components/TodayStrip/TodayStrip'
@@ -11,24 +11,9 @@ import './HomePage.css'
 const PLACES_PER_PAGE = 16
 const EVENTS_PER_PAGE = 8
 
-const TYPE_FILTERS = [
-  { value: 'all',        label: 'Всі' },
-  { value: 'restaurant', label: 'Ресторан' },
-  { value: 'cafe',       label: 'Кафе' },
-  { value: 'bar',        label: 'Бар' },
-  { value: 'coffee',     label: "Кав'ярня" },
-  { value: 'pub',        label: 'Паб' },
-  { value: 'lounge',     label: 'Лаундж' },
-  { value: 'theater',    label: 'Театр' },
-  { value: 'exhibition', label: 'Виставка' },
-]
-
-const EVENT_DATE_FILTERS = [
-  { value: 'all',      label: 'Усі дати' },
-  { value: 'today',    label: 'Сьогодні' },
-  { value: 'tomorrow', label: 'Завтра' },
-  { value: 'week',     label: 'Цей тиждень' },
-]
+const TYPE_FILTER_VALUES = ['all', 'restaurant', 'cafe', 'bar', 'coffee', 'pub', 'lounge', 'theater', 'exhibition']
+const EVENT_DATE_FILTER_VALUES = ['all', 'today', 'tomorrow', 'week']
+const EVENT_TYPE_VALUES = ['live_music', 'dj', 'jazz', 'wine', 'beer', 'master_class', 'theme_night', 'cocktail', 'other']
 
 const TODAY    = new Date().toISOString().slice(0, 10)
 const TOMORROW = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
@@ -43,15 +28,10 @@ function isHappeningNow(time) {
   return evMin <= nowMin && nowMin <= evMin + 180
 }
 
-const TICKER_ITEMS = [
-  'Заклади', 'Івенти', 'Live Music', 'Ресторани',
-  'Бари', 'DJ Night', 'Джаз', "Кав'ярні", 'Виставки',
-  'Паби', 'Cocktail Bar', 'Gastro', 'Лаунж', 'Після роботи',
-]
-const TICKER_FULL = [...TICKER_ITEMS, ...TICKER_ITEMS]
-
 export default function HomePage() {
   const { filteredPlaces, events, banners } = useApp()
+  const { t } = useLanguage()
+  const tickerFull = [...t('home.ticker'), ...t('home.ticker')]
 
   const [activeTab, setActiveTab] = useState('venues')
 
@@ -97,7 +77,6 @@ export default function HomePage() {
     if (typeFilter  !== 'all')     r = r.filter(p => p.type === typeFilter)
     if (quickFilter === 'today')   r = r.filter(p => placesWithToday.has(p.id))
     if (quickFilter === 'now')     r = r.filter(p => placesWithNow.has(p.id))
-    if (MARKS.find(m => m.slug === quickFilter)) r = r.filter(p => Array.isArray(p.marks) && p.marks.includes(quickFilter))
     if (search.trim()) {
       const q = search.toLowerCase()
       r = r.filter(p =>
@@ -152,7 +131,7 @@ export default function HomePage() {
       <section className="home__hero">
         <div className="home__ticker" aria-hidden="true">
           <div className="home__ticker-track">
-            {TICKER_FULL.map((item, i) => (
+            {tickerFull.map((item, i) => (
               <span key={i} className="home__ticker-item">
                 {item} <span className="home__ticker-sep">—</span>
               </span>
@@ -162,9 +141,9 @@ export default function HomePage() {
         <div className="container home__hero-inner">
           <div className="home__hero-left">
             <h1 className="home__hero-title">
-              твій<br/>план<br/>на сьогодні
+              {t('home.heroLine1')}<br/>{t('home.heroLine2')}<br/>{t('home.heroLine3')}
             </h1>
-            <p className="home__hero-sub">Знайди де провести час —&nbsp;зараз</p>
+            <p className="home__hero-sub">{t('home.heroSub')}</p>
           </div>
         </div>
       </section>
@@ -179,37 +158,20 @@ export default function HomePage() {
       <div className="home__listing">
         <div className="container">
 
-          {/* Search — venues only */}
-          {activeTab === 'venues' && (
-            <div className="home__search">
-              <svg className="home__search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-              </svg>
-              <input
-                className="home__search-input"
-                type="text"
-                placeholder="Заклад, кухня, адреса..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-              {search && <button className="home__search-clear" onClick={() => setSearch('')}>✕</button>}
-            </div>
-          )}
-
           {/* Section tabs */}
           <div className="home__section-tabs">
             <button
               className={`home__section-tab ${activeTab === 'venues' ? 'active' : ''}`}
               onClick={() => setActiveTab('venues')}
             >
-              Заклади
+              {t('home.tabVenues')}
               <span className="home__section-tab__count">{filteredPlaces.length}</span>
             </button>
             <button
               className={`home__section-tab ${activeTab === 'events' ? 'active' : ''}`}
               onClick={() => setActiveTab('events')}
             >
-              Події
+              {t('home.tabEvents')}
               <span className="home__section-tab__count">{events.filter(e => e.date >= TODAY).length}</span>
             </button>
           </div>
@@ -225,41 +187,42 @@ export default function HomePage() {
                       onClick={() => setQuickFilter(q => q === 'now' ? 'all' : 'now')}
                     >
                       <span className="home__live-dot" />
-                      Зараз
+                      {t('home.quickNow')}
                     </button>
                     <button
                       className={`home__quick-btn ${quickFilter === 'today' ? 'active' : ''}`}
                       onClick={() => setQuickFilter(q => q === 'today' ? 'all' : 'today')}
                     >
-                      З подіями сьогодні
+                      {t('home.quickToday')}
                     </button>
-                    {MARKS.map(m => (
-                      <button
-                        key={m.slug}
-                        className={`home__quick-btn ${quickFilter === m.slug ? 'active' : ''}`}
-                        onClick={() => setQuickFilter(q => q === m.slug ? 'all' : m.slug)}
-                      >
-                        {m.icon} {m.label}
-                      </button>
-                    ))}
                   </div>
                   <div className="home__filter-divider" />
-                  {TYPE_FILTERS.map(f => (
+                  {TYPE_FILTER_VALUES.map(v => (
                     <button
-                      key={f.value}
-                      className={`home__filter-btn ${typeFilter === f.value ? 'active' : ''}`}
-                      onClick={() => setTypeFilter(f.value)}
+                      key={v}
+                      className={`home__filter-btn ${typeFilter === v ? 'active' : ''}`}
+                      onClick={() => setTypeFilter(v)}
                     >
-                      {f.label}
+                      {t(`home.typeFilter.${v}`)}
                     </button>
                   ))}
                 </div>
                 <div className="home__filter-right">
-                  <span className="home__count">
-                    {allFilteredPlaces.length} {allFilteredPlaces.length === 1 ? 'заклад' : allFilteredPlaces.length < 5 ? 'заклади' : 'закладів'}
-                  </span>
+                  <div className="home__search">
+                    <svg className="home__search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <input
+                      className="home__search-input"
+                      type="text"
+                      placeholder={t('home.searchPlaceholder')}
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                    />
+                    {search && <button className="home__search-clear" onClick={() => setSearch('')}>✕</button>}
+                  </div>
                   {hasVenueFilters && (
-                    <button className="home__reset" onClick={resetVenues}>Скинути</button>
+                    <button className="home__reset" onClick={resetVenues}>{t('common.reset')}</button>
                   )}
                 </div>
               </div>
@@ -286,9 +249,9 @@ export default function HomePage() {
               ) : (
                 <div className="empty-state">
                   <span className="empty-state__icon">🔍</span>
-                  <h3>Нічого не знайдено</h3>
-                  <p>Спробуйте змінити фільтри</p>
-                  <button className="btn btn-dark" onClick={resetVenues}>Показати все</button>
+                  <h3>{t('home.noVenuesTitle')}</h3>
+                  <p>{t('home.noVenuesText')}</p>
+                  <button className="btn btn-dark" onClick={resetVenues}>{t('common.showAll')}</button>
                 </div>
               )}
             </>
@@ -299,13 +262,13 @@ export default function HomePage() {
             <>
               <div className="home__filters">
                 <div className="home__filter-group">
-                  {EVENT_DATE_FILTERS.map(f => (
+                  {EVENT_DATE_FILTER_VALUES.map(v => (
                     <button
-                      key={f.value}
-                      className={`home__filter-btn ${evDate === f.value ? 'active' : ''}`}
-                      onClick={() => setEvDate(f.value)}
+                      key={v}
+                      className={`home__filter-btn ${evDate === v ? 'active' : ''}`}
+                      onClick={() => setEvDate(v)}
                     >
-                      {f.label}
+                      {t(`home.dateFilter.${v}`)}
                     </button>
                   ))}
                   <div className="home__filter-divider" />
@@ -313,24 +276,24 @@ export default function HomePage() {
                     className={`home__filter-btn ${evType === 'all' ? 'active' : ''}`}
                     onClick={() => setEvType('all')}
                   >
-                    Усі типи
+                    {t('home.eventTypeAll')}
                   </button>
-                  {Object.entries(EVENT_TYPES).map(([val, label]) => (
+                  {EVENT_TYPE_VALUES.map(val => (
                     <button
                       key={val}
                       className={`home__filter-btn ${evType === val ? 'active' : ''}`}
                       onClick={() => setEvType(val)}
                     >
-                      {label}
+                      {t(`eventTypes.${val}`)}
                     </button>
                   ))}
                 </div>
                 <div className="home__filter-right">
                   <span className="home__count">
-                    {allFilteredEvents.length} {allFilteredEvents.length === 1 ? 'подія' : allFilteredEvents.length < 5 ? 'події' : 'подій'}
+                    {t('home.countEvents', allFilteredEvents.length)}
                   </span>
                   {hasEventFilters && (
-                    <button className="home__reset" onClick={resetEvents}>Скинути</button>
+                    <button className="home__reset" onClick={resetEvents}>{t('common.reset')}</button>
                   )}
                 </div>
               </div>
@@ -350,9 +313,9 @@ export default function HomePage() {
               ) : (
                 <div className="empty-state">
                   <span className="empty-state__icon">🎵</span>
-                  <h3>Подій не знайдено</h3>
-                  <p>Спробуйте змінити фільтр дати або типу</p>
-                  <button className="btn btn-dark" onClick={resetEvents}>Показати все</button>
+                  <h3>{t('home.noEventsTitle')}</h3>
+                  <p>{t('home.noEventsText')}</p>
+                  <button className="btn btn-dark" onClick={resetEvents}>{t('common.showAll')}</button>
                 </div>
               )}
             </>

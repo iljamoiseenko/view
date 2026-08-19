@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLanguage } from '../../context/LanguageContext'
 
 export default function ResetPasswordPage() {
+  const { t } = useLanguage()
   const [searchParams]        = useSearchParams()
   const token                 = searchParams.get('token') || ''
   const navigate              = useNavigate()
@@ -13,8 +15,8 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (password !== password2) return setError('Паролі не співпадають')
-    if (password.length < 6)    return setError('Мінімум 6 символів')
+    if (password !== password2) return setError(t('resetPassword.errMismatch'))
+    if (password.length < 6)    return setError(t('resetPassword.errLen'))
     setError('')
     setLoading(true)
     try {
@@ -24,7 +26,7 @@ export default function ResetPasswordPage() {
         body: JSON.stringify({ token, password }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Помилка')
+      if (!res.ok) throw new Error(data.error || t('resetPassword.errDefault'))
       setDone(true)
       setTimeout(() => navigate('/login'), 3000)
     } catch (err) {
@@ -38,8 +40,8 @@ export default function ResetPasswordPage() {
     return (
       <div className="login-page">
         <div className="login-box">
-          <p className="login-error">Невірне або відсутнє посилання для скидання пароля.</p>
-          <a href="/forgot-password" className="login-forgot" style={{ marginTop: 12, display: 'block', textAlign: 'center' }}>Запросити нове</a>
+          <p className="login-error">{t('resetPassword.invalidLink')}</p>
+          <a href="/forgot-password" className="login-forgot" style={{ marginTop: 12, display: 'block', textAlign: 'center' }}>{t('resetPassword.requestNew')}</a>
         </div>
       </div>
     )
@@ -49,30 +51,30 @@ export default function ResetPasswordPage() {
     <div className="login-page">
       <div className="login-box">
         <div className="login-box__logo">VIEW</div>
-        <h1 className="login-box__title">Новий пароль</h1>
-        <p className="login-box__sub">Введіть новий пароль для вашого акаунту</p>
+        <h1 className="login-box__title">{t('resetPassword.title')}</h1>
+        <p className="login-box__sub">{t('resetPassword.sub')}</p>
 
         {done ? (
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
-            <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Пароль змінено!</p>
-            <p style={{ fontSize: 13, color: 'var(--text-3)' }}>Переходимо до входу...</p>
+            <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{t('resetPassword.doneTitle')}</p>
+            <p style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('resetPassword.doneText')}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="login-form">
             <div className="login-field">
-              <label className="login-label">Новий пароль</label>
+              <label className="login-label">{t('resetPassword.newPassword')}</label>
               <input
                 className={`input ${error ? 'input--error' : ''}`}
                 type="password"
-                placeholder="мінімум 6 символів"
+                placeholder={t('resetPassword.newPasswordPlaceholder')}
                 value={password}
                 onChange={e => { setPassword(e.target.value); setError('') }}
                 required
               />
             </div>
             <div className="login-field">
-              <label className="login-label">Повторіть пароль</label>
+              <label className="login-label">{t('resetPassword.repeatPassword')}</label>
               <input
                 className={`input ${error ? 'input--error' : ''}`}
                 type="password"
@@ -84,7 +86,7 @@ export default function ResetPasswordPage() {
             </div>
             {error && <p className="login-error">{error}</p>}
             <button type="submit" className="btn btn-dark login-submit" disabled={loading}>
-              {loading ? 'Зберігаємо...' : 'Зберегти пароль'}
+              {loading ? t('resetPassword.saving') : t('resetPassword.submit')}
             </button>
           </form>
         )}

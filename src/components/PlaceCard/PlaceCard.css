@@ -53,6 +53,49 @@
   gap: 6px;
 }
 
+.pcard__top-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Diagonal "running text" corner ribbon */
+.pcard__ribbon {
+  position: absolute;
+  top: 18px;
+  right: -42px;
+  width: 160px;
+  transform: rotate(45deg);
+  transform-origin: center;
+  background: #ff0f0f;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  overflow: hidden;
+  z-index: 3;
+}
+
+.pcard__ribbon-track {
+  display: flex;
+  width: max-content;
+  animation: pcard-ribbon-scroll 6s linear infinite;
+}
+
+.pcard__ribbon-text {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #fff;
+  padding: 4px 0;
+}
+
+@keyframes pcard-ribbon-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
 .pcard__today {
   background: #fff;
   color: #000;

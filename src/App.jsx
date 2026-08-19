@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
 import { AuthProvider } from './context/AuthContext'
+import { LanguageProvider } from './context/LanguageContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Header from './components/Header/Header'
 import Footer from './components/Footer/Footer'
@@ -12,9 +13,12 @@ import LoginPage from './pages/LoginPage/LoginPage'
 import SuperAdminPage from './pages/SuperAdmin/SuperAdminPage'
 import VenueAdminPage from './pages/VenueAdmin/VenueAdminPage'
 import RegisterPage from './pages/RegisterPage/RegisterPage'
-import SpecialPage from './pages/SpecialPage/SpecialPage'
 import AboutPage from './pages/AboutPage/AboutPage'
 import CollectionsPage from './pages/CollectionsPage/CollectionsPage'
+import CollectionDetailPage from './pages/CollectionDetailPage/CollectionDetailPage'
+import TermsPage from './pages/LegalPages/TermsPage'
+import RefundPolicyPage from './pages/LegalPages/RefundPolicyPage'
+import ContactsPage from './pages/LegalPages/ContactsPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage'
 import ScrollToTop from './components/ScrollToTop'
@@ -22,6 +26,7 @@ import ScrollToTop from './components/ScrollToTop'
 export default function App() {
   return (
     <BrowserRouter>
+      <LanguageProvider>
       <AuthProvider>
         <AppProvider>
           <div className="app">
@@ -34,13 +39,16 @@ export default function App() {
                 <Route path="/place/:id" element={<PlaceDetailPage />} />
                 <Route path="/event/:id" element={<EventDetailPage />} />
                 <Route path="/events" element={<EventsPage />} />
-                <Route path="/special/:slug" element={<SpecialPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/collections" element={<CollectionsPage />} />
+                <Route path="/collections/:slug" element={<CollectionDetailPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/refund-policy" element={<RefundPolicyPage />} />
+                <Route path="/contacts" element={<ContactsPage />} />
 
                 {/* Super admin */}
                 <Route path="/admin" element={
@@ -66,6 +74,7 @@ export default function App() {
           </div>
         </AppProvider>
       </AuthProvider>
+      </LanguageProvider>
     </BrowserRouter>
   )
 }

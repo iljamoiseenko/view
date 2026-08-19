@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
-import { EVENT_TYPES } from '../../data/initialData'
+import { useLanguage } from '../../context/LanguageContext'
+import { getEventTypeLabel } from '../../utils/eventType'
 import './EventCard.css'
-
-const MONTHS = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру']
 
 export default function EventCard({ event }) {
   const { places } = useApp()
+  const { t } = useLanguage()
   const place = places.find(p => p.id === event.placeId)
   const date = new Date(event.date)
 
@@ -21,10 +21,10 @@ export default function EventCard({ event }) {
         />
         <div className="ecard__date">
           <span className="ecard__date-day">{date.getDate()}</span>
-          <span className="ecard__date-month">{MONTHS[date.getMonth()]}</span>
+          <span className="ecard__date-month">{t('common.monthsShort')[date.getMonth()]}</span>
         </div>
         <span className={`ecard__type badge badge-event-${event.type}`}>
-          {EVENT_TYPES[event.type] || event.type}
+          {getEventTypeLabel(event, t)}
         </span>
       </div>
 
@@ -45,7 +45,7 @@ export default function EventCard({ event }) {
         <div className="ecard__footer">
           <span className="ecard__time">{event.time}</span>
           <span className={`ecard__price ${event.price === 0 ? 'free' : ''}`}>
-            {event.price === 0 ? 'FREE' : `${event.price} грн`}
+            {event.price === 0 ? t('common.free') : `${event.price} ${t('common.currency')}`}
           </span>
         </div>
       </div>

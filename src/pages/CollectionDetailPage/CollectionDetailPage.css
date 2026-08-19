@@ -47,6 +47,7 @@
   text-decoration: none;
   transition: color 0.2s;
   flex-shrink: 0;
+  margin-bottom: 20px;
 }
 
 .sp-back:hover { color: #fff; }

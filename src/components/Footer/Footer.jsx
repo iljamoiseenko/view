@@ -1,28 +1,30 @@
 import { Link, NavLink } from 'react-router-dom'
+import { useLanguage } from '../../context/LanguageContext'
 import './Footer.css'
 
 export default function Footer() {
+  const { t } = useLanguage()
   return (
     <footer className="footer">
       <div className="container footer__inner">
 
-        {/* Logo + copy */}
+        {/* Logo */}
         <div className="footer__brand">
           <Link to="/" className="footer__logo">VIEW</Link>
         </div>
 
         {/* Nav */}
         <nav className="footer__nav">
-          <NavLink to="/" end className="footer__nav-link">Заклади</NavLink>
-          <NavLink to="/events" className="footer__nav-link">Івенти</NavLink>
-          <NavLink to="/about" className="footer__nav-link">Про нас</NavLink>
-          <NavLink to="/register" className="footer__nav-link">Додати заклад</NavLink>
+          <NavLink to="/" end className="footer__nav-link">{t('header.venues')}</NavLink>
+          <NavLink to="/events" className="footer__nav-link">{t('header.events')}</NavLink>
+          <NavLink to="/about" className="footer__nav-link">{t('header.about')}</NavLink>
+          <NavLink to="/register" className="footer__nav-link">{t('footer.addVenue')}</NavLink>
         </nav>
 
         {/* Right: donate + socials */}
         <div className="footer__right">
           <a href="https://send.monobank.ua/jar/4WzeZ54Q7f" className="footer__donate" target="_blank" rel="noreferrer">
-            Підтримати проеєкт ❤️
+            {t('footer.donate')}
           </a>
           <div className="footer__socials">
             <a href="https://www.instagram.com/theview_view?igsh=NDFxeHc5MGV0OHhi" className="footer__social" aria-label="Instagram">
@@ -44,7 +46,14 @@ export default function Footer() {
         </div>
 
       </div>
-      <div className="footer__copy">© 2026 View</div>
+      <div className="footer__legal">
+        <div className="footer__legal-links">
+          <Link to="/terms" className="footer__legal-link">{t('footer.terms')}</Link>
+          <Link to="/refund-policy" className="footer__legal-link">{t('footer.refundPolicy')}</Link>
+          <Link to="/contacts" className="footer__legal-link">{t('footer.contacts')}</Link>
+        </div>
+        <div className="footer__copy">© 2026 View</div>
+      </div>
     </footer>
   )
 }

@@ -1,0 +1,103 @@
+.legal__hero {
+  background: var(--dark);
+  padding: 56px 0 40px;
+}
+.legal__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vivid);
+  margin-bottom: 16px;
+}
+.legal__title {
+  font-size: clamp(28px, 5vw, 44px);
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
+.legal__updated {
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+}
+
+.legal__body {
+  padding: 48px 0 72px;
+  max-width: 760px;
+}
+
+.legal__draft-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 40px;
+  font-size: 13px;
+  color: #92400E;
+  line-height: 1.6;
+}
+.legal__draft-notice-icon { font-size: 18px; flex-shrink: 0; }
+.legal__draft-notice a { color: #92400E; text-decoration: underline; font-weight: 700; }
+
+.legal__section { margin-bottom: 32px; }
+.legal__section:last-child { margin-bottom: 0; }
+.legal__section h2 {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--dark);
+  margin-bottom: 10px;
+}
+.legal__section p {
+  font-size: 14px;
+  color: var(--text-3);
+  line-height: 1.7;
+}
+.legal__section p + p { margin-top: 10px; }
+.legal__section p a,
+.legal__contact-list a {
+  color: var(--dark);
+  text-decoration: underline;
+  font-weight: 600;
+}
+.legal__section p a:hover,
+.legal__contact-list a:hover { color: var(--vivid); }
+
+.legal__fill {
+  background: #FEF2F2;
+  color: #B91C1C;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.legal__contact-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.legal__contact-list li {
+  font-size: 14px;
+  color: var(--text-3);
+  display: flex;
+  gap: 8px;
+}
+.legal__contact-label {
+  font-weight: 700;
+  color: var(--dark);
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .legal__hero { padding: 40px 0 32px; }
+  .legal__body { padding: 32px 0 56px; }
+  .legal__contact-list li { flex-direction: column; gap: 2px; }
+  .legal__contact-label { min-width: 0; }
+}

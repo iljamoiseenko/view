@@ -62,6 +62,14 @@ db.exec(`
     image TEXT,
     FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS boosts (
+    id TEXT PRIMARY KEY,
+    place_id TEXT NOT NULL,
+    boosted_by TEXT NOT NULL,
+    boosted_at INTEGER NOT NULL,
+    FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE
+  );
 `)
 
 // Migrations
@@ -85,6 +93,46 @@ if (!placesCols.includes('booking_enabled')) {
   db.prepare('ALTER TABLE places ADD COLUMN booking_phone TEXT').run()
   console.log('[db] Migration: added `booking_enabled`/`booking_phone` columns to places')
 }
+if (!placesCols.includes('menu_url')) {
+  db.prepare('ALTER TABLE places ADD COLUMN menu_url TEXT').run()
+  console.log('[db] Migration: added `menu_url` column to places')
+}
+if (!placesCols.includes('pets_friendly')) {
+  db.prepare('ALTER TABLE places ADD COLUMN pets_friendly INTEGER NOT NULL DEFAULT 0').run()
+  db.prepare('ALTER TABLE places ADD COLUMN kids_room INTEGER NOT NULL DEFAULT 0').run()
+  console.log('[db] Migration: added `pets_friendly`/`kids_room` columns to places')
+}
+if (!placesCols.includes('instagram_url')) {
+  db.prepare('ALTER TABLE places ADD COLUMN instagram_url TEXT').run()
+  db.prepare('ALTER TABLE places ADD COLUMN facebook_url TEXT').run()
+  db.prepare('ALTER TABLE places ADD COLUMN tiktok_url TEXT').run()
+  db.prepare('ALTER TABLE places ADD COLUMN threads_url TEXT').run()
+  db.prepare('ALTER TABLE places ADD COLUMN telegram_url TEXT').run()
+  db.prepare('ALTER TABLE places ADD COLUMN youtube_url TEXT').run()
+  console.log('[db] Migration: added social link columns to places')
+}
+if (!placesCols.includes('tickets_url')) {
+  db.prepare('ALTER TABLE places ADD COLUMN tickets_url TEXT').run()
+  console.log('[db] Migration: added `tickets_url` column to places')
+}
+if (!placesCols.includes('custom_type')) {
+  db.prepare('ALTER TABLE places ADD COLUMN custom_type TEXT').run()
+  console.log('[db] Migration: added `custom_type` column to places')
+}
+if (!placesCols.includes('boosted_at')) {
+  db.prepare('ALTER TABLE places ADD COLUMN boosted_at INTEGER').run()
+  console.log('[db] Migration: added `boosted_at` column to places')
+}
+if (!placesCols.includes('collections')) {
+  db.prepare("ALTER TABLE places ADD COLUMN collections TEXT DEFAULT '[]'").run()
+  console.log('[db] Migration: added `collections` column to places')
+}
+
+const eventsCols = db.prepare('PRAGMA table_info(events)').all().map(c => c.name)
+if (!eventsCols.includes('custom_type')) {
+  db.prepare('ALTER TABLE events ADD COLUMN custom_type TEXT').run()
+  console.log('[db] Migration: added `custom_type` column to events')
+}
 
 const usersCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
 if (!usersCols.includes('username')) {
@@ -96,6 +144,14 @@ if (!usersCols.includes('username')) {
 if (!usersCols.includes('plain_pass')) {
   db.prepare('ALTER TABLE users ADD COLUMN plain_pass TEXT').run()
   console.log('[db] Migration: added `plain_pass` column')
+}
+if (!usersCols.includes('avatar_url')) {
+  db.prepare('ALTER TABLE users ADD COLUMN avatar_url TEXT').run()
+  console.log('[db] Migration: added `avatar_url` column')
+}
+if (!usersCols.includes('subscription_tier')) {
+  db.prepare("ALTER TABLE users ADD COLUMN subscription_tier TEXT NOT NULL DEFAULT 'basic'").run()
+  console.log('[db] Migration: added `subscription_tier` column')
 }
 
 // Seed only superadmin if no users exist

@@ -1,33 +1,35 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
-import { EVENT_TYPES, PLACE_TYPES } from '../../data/initialData'
+import { useLanguage } from '../../context/LanguageContext'
 import PlaceMap from '../../components/PlaceMap/PlaceMap'
 import { mapsUrl } from '../../utils/maps'
+import { parseAddresses } from '../../utils/address'
 import { buildEventTimes, addToDeviceCalendar } from '../../utils/calendar'
+import { getPlaceTypeLabel } from '../../utils/placeType'
+import { getEventTypeLabel } from '../../utils/eventType'
 import './EventDetailPage.css'
-
-const MONTHS_FULL = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня']
-const WEEKDAYS = ['неділя','понеділок','вівторок','середа','четвер','пʼятниця','субота']
 
 export default function EventDetailPage() {
   const { id } = useParams()
   const { events, places } = useApp()
+  const { t } = useLanguage()
   const navigate = useNavigate()
 
   const event = events.find(e => e.id === id)
   const place = event ? places.find(p => p.id === event.placeId) : null
+  const venueAddresses = place ? parseAddresses(place.address) : []
 
   if (!event) {
     return (
       <div className="container" style={{ padding: '80px 24px', textAlign: 'center' }}>
-        <h2>Подію не знайдено</h2>
-        <Link to="/events" className="btn btn-dark" style={{ marginTop: 16, display: 'inline-flex' }}>До подій</Link>
+        <h2>{t('eventDetail.notFoundTitle')}</h2>
+        <Link to="/events" className="btn btn-dark" style={{ marginTop: 16, display: 'inline-flex' }}>{t('eventDetail.toEvents')}</Link>
       </div>
     )
   }
 
   const date = new Date(event.date)
-  const dateStr = `${date.getDate()} ${MONTHS_FULL[date.getMonth()]} · ${WEEKDAYS[date.getDay()]}`
+  const dateStr = `${date.getDate()} ${t('common.monthsFull')[date.getMonth()]} · ${t('common.weekdaysFull')[date.getDay()]}`
 
   const handleAddToCalendar = () => {
     const { start, end } = buildEventTimes(event.date, event.time)
@@ -44,7 +46,7 @@ export default function EventDetailPage() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>
-          Назад
+          {t('common.back')}
         </button>
       </div>
 
@@ -61,7 +63,7 @@ export default function EventDetailPage() {
             />
             <div className="edetail__poster-badge">
               <span className={`badge badge-event-${event.type}`}>
-                {EVENT_TYPES[event.type] || event.type}
+                {getEventTypeLabel(event, t)}
               </span>
             </div>
           </div>
@@ -80,18 +82,23 @@ export default function EventDetailPage() {
 
           <div className="edetail__price-row">
             {event.price === 0
-              ? <span className="edetail__price free">FREE</span>
-              : <span className="edetail__price">{event.price} грн</span>
+              ? <span className="edetail__price free">{t('common.free')}</span>
+              : <span className="edetail__price">{event.price} {t('common.currency')}</span>
             }
           </div>
 
           <div className="edetail__actions">
             <button className="btn btn-dark" onClick={handleAddToCalendar}>
-              Додати в календар
+              {t('eventDetail.addToCalendar')}
             </button>
             {place?.bookingEnabled && place?.bookingPhone && (
               <a href={`tel:${place.bookingPhone}`} className="btn btn-outline">
-                Забронювати
+                {t('eventDetail.book')}
+              </a>
+            )}
+            {place?.ticketsUrl && (
+              <a href={place.ticketsUrl} target="_blank" rel="noreferrer" className="btn btn-outline">
+                {t('eventDetail.buyTickets')}
               </a>
             )}
           </div>
@@ -111,17 +118,17 @@ export default function EventDetailPage() {
                   />
                 </div>
                 <div className="edetail__venue-info">
-                  <span className="edetail__venue-label">Місце проведення</span>
+                  <span className="edetail__venue-label">{t('eventDetail.venueLabel')}</span>
                   <span className="edetail__venue-name">{place.name}</span>
                   <span className="edetail__venue-meta">
-                    {PLACE_TYPES[place.type] || place.type}
+                    {getPlaceTypeLabel(place, t)}
                     {place.city && ` · ${place.city}`}
                   </span>
                 </div>
               </Link>
-              {place.address && (
+              {venueAddresses.length === 1 && (
                 <a
-                  href={mapsUrl({ lat: place.lat, lng: place.lng, address: `${place.address}, ${place.city}` })}
+                  href={mapsUrl({ lat: place.lat, lng: place.lng, address: `${venueAddresses[0]}, ${place.city}` })}
                   target="_blank"
                   rel="noreferrer"
                   className="edetail__venue-address"
@@ -130,8 +137,28 @@ export default function EventDetailPage() {
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                     <circle cx="12" cy="10" r="3"/>
                   </svg>
-                  {place.address}
+                  {venueAddresses[0]}
                 </a>
+              )}
+              {venueAddresses.length > 1 && (
+                <ul className="edetail__venue-address-list">
+                  {venueAddresses.map((addr, i) => (
+                    <li key={i}>
+                      <a
+                        href={mapsUrl({ address: `${addr}, ${place.city}` })}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="edetail__venue-address"
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                          <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        {addr}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           )}

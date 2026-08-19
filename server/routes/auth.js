@@ -35,6 +35,8 @@ function publicUser(user) {
     name: user.name,
     placeId: user.place_id,
     isActive: !!user.is_active,
+    avatarUrl: user.avatar_url || null,
+    subscriptionTier: user.subscription_tier || 'basic',
   }
 }
 

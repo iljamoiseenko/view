@@ -1,6 +1,8 @@
+import { useLanguage } from '../../context/LanguageContext'
 import './Pagination.css'
 
 export default function Pagination({ total, page, perPage, onChange }) {
+  const { t } = useLanguage()
   const totalPages = Math.ceil(total / perPage)
   if (totalPages <= 1) return null
 
@@ -23,14 +25,14 @@ export default function Pagination({ total, page, perPage, onChange }) {
 
   return (
     <div className="pagination">
-      <span className="pagination__info">{from}–{to} з {total}</span>
+      <span className="pagination__info">{t('pagination.of', from, to, total)}</span>
 
       <div className="pagination__controls">
         <button
           className="pagination__btn"
           disabled={page === 1}
           onClick={() => onChange(page - 1)}
-          aria-label="Попередня сторінка"
+          aria-label={t('pagination.prevPage')}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M15 18l-6-6 6-6"/>
@@ -55,7 +57,7 @@ export default function Pagination({ total, page, perPage, onChange }) {
           className="pagination__btn"
           disabled={page === totalPages}
           onClick={() => onChange(page + 1)}
-          aria-label="Наступна сторінка"
+          aria-label={t('pagination.nextPage')}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M9 18l6-6-6-6"/>

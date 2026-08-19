@@ -1,4 +1,4 @@
-export const CITIES = ['Харків']
+export const CITIES = ['Харків', 'Київ', 'Одеса', 'Львів', 'Дніпро', 'Полтава', 'Запоріжжя']
 
 export const PLACE_TYPES = {
   restaurant: 'Ресторан',
@@ -20,11 +20,28 @@ export const PLACE_TYPES = {
   other: 'Інше',
 }
 
-export const MARKS = [
-  { slug: 'summer_terrace', label: 'Літня тераса', icon: '🌿', color: '#16a34a', bg: '#dcfce7' },
-  { slug: 'football',       label: 'Показ футболу', icon: '⚽', color: '#2563eb', bg: '#dbeafe' },
-  { slug: 'swimming',       label: 'Басейн',  icon: '🏊', color: '#0891b2', bg: '#cffafe' },
+// Place types that sell tickets instead of taking phone bookings, and don't have a "cuisine"
+export const TICKET_TYPES = ['theater', 'exhibition']
+
+// Curated collections shown on /collections — admin-assigned
+export const COLLECTIONS = [
+  { slug: 'romantic_evening', icon: '🌙' },
+  { slug: 'business_lunch_spot', icon: '💼' },
+  { slug: 'corporate_party', icon: '🎉' },
+  { slug: 'morning_coffee', icon: '☕' },
+  { slug: 'live_music_night', icon: '🎸' },
+  { slug: 'summer_terrace_spot', icon: '🌿' },
 ]
+
+// Subscription plans (payment processing not wired up yet —
+// tier is set manually by superadmin on the account)
+export const SUBSCRIPTION_TIERS = {
+  basic: { price: 7, boostsPerMonth: 5, eventsPerMonth: 3 },
+  standard: { price: 15, boostsPerMonth: 10, eventsPerMonth: 6 },
+  pro: { price: 24, boostsPerMonth: 20, eventsPerMonth: null },
+}
+
+export const BOOST_DURATION_HOURS = 24
 
 export const EVENT_TYPES = {
   live_music: 'Жива музика',

@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
-import { MARKS } from '../../data/initialData'
+import { useLanguage } from '../../context/LanguageContext'
+import { COLLECTIONS } from '../../data/initialData'
 import PlaceCard from '../../components/PlaceCard/PlaceCard'
 import Pagination from '../../components/Pagination/Pagination'
-import './SpecialPage.css'
+import './CollectionDetailPage.css'
 
 const PER_PAGE = 16
 const TODAY = new Date().toISOString().slice(0, 10)
@@ -18,9 +19,10 @@ function isHappeningNow(time) {
   return evMin <= nowMin && nowMin <= evMin + 180
 }
 
-export default function SpecialPage() {
+export default function CollectionDetailPage() {
   const { slug } = useParams()
   const { filteredPlaces, events } = useApp()
+  const { t } = useLanguage()
   const [page, setPage] = useState(1)
 
   const todayCountByPlace = useMemo(() => {
@@ -35,19 +37,20 @@ export default function SpecialPage() {
     return s
   }, [events])
 
-  const mark   = MARKS.find(m => m.slug === slug)
-  const places = filteredPlaces.filter(p => Array.isArray(p.marks) && p.marks.includes(slug))
+  const collection = COLLECTIONS.find(c => c.slug === slug)
+  const collectionLabel = collection ? t(`collectionsList.${collection.slug}`) : ''
+  const places = filteredPlaces.filter(p => Array.isArray(p.collections) && p.collections.includes(slug))
 
   const pageItems = useMemo(() => {
     const start = (page - 1) * PER_PAGE
     return places.slice(start, start + PER_PAGE)
   }, [places, page])
 
-  if (!mark) {
+  if (!collection) {
     return (
       <div className="sp-not-found container">
-        <h2>Категорію не знайдено</h2>
-        <Link to="/" className="btn btn-dark">На головну</Link>
+        <h2>{t('collections.notFoundTitle')}</h2>
+        <Link to="/collections" className="btn btn-dark">{t('placeDetail.toHome')}</Link>
       </div>
     )
   }
@@ -56,23 +59,22 @@ export default function SpecialPage() {
     <div className="sp-page">
       {/* Hero */}
       <div className="sp-hero">
-        <div className="container sp-hero__inner">
-          <span className="sp-hero__icon">{mark.icon}</span>
-          <div className="sp-hero__text">
-            <h1 className="sp-hero__title">{mark.label}</h1>
-            <p className="sp-hero__count">
-              {places.length === 0
-                ? 'Заклади не знайдено'
-                : `${places.length} ${places.length === 1 ? 'заклад' : places.length < 5 ? 'заклади' : 'закладів'}`
-              }
-            </p>
-          </div>
-          <Link to="/" className="sp-back">
+        <div className="container">
+          <Link to="/collections" className="sp-back">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>
-            Назад
+            {t('collections.back')}
           </Link>
+          <div className="sp-hero__inner">
+            <span className="sp-hero__icon">{collection.icon}</span>
+            <div className="sp-hero__text">
+              <h1 className="sp-hero__title">{collectionLabel}</h1>
+              <p className="sp-hero__count">
+                {places.length === 0 ? t('collections.noVenues') : t('collections.count', places.length)}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -99,10 +101,10 @@ export default function SpecialPage() {
           </>
         ) : (
           <div className="empty-state">
-            <span className="empty-state__icon">{mark.icon}</span>
-            <h3>Заклади з відміткою «{mark.label}» відсутні</h3>
-            <p>Незабаром тут з'являться заклади</p>
-            <Link to="/" className="btn btn-dark">На головну</Link>
+            <span className="empty-state__icon">{collection.icon}</span>
+            <h3>{t('collections.emptyTitle', collectionLabel)}</h3>
+            <p>{t('collections.emptyText')}</p>
+            <Link to="/collections" className="btn btn-dark">{t('placeDetail.toHome')}</Link>
           </div>
         )}
       </div>

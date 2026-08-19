@@ -4,7 +4,9 @@ import { Swiper, SwiperSlide } from 'swiper/react'
 import { Navigation } from 'swiper/modules'
 import 'swiper/css'
 import { useApp } from '../../context/AppContext'
-import { EVENT_TYPES, CITIES } from '../../data/initialData'
+import { CITIES } from '../../data/initialData'
+import { useLanguage } from '../../context/LanguageContext'
+import { getEventTypeLabel } from '../../utils/eventType'
 import './TodayStrip.css'
 
 const TODAY = new Date().toISOString().slice(0, 10)
@@ -24,6 +26,7 @@ function formatTime(t) {
 
 export default function TodayStrip() {
   const { events, places, filteredPlaces, selectedCity } = useApp()
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [swiperRef, setSwiperRef] = useState(null)
 
@@ -45,6 +48,18 @@ export default function TodayStrip() {
     [events, publishedPlaceIds]
   )
 
+  // No events today? Fall back to the nearest upcoming events instead of an empty block
+  const upcomingEvents = useMemo(() => {
+    if (todayEvents.length > 0) return []
+    return events
+      .filter(e => e.date > TODAY && publishedPlaceIds.has(e.placeId))
+      .sort((a, b) => a.date === b.date ? (a.time || '').localeCompare(b.time || '') : a.date.localeCompare(b.date))
+      .slice(0, 12)
+  }, [events, todayEvents, publishedPlaceIds])
+
+  const isToday = todayEvents.length > 0
+  const displayEvents = isToday ? todayEvents : upcomingEvents
+
   const placeById = useMemo(() => {
     const m = {}
     places.forEach(p => { m[p.id] = p })
@@ -65,27 +80,27 @@ export default function TodayStrip() {
           <button className="ts-stat-btn" onClick={() => navigate('/')}>
             <span className="ts-stat__num">{totalStats.places}</span>
             <span className="ts-stat__label">
-              {selectedCity === 'Усі міста' ? 'закладів' : `в ${selectedCity}`}
+              {selectedCity === 'Усі міста' ? t('todayStrip.venuesLabel') : t('todayStrip.inCity', selectedCity)}
             </span>
           </button>
           <span className="ts-stats__dot" />
           <button className="ts-stat-btn" onClick={() => navigate('/events')}>
             <span className="ts-stat__num ts-stat__num--accent">{totalStats.events}</span>
-            <span className="ts-stat__label">подій сьогодні</span>
+            <span className="ts-stat__label">{t('todayStrip.eventsToday')}</span>
           </button>
         </div>
       </div>
 
       {/* Events strip */}
-      {todayEvents.length > 0 ? (
+      {displayEvents.length > 0 ? (
         <section className="ts-section">
           <div className="container ts-section__head">
             <div className="ts-section__left">
               <span className="ts-tag">
-                <span className="ts-tag__dot" />
-                сьогодні
+                {isToday && <span className="ts-tag__dot" />}
+                {isToday ? t('todayStrip.todayTag') : t('todayStrip.upcomingTag')}
               </span>
-              <h2 className="ts-section__title">Що відбувається</h2>
+              <h2 className="ts-section__title">{isToday ? t('todayStrip.whatsOn') : t('todayStrip.upcomingTitle')}</h2>
             </div>
             <div className="ts-section__controls">
               <button
@@ -106,7 +121,7 @@ export default function TodayStrip() {
                   <path d="m9 18 6-6-6-6"/>
                 </svg>
               </button>
-              <Link to="/events" className="ts-all-link">Всі події →</Link>
+              <Link to="/events" className="ts-all-link">{t('todayStrip.allEvents')}</Link>
             </div>
           </div>
 
@@ -126,10 +141,11 @@ export default function TodayStrip() {
                 1024: { slidesPerView: 4,   slidesPerGroup: 4 },
               }}
             >
-              {todayEvents.map(ev => {
+              {displayEvents.map(ev => {
                 const place = placeById[ev.placeId]
-                const typeName = EVENT_TYPES[ev.type] || ev.type
-                const happening = isHappeningNow(ev.time)
+                const typeName = getEventTypeLabel(ev, t)
+                const happening = isToday && isHappeningNow(ev.time)
+                const evDate = new Date(ev.date)
 
                 return (
                   <SwiperSlide key={ev.id} className="ts-slide">
@@ -146,7 +162,7 @@ export default function TodayStrip() {
                         <div className="ts-card__top-badges">
                           {happening && (
                             <span className="ts-card__live">
-                              <span className="ts-card__live-dot" /> Зараз
+                              <span className="ts-card__live-dot" /> {t('common.now')}
                             </span>
                           )}
                           <span className="ts-card__type">{typeName}</span>
@@ -163,6 +179,14 @@ export default function TodayStrip() {
                                 <circle cx="12" cy="10" r="3"/>
                               </svg>
                               {place.name}
+                            </span>
+                          )}
+                          {!isToday && (
+                            <span className="ts-card__time">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
+                              </svg>
+                              {evDate.getDate()} {t('common.monthsShort')[evDate.getMonth()]}
                             </span>
                           )}
                           {ev.time && (
@@ -188,8 +212,8 @@ export default function TodayStrip() {
           <div className="container ts-empty__inner">
             <span className="ts-empty__icon">🎵</span>
             <div>
-              <p className="ts-empty__text">Сьогодні немає запланованих подій</p>
-              <Link to="/events" className="ts-empty__link">Переглянути всі →</Link>
+              <p className="ts-empty__text">{t('todayStrip.noEvents')}</p>
+              <Link to="/events" className="ts-empty__link">{t('todayStrip.viewAll')}</Link>
             </div>
           </div>
         </div>

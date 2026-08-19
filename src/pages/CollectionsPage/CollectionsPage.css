@@ -58,8 +58,15 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  opacity: 0.6;
   position: relative;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.coll-page__card:hover {
+  border-color: var(--dark);
+  transform: translateY(-2px);
 }
 
 .coll-page__card-icon {

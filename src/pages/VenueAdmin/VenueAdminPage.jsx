@@ -1,18 +1,24 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useApp } from '../../context/AppContext'
-import { PLACE_TYPES, EVENT_TYPES, CITIES, CUISINE_LIST, MARKS } from '../../data/initialData'
+import { useLanguage } from '../../context/LanguageContext'
 import { api } from '../../api/client'
+import { PLACE_TYPES, EVENT_TYPES, CITIES, CUISINE_LIST, TICKET_TYPES, COLLECTIONS, SUBSCRIPTION_TIERS } from '../../data/initialData'
+import { getEventTypeLabel } from '../../utils/eventType'
 import './VenueAdminPage.css'
+
+const EMPTY_LOGIN_FORM = { currentPassword: '', username: '' }
+const EMPTY_PASSWORD_FORM = { currentPassword: '', newPassword: '', confirmPassword: '' }
 
 const EMPTY_EVENT = {
   title: '', description: '', date: '', time: '19:00',
-  type: 'live_music', price: 0, image: '',
+  type: 'live_music', price: 0, image: '', customType: '',
 }
 
 // ── Photo input with file upload + URL fallback ──────────────────────────────
 function PhotoInput({ value, onChange, placeholder }) {
+  const { t } = useLanguage()
   const inputRef = useRef()
   const [uploading, setUploading] = useState(false)
 
@@ -60,7 +66,7 @@ function PhotoInput({ value, onChange, placeholder }) {
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
         >
-          {uploading ? '...' : '↑ Файл'}
+          {uploading ? '...' : t('venueAdmin.uploadFile')}
         </button>
         <input
           ref={inputRef}
@@ -76,6 +82,7 @@ function PhotoInput({ value, onChange, placeholder }) {
 
 // ── Event Modal ──────────────────────────────────────────────────────────────
 function EventModal({ initial, placeId, onSave, onClose }) {
+  const { t } = useLanguage()
   const [form, setForm] = useState({ ...EMPTY_EVENT, placeId, ...initial })
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -83,28 +90,34 @@ function EventModal({ initial, placeId, onSave, onClose }) {
     <div className="va-modal-overlay" onClick={onClose}>
       <div className="va-modal" onClick={e => e.stopPropagation()}>
         <div className="va-modal__head">
-          <h2>{initial?.id ? 'Редагувати подію' : 'Нова подія'}</h2>
+          <h2>{initial?.id ? t('venueAdmin.modalEditEvent') : t('venueAdmin.modalNewEvent')}</h2>
           <button className="va-modal__close" onClick={onClose}>✕</button>
         </div>
         <form className="va-modal__form" onSubmit={e => { e.preventDefault(); onSave({ ...form, price: Number(form.price) }) }}>
           <div className="va-modal-body">
             <div className="va-field-group">
               <div className="va-field va-field--full">
-                <label className="va-label">Назва *</label>
+                <label className="va-label">{t('venueAdmin.fieldName')}</label>
                 <input className="input" required value={form.title}
-                  onChange={e => set('title', e.target.value)} placeholder="Назва події" />
+                  onChange={e => set('title', e.target.value)} placeholder={t('venueAdmin.eventNamePh')} />
               </div>
             </div>
 
             <div className="va-field-group">
               <div className="va-field">
-                <label className="va-label">Тип *</label>
+                <label className="va-label">{t('venueAdmin.fieldEventType')}</label>
                 <select className="input" value={form.type} onChange={e => set('type', e.target.value)}>
-                  {Object.entries(EVENT_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  {Object.keys(EVENT_TYPES).map(k => <option key={k} value={k}>{t(`eventTypes.${k}`)}</option>)}
                 </select>
+                {form.type === 'other' && (
+                  <input className="input" style={{ marginTop: 6 }}
+                    placeholder={t('venueAdmin.customTypePh')}
+                    value={form.customType || ''}
+                    onChange={e => set('customType', e.target.value)} />
+                )}
               </div>
               <div className="va-field">
-                <label className="va-label">Ціна (грн, 0 = FREE)</label>
+                <label className="va-label">{t('venueAdmin.fieldPrice')}</label>
                 <input className="input" type="number" min="0" value={form.price}
                   onChange={e => set('price', e.target.value)} />
               </div>
@@ -112,12 +125,12 @@ function EventModal({ initial, placeId, onSave, onClose }) {
 
             <div className="va-field-group">
               <div className="va-field">
-                <label className="va-label">Дата *</label>
+                <label className="va-label">{t('venueAdmin.fieldEventDate')}</label>
                 <input className="input" type="date" required value={form.date}
                   onChange={e => set('date', e.target.value)} />
               </div>
               <div className="va-field">
-                <label className="va-label">Час *</label>
+                <label className="va-label">{t('venueAdmin.fieldEventTime')}</label>
                 <input className="input" type="time" required value={form.time}
                   onChange={e => set('time', e.target.value)} />
               </div>
@@ -125,23 +138,23 @@ function EventModal({ initial, placeId, onSave, onClose }) {
 
             <div className="va-field-group">
               <div className="va-field va-field--full">
-                <label className="va-label">Опис *</label>
+                <label className="va-label">{t('venueAdmin.fieldEventDesc')}</label>
                 <textarea className="input textarea" rows={3} required value={form.description}
-                  onChange={e => set('description', e.target.value)} placeholder="Опишіть подію..." />
+                  onChange={e => set('description', e.target.value)} placeholder={t('venueAdmin.eventDescPh')} />
               </div>
             </div>
 
             <div className="va-field-group">
               <div className="va-field va-field--full">
-                <label className="va-label">Фото події</label>
+                <label className="va-label">{t('venueAdmin.fieldEventPhoto')}</label>
                 <PhotoInput value={form.image} onChange={v => set('image', v)} />
               </div>
             </div>
           </div>
           <div className="va-modal__foot">
-            <button type="button" className="btn btn-outline" onClick={onClose}>Скасувати</button>
+            <button type="button" className="btn btn-outline" onClick={onClose}>{t('common.cancel')}</button>
             <button type="submit" className="btn btn-dark">
-              {initial?.id ? 'Зберегти' : 'Додати подію'}
+              {initial?.id ? t('venueAdmin.saveEvent') : t('venueAdmin.addEventBtn')}
             </button>
           </div>
         </form>
@@ -154,6 +167,7 @@ function EventModal({ initial, placeId, onSave, onClose }) {
 export default function VenueAdminPage() {
   const { currentUser, logout } = useAuth()
   const { places, events, updatePlace, addEvent, updateEvent, deleteEvent } = useApp()
+  const { t, lang } = useLanguage()
   const navigate = useNavigate()
 
   const place = places.find(p => p.id === currentUser?.placeId)
@@ -166,15 +180,66 @@ export default function VenueAdminPage() {
   const [saved, setSaved] = useState(false)
   const [wasFirstPublish, setWasFirstPublish] = useState(false)
 
+  const [accountTab, setAccountTab] = useState('login')
+  const [loginForm, setLoginForm] = useState(EMPTY_LOGIN_FORM)
+  const [loginError, setLoginError] = useState('')
+  const [loginSaving, setLoginSaving] = useState(false)
+  const [passwordForm, setPasswordForm] = useState(EMPTY_PASSWORD_FORM)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  const [accountSaved, setAccountSaved] = useState(false)
+
   const [placeForm, setPlaceForm] = useState(() => {
     if (!place) return {}
     return {
       ...place,
       photos: place.photos?.length ? place.photos : [''],
       tags: Array.isArray(place.tags) ? place.tags.join(', ') : '',
-      marks: Array.isArray(place.marks) ? place.marks : [],
+      collections: Array.isArray(place.collections) ? place.collections : [],
     }
   })
+
+  // places load asynchronously — hydrate the form once the venue's data arrives
+  const placeFormInitialized = useRef(!!place)
+  useEffect(() => {
+    if (place && !placeFormInitialized.current) {
+      placeFormInitialized.current = true
+      setPlaceForm({
+        ...place,
+        photos: place.photos?.length ? place.photos : [''],
+        tags: Array.isArray(place.tags) ? place.tags.join(', ') : '',
+        collections: Array.isArray(place.collections) ? place.collections : [],
+      })
+    }
+  }, [place])
+
+  const isTicketType = TICKET_TYPES.includes(placeForm.type)
+
+  const [boostQuota, setBoostQuota] = useState(null)
+  const [boosting, setBoosting] = useState(false)
+  const [boostError, setBoostError] = useState('')
+  const [planNotice, setPlanNotice] = useState(false)
+
+  useEffect(() => {
+    if (!place?.id) return
+    api.get(`/places/${place.id}/boost-quota`).then(setBoostQuota).catch(() => {})
+  }, [place?.id])
+
+  const handleBoost = async () => {
+    if (!place) return
+    setBoosting(true)
+    setBoostError('')
+    try {
+      const updated = await api.post(`/places/${place.id}/boost`, {})
+      setPlaceForm(f => ({ ...f, topUntil: updated.topUntil, boostedAt: updated.boostedAt }))
+      const quota = await api.get(`/places/${place.id}/boost-quota`)
+      setBoostQuota(quota)
+    } catch (err) {
+      setBoostError(err.message)
+    } finally {
+      setBoosting(false)
+    }
+  }
 
   const setField = (k, v) => setPlaceForm(f => ({ ...f, [k]: v }))
   const setPhoto = (i, v) => {
@@ -200,7 +265,7 @@ export default function VenueAdminPage() {
       rating: placeForm.rating ? parseFloat(placeForm.rating) : undefined,
     }
     const updated = await updatePlace(place.id, data)
-    setPlaceForm(f => ({ ...f, ...updated, tags: Array.isArray(updated.tags) ? updated.tags.join(', ') : '', marks: Array.isArray(updated.marks) ? updated.marks : [] }))
+    setPlaceForm(f => ({ ...f, ...updated, tags: Array.isArray(updated.tags) ? updated.tags.join(', ') : '', collections: Array.isArray(updated.collections) ? updated.collections : [] }))
     setWasFirstPublish(firstPublish)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
@@ -219,11 +284,67 @@ export default function VenueAdminPage() {
 
   const handleLogout = () => { logout(); navigate('/') }
 
+  const setLoginField = (k, v) => setLoginForm(f => ({ ...f, [k]: v }))
+  const setPasswordField = (k, v) => setPasswordForm(f => ({ ...f, [k]: v }))
+
+  const showAccountSaved = () => {
+    setAccountSaved(true)
+    setTimeout(() => setAccountSaved(false), 3000)
+  }
+
+  const handleSaveLogin = async (e) => {
+    e.preventDefault()
+    setLoginError('')
+
+    const newUsername = loginForm.username.trim()
+    if (!loginForm.currentPassword) return setLoginError(t('venueAdmin.errCurrentPasswordRequired'))
+    if (!newUsername) return setLoginError(t('venueAdmin.errNothingToChange'))
+
+    setLoginSaving(true)
+    try {
+      await api.put(`/users/${currentUser.id}`, {
+        currentPassword: loginForm.currentPassword,
+        username: newUsername,
+      })
+      setLoginForm(EMPTY_LOGIN_FORM)
+      showAccountSaved()
+    } catch (err) {
+      setLoginError(err.message)
+    } finally {
+      setLoginSaving(false)
+    }
+  }
+
+  const handleSavePassword = async (e) => {
+    e.preventDefault()
+    setPasswordError('')
+
+    const newPassword = passwordForm.newPassword
+    if (!passwordForm.currentPassword) return setPasswordError(t('venueAdmin.errCurrentPasswordRequired'))
+    if (!newPassword) return setPasswordError(t('venueAdmin.errNothingToChange'))
+    if (newPassword.length < 6) return setPasswordError(t('venueAdmin.errPasswordLen'))
+    if (newPassword !== passwordForm.confirmPassword) return setPasswordError(t('venueAdmin.errPasswordMismatch'))
+
+    setPasswordSaving(true)
+    try {
+      await api.put(`/users/${currentUser.id}`, {
+        currentPassword: passwordForm.currentPassword,
+        password: newPassword,
+      })
+      setPasswordForm(EMPTY_PASSWORD_FORM)
+      showAccountSaved()
+    } catch (err) {
+      setPasswordError(err.message)
+    } finally {
+      setPasswordSaving(false)
+    }
+  }
+
   if (!place) {
     return (
       <div className="container" style={{ padding: '64px 24px', textAlign: 'center' }}>
-        <h2>Заклад не знайдено</h2>
-        <p style={{ color: 'var(--text-2)', marginTop: 8 }}>Зверніться до адміністратора View.</p>
+        <h2>{t('venueAdmin.notFoundTitle')}</h2>
+        <p style={{ color: 'var(--text-2)', marginTop: 8 }}>{t('venueAdmin.notFoundText')}</p>
       </div>
     )
   }
@@ -240,9 +361,9 @@ export default function VenueAdminPage() {
           </div>
           <div className="va-topbar__actions">
             <Link to={`/place/${place.id}`} className="btn btn-outline btn-sm text-white" target="_blank">
-              Переглянути сторінку
+              {t('venueAdmin.viewPage')}
             </Link>
-            <button className="va-logout" onClick={handleLogout}>Вийти</button>
+            <button className="va-logout" onClick={handleLogout}>{t('venueAdmin.logout')}</button>
           </div>
         </div>
       </div>
@@ -252,61 +373,106 @@ export default function VenueAdminPage() {
         <div className="va-unpublished-banner">
           <div className="container va-unpublished-banner__inner">
             <span className="va-unpublished-banner__dot" />
-            <span>Ваш заклад ще не опублікований — він не відображається у загальному списку. Заповніть інформацію та натисніть «Зберегти зміни».</span>
+            <span>{t('venueAdmin.unpublishedBanner')}</span>
           </div>
         </div>
       )}
 
       <div className="container va-body">
-        {/* Tabs */}
-        <div className="va-tabs">
-          <button className={`va-tab ${tab === 'place' ? 'active' : ''}`} onClick={() => setTab('place')}>
-            Мій заклад
+        {/* Nav */}
+        <div className="va-nav">
+          <button className={`va-nav-item ${tab === 'place' ? 'active' : ''}`} onClick={() => setTab('place')}>
+            {t('venueAdmin.tabVenue')}
           </button>
-          <button className={`va-tab ${tab === 'events' ? 'active' : ''}`} onClick={() => setTab('events')}>
-            Мої події
-            <span className="va-tab__count">{myEvents.length}</span>
+          <button className={`va-nav-item ${tab === 'events' ? 'active' : ''}`} onClick={() => setTab('events')}>
+            {t('venueAdmin.tabEvents')}
+            <span className="va-nav-item__count">{myEvents.length}</span>
+          </button>
+          <button className={`va-nav-item ${tab === 'account' ? 'active' : ''}`} onClick={() => setTab('account')}>
+            {t('venueAdmin.tabAccount')}
+          </button>
+          <button className={`va-nav-item ${tab === 'subscription' ? 'active' : ''}`} onClick={() => setTab('subscription')}>
+            {t('venueAdmin.tabSubscription')}
           </button>
         </div>
 
+        <div className="va-content">
         {/* Tab: Place */}
         {tab === 'place' && (
-          <div className="va-section">
+          <>
+            <div className="va-boost-card">
+              <div className="va-boost-card__info">
+                <div className="va-boost-card__title">🚀 {t('venueAdmin.sectionBoost')}</div>
+                <p className="va-boost-card__hint">{t('venueAdmin.boostHint')}</p>
+                {boostQuota && (
+                  boostQuota.limit === 0 ? (
+                    <p className="va-boost-card__locked">{t('venueAdmin.boostLocked')} — {t('venueAdmin.boostLockedHint')}</p>
+                  ) : (
+                    <p className="va-boost-card__quota">{t('venueAdmin.boostQuotaText', boostQuota.used, boostQuota.limit)}</p>
+                  )
+                )}
+                {boostError && <p className="va-boost-card__error">{boostError}</p>}
+              </div>
+              <div className="va-boost-card__action">
+                {boostQuota?.topUntil && boostQuota.topUntil > Date.now() ? (
+                  <span className="va-boost-card__active">
+                    {t('venueAdmin.boostActiveUntil', new Date(boostQuota.topUntil).toLocaleString(lang === 'uk' ? 'uk-UA' : 'en-US', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-dark"
+                    onClick={handleBoost}
+                    disabled={boosting || !boostQuota || boostQuota.limit === 0 || boostQuota.remaining <= 0}
+                  >
+                    {t('venueAdmin.boostButton')}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="va-section">
             <div className="va-section__head">
-              <h2>Редагування закладу</h2>
+              <h2>{t('venueAdmin.editVenueTitle')}</h2>
             </div>
             <form onSubmit={handleSavePlace}>
 
               {/* ── Group 1: Основна інформація ── */}
               <div className="va-form-section">
-                <div className="va-form-section__title">Основна інформація</div>
+                <div className="va-form-section__title">{t('venueAdmin.sectionMain')}</div>
                 <div className="va-form-grid">
                   <div className="va-field va-field--full">
-                    <label className="va-label">Назва *</label>
+                    <label className="va-label">{t('venueAdmin.fieldName')}</label>
                     <input className="input" required value={placeForm.name || ''}
                       onChange={e => setField('name', e.target.value)} />
                   </div>
                   <div className="va-field">
-                    <label className="va-label">Тип</label>
+                    <label className="va-label">{t('venueAdmin.fieldType')}</label>
                     <select className="input" value={placeForm.type || 'restaurant'}
                       onChange={e => setField('type', e.target.value)}>
-                      {Object.entries(PLACE_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      {Object.keys(PLACE_TYPES).map(k => <option key={k} value={k}>{t(`placeTypes.${k}`)}</option>)}
                     </select>
+                    {placeForm.type === 'other' && (
+                      <input className="input" style={{ marginTop: 6 }}
+                        placeholder={t('venueAdmin.customTypePh')}
+                        value={placeForm.customType || ''}
+                        onChange={e => setField('customType', e.target.value)} />
+                    )}
                   </div>
                   <div className="va-field">
-                    <label className="va-label">Місто</label>
+                    <label className="va-label">{t('venueAdmin.fieldCity')}</label>
                     <select className="input" value={placeForm.city || ''}
                       onChange={e => setField('city', e.target.value)}>
                       {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                   <div className="va-field va-field--full">
-                    <label className="va-label">Адреса *</label>
+                    <label className="va-label">{t('venueAdmin.fieldAddress')}</label>
                     <input className="input" required value={placeForm.address || ''}
                       onChange={e => setField('address', e.target.value)} />
                   </div>
                   <div className="va-field va-field--full">
-                    <label className="va-label">Опис *</label>
+                    <label className="va-label">{t('venueAdmin.fieldDescription')}</label>
                     <textarea className="input textarea" rows={4} required
                       value={placeForm.description || ''}
                       onChange={e => setField('description', e.target.value)} />
@@ -316,95 +482,178 @@ export default function VenueAdminPage() {
 
               {/* ── Group 2: Контакти та деталі ── */}
               <div className="va-form-section">
-                <div className="va-form-section__title">Контакти та деталі</div>
+                <div className="va-form-section__title">{t('venueAdmin.sectionContacts')}</div>
                 <div className="va-form-grid">
                   <div className="va-field">
-                    <label className="va-label">Телефон</label>
+                    <label className="va-label">{t('venueAdmin.fieldPhone')}</label>
                     <input className="input" value={placeForm.phone || ''}
-                      onChange={e => setField('phone', e.target.value)} placeholder="+380 XX XXX-XX-XX" />
+                      onChange={e => setField('phone', e.target.value)} placeholder={t('venueAdmin.phonePh')} />
                   </div>
+                  {!isTicketType && (
+                    <div className="va-field">
+                      <label className="va-label">{t('venueAdmin.fieldCuisine')}</label>
+                      {(() => {
+                        const knownCuisines = CUISINE_LIST.filter(c => c !== 'Інше')
+                        const isCustom = placeForm.cuisine && !knownCuisines.includes(placeForm.cuisine)
+                        const selectVal = isCustom ? 'Інше' : (placeForm.cuisine || '')
+                        return <>
+                          <select className="input" value={selectVal}
+                            onChange={e => setField('cuisine', e.target.value === 'Інше' ? '__custom__' : e.target.value)}>
+                            <option value="">{t('venueAdmin.chooseOption')}</option>
+                            {CUISINE_LIST.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                          {(selectVal === 'Інше' || placeForm.cuisine === '__custom__') && (
+                            <input className="input" style={{marginTop:6}}
+                              placeholder={t('venueAdmin.customCuisinePh')}
+                              value={isCustom ? placeForm.cuisine : ''}
+                              onChange={e => setField('cuisine', e.target.value)} />
+                          )}
+                        </>
+                      })()}
+                    </div>
+                  )}
                   <div className="va-field">
-                    <label className="va-label">Кухня</label>
-                    {(() => {
-                      const knownCuisines = CUISINE_LIST.filter(c => c !== 'Інше')
-                      const isCustom = placeForm.cuisine && !knownCuisines.includes(placeForm.cuisine)
-                      const selectVal = isCustom ? 'Інше' : (placeForm.cuisine || '')
-                      return <>
-                        <select className="input" value={selectVal}
-                          onChange={e => setField('cuisine', e.target.value === 'Інше' ? '__custom__' : e.target.value)}>
-                          <option value="">— Оберіть —</option>
-                          {CUISINE_LIST.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        {(selectVal === 'Інше' || placeForm.cuisine === '__custom__') && (
-                          <input className="input" style={{marginTop:6}}
-                            placeholder="Введіть свій варіант"
-                            value={isCustom ? placeForm.cuisine : ''}
-                            onChange={e => setField('cuisine', e.target.value)} />
-                        )}
-                      </>
-                    })()}
-                  </div>
-                  <div className="va-field">
-                    <label className="va-label">Години роботи</label>
+                    <label className="va-label">{t('venueAdmin.fieldWorkingHours')}</label>
                     <input className="input" value={placeForm.workingHours || ''}
                       onChange={e => setField('workingHours', e.target.value)}
-                      placeholder="Пн–Нд: 10:00 – 22:00" />
+                      placeholder={t('venueAdmin.workingHoursPh')} />
                   </div>
                   <div className="va-field">
-                    <label className="va-label">Сайт</label>
+                    <label className="va-label">{t('venueAdmin.fieldWebsite')}</label>
                     <input className="input" type="url" value={placeForm.website || ''}
                       onChange={e => setField('website', e.target.value)} placeholder="https://" />
                   </div>
+                  <div className="va-field">
+                    <label className="va-label">{t('venueAdmin.fieldMenuUrl')}</label>
+                    <input className="input" type="url" value={placeForm.menuUrl || ''}
+                      onChange={e => setField('menuUrl', e.target.value)} placeholder={t('venueAdmin.menuUrlPh')} />
+                  </div>
                   <div className="va-field va-field--full">
-                    <label className="va-label">Теги (через кому)</label>
+                    <label className="va-label">{t('venueAdmin.fieldTags')}</label>
                     <input className="input" value={placeForm.tags || ''}
-                      onChange={e => setField('tags', e.target.value)} placeholder="піца, вино, романтика" />
+                      onChange={e => setField('tags', e.target.value)} placeholder={t('venueAdmin.tagsPh')} />
                   </div>
                 </div>
               </div>
 
-              {/* ── Group: Бронювання ── */}
-              <div className="va-form-section">
-                <div className="va-form-section__title">Бронювання</div>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={!!placeForm.bookingEnabled}
-                    onChange={e => setField('bookingEnabled', e.target.checked)}
-                  />
-                  <span className="toggle-switch__track" />
-                  <span className="toggle-switch__label">Приймати бронювання по телефону</span>
-                </label>
-                {placeForm.bookingEnabled && (
-                  <div className="va-field" style={{ marginTop: 14, maxWidth: 320 }}>
-                    <label className="va-label">Номер для бронювання *</label>
-                    <input className="input" type="tel" required={!!placeForm.bookingEnabled}
-                      value={placeForm.bookingPhone || ''}
-                      onChange={e => setField('bookingPhone', e.target.value)}
-                      placeholder="+380 XX XXX-XX-XX" />
+              {/* ── Group: Бронювання / Квитки ── */}
+              {!isTicketType && (
+                <div className="va-form-section">
+                  <div className="va-form-section__title">{t('venueAdmin.sectionBooking')}</div>
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={!!placeForm.bookingEnabled}
+                      onChange={e => setField('bookingEnabled', e.target.checked)}
+                    />
+                    <span className="toggle-switch__track" />
+                    <span className="toggle-switch__label">{t('venueAdmin.bookingToggle')}</span>
+                  </label>
+                  {placeForm.bookingEnabled && (
+                    <div className="va-field" style={{ marginTop: 14, maxWidth: 320 }}>
+                      <label className="va-label">{t('venueAdmin.fieldBookingPhone')}</label>
+                      <input className="input" type="tel" required={!!placeForm.bookingEnabled}
+                        value={placeForm.bookingPhone || ''}
+                        onChange={e => setField('bookingPhone', e.target.value)}
+                        placeholder={t('venueAdmin.phonePh')} />
+                    </div>
+                  )}
+                </div>
+              )}
+              {isTicketType && (
+                <div className="va-form-section">
+                  <div className="va-form-section__title">{t('venueAdmin.sectionTickets')}</div>
+                  <div className="va-field" style={{ maxWidth: 400 }}>
+                    <label className="va-label">{t('venueAdmin.fieldTicketsUrl')}</label>
+                    <input className="input" type="url"
+                      value={placeForm.ticketsUrl || ''}
+                      onChange={e => setField('ticketsUrl', e.target.value)}
+                      placeholder={t('venueAdmin.ticketsUrlPh')} />
                   </div>
-                )}
+                </div>
+              )}
+
+              {/* ── Group: Соціальні мережі ── */}
+              <div className="va-form-section">
+                <div className="va-form-section__title">{t('venueAdmin.sectionSocials')}</div>
+                <div className="va-form-grid">
+                  <div className="va-field">
+                    <label className="va-label">{t('venueAdmin.fieldInstagram')}</label>
+                    <input className="input" type="url" value={placeForm.instagramUrl || ''}
+                      onChange={e => setField('instagramUrl', e.target.value)} placeholder="https://instagram.com/..." />
+                  </div>
+                  <div className="va-field">
+                    <label className="va-label">{t('venueAdmin.fieldFacebook')}</label>
+                    <input className="input" type="url" value={placeForm.facebookUrl || ''}
+                      onChange={e => setField('facebookUrl', e.target.value)} placeholder="https://facebook.com/..." />
+                  </div>
+                  <div className="va-field">
+                    <label className="va-label">{t('venueAdmin.fieldTiktok')}</label>
+                    <input className="input" type="url" value={placeForm.tiktokUrl || ''}
+                      onChange={e => setField('tiktokUrl', e.target.value)} placeholder="https://tiktok.com/@..." />
+                  </div>
+                  <div className="va-field">
+                    <label className="va-label">{t('venueAdmin.fieldThreads')}</label>
+                    <input className="input" type="url" value={placeForm.threadsUrl || ''}
+                      onChange={e => setField('threadsUrl', e.target.value)} placeholder="https://threads.net/@..." />
+                  </div>
+                  <div className="va-field">
+                    <label className="va-label">{t('venueAdmin.fieldTelegram')}</label>
+                    <input className="input" type="url" value={placeForm.telegramUrl || ''}
+                      onChange={e => setField('telegramUrl', e.target.value)} placeholder="https://t.me/..." />
+                  </div>
+                  <div className="va-field">
+                    <label className="va-label">{t('venueAdmin.fieldYoutube')}</label>
+                    <input className="input" type="url" value={placeForm.youtubeUrl || ''}
+                      onChange={e => setField('youtubeUrl', e.target.value)} placeholder="https://youtube.com/@..." />
+                  </div>
+                </div>
               </div>
 
-              {/* ── Group: Відмітки ── */}
+              {/* ── Group: Зручності ── */}
               <div className="va-form-section">
-                <div className="va-form-section__title">Відмітки закладу</div>
-                <p className="va-marks-hint">Відмітки допомагають гостям знайти ваш заклад через тематичні банери на головній сторінці.</p>
+                <div className="va-form-section__title">{t('venueAdmin.sectionAmenities')}</div>
+                <div className="va-amenities">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={!!placeForm.petsFriendly}
+                      onChange={e => setField('petsFriendly', e.target.checked)}
+                    />
+                    <span className="toggle-switch__track" />
+                    <span className="toggle-switch__label">{t('venueAdmin.petsFriendlyToggle')}</span>
+                  </label>
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={!!placeForm.kidsRoom}
+                      onChange={e => setField('kidsRoom', e.target.checked)}
+                    />
+                    <span className="toggle-switch__track" />
+                    <span className="toggle-switch__label">{t('venueAdmin.kidsRoomToggle')}</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* ── Group: Підбірки ── */}
+              <div className="va-form-section">
+                <div className="va-form-section__title">{t('venueAdmin.sectionCollections')}</div>
+                <p className="va-marks-hint">{t('venueAdmin.collectionsHint')}</p>
                 <div className="va-marks">
-                  {MARKS.map(m => {
-                    const checked = Array.isArray(placeForm.marks) && placeForm.marks.includes(m.slug)
+                  {COLLECTIONS.map(c => {
+                    const checked = Array.isArray(placeForm.collections) && placeForm.collections.includes(c.slug)
                     return (
-                      <label key={m.slug} className={`va-mark-check ${checked ? 'checked' : ''}`}>
+                      <label key={c.slug} className={`va-mark-check ${checked ? 'checked' : ''}`}>
                         <input
                           type="checkbox"
                           checked={checked}
-                          onChange={() => setField('marks', checked
-                            ? placeForm.marks.filter(s => s !== m.slug)
-                            : [...(placeForm.marks || []), m.slug]
+                          onChange={() => setField('collections', checked
+                            ? placeForm.collections.filter(s => s !== c.slug)
+                            : [...(placeForm.collections || []), c.slug]
                           )}
                         />
-                        <span className="va-mark-check__icon">{m.icon}</span>
-                        <span>{m.label}</span>
+                        <span className="va-mark-check__icon">{c.icon}</span>
+                        <span>{t(`collectionsList.${c.slug}`)}</span>
                       </label>
                     )
                   })}
@@ -413,7 +662,7 @@ export default function VenueAdminPage() {
 
               {/* ── Group 3: Фотографії ── */}
               <div className="va-form-section">
-                <div className="va-form-section__title">Фотографії</div>
+                <div className="va-form-section__title">{t('venueAdmin.sectionPhotos')}</div>
                 <div className="va-photos-list">
                   {(placeForm.photos || ['']).map((ph, i) => (
                     <div key={i} className="va-photo-row">
@@ -422,16 +671,16 @@ export default function VenueAdminPage() {
                         <PhotoInput
                           value={ph}
                           onChange={v => setPhoto(i, v)}
-                          placeholder="Вставте URL або завантажте файл"
+                          placeholder={t('venueAdmin.photoUrlPh')}
                         />
                       </div>
                       {i === 0 ? (
-                        <span className="va-photo-main-badge">★ Головна</span>
+                        <span className="va-photo-main-badge">{t('venueAdmin.mainPhoto')}</span>
                       ) : (
                         <button type="button" className="va-photo-set-main"
                           onClick={() => setMainPhoto(i)}
-                          title="Зробити головною">
-                          ☆ Головна
+                          title={t('venueAdmin.setMainTitle')}>
+                          {t('venueAdmin.setMainPhoto')}
                         </button>
                       )}
                       {(placeForm.photos || []).length > 1 && (
@@ -444,31 +693,32 @@ export default function VenueAdminPage() {
                   ))}
                   <button type="button" className="btn btn-outline btn-sm va-add-photo"
                     onClick={() => setField('photos', [...(placeForm.photos || []), ''])}>
-                    + Додати фото
+                    {t('venueAdmin.addPhoto')}
                   </button>
                 </div>
               </div>
 
               <div className="va-form-footer">
-                <button type="submit" className="btn btn-dark">Зберегти зміни</button>
+                <button type="submit" className="btn btn-dark">{t('venueAdmin.saveChanges')}</button>
               </div>
             </form>
-          </div>
+            </div>
+          </>
         )}
 
         {/* Tab: Events */}
         {tab === 'events' && (
           <div className="va-section">
             <div className="va-section__head">
-              <h2>Мої події</h2>
+              <h2>{t('venueAdmin.myEventsTitle')}</h2>
               <button className="btn btn-dark btn-sm" onClick={() => setEventModal({})}>
-                + Нова подія
+                {t('venueAdmin.newEvent')}
               </button>
             </div>
 
             {myEvents.length === 0 && (
               <div className="va-empty">
-                <p>У вас ще немає подій. Додайте першу!</p>
+                <p>{t('venueAdmin.noEventsText')}</p>
               </div>
             )}
 
@@ -477,12 +727,12 @@ export default function VenueAdminPage() {
                 <table className="va-table">
                   <thead>
                     <tr>
-                      <th>Назва</th>
-                      <th>Тип</th>
-                      <th>Дата</th>
-                      <th>Час</th>
-                      <th>Ціна</th>
-                      <th>Дії</th>
+                      <th>{t('venueAdmin.thTitle')}</th>
+                      <th>{t('venueAdmin.thType')}</th>
+                      <th>{t('venueAdmin.thDate')}</th>
+                      <th>{t('venueAdmin.thTime')}</th>
+                      <th>{t('venueAdmin.thPrice')}</th>
+                      <th>{t('venueAdmin.thActions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -491,12 +741,12 @@ export default function VenueAdminPage() {
                         <td className="va-table__main">{ev.title}</td>
                         <td>
                           <span className={`badge badge-event-${ev.type}`}>
-                            {EVENT_TYPES[ev.type]}
+                            {getEventTypeLabel(ev, t)}
                           </span>
                         </td>
                         <td>{ev.date}</td>
                         <td>{ev.time}</td>
-                        <td>{ev.price === 0 ? <span className="va-free">FREE</span> : `${ev.price} грн`}</td>
+                        <td>{ev.price === 0 ? <span className="va-free">{t('common.free')}</span> : `${ev.price} ${t('common.currency')}`}</td>
                         <td>
                           <div className="va-actions">
                             <button className="va-btn-icon" onClick={() => setEventModal(ev)}>✏️</button>
@@ -511,6 +761,135 @@ export default function VenueAdminPage() {
             )}
           </div>
         )}
+
+        {/* Tab: Account */}
+        {tab === 'account' && (
+          <div className="va-section">
+            <div className="va-section__head">
+              <h2>{t('venueAdmin.accountTitle')}</h2>
+            </div>
+
+            <div className="va-subtabs">
+              <button className={`va-subtab ${accountTab === 'login' ? 'active' : ''}`} onClick={() => setAccountTab('login')}>
+                {t('venueAdmin.subTabLogin')}
+              </button>
+              <button className={`va-subtab ${accountTab === 'password' ? 'active' : ''}`} onClick={() => setAccountTab('password')}>
+                {t('venueAdmin.subTabPassword')}
+              </button>
+            </div>
+
+            {accountTab === 'login' && (
+              <form onSubmit={handleSaveLogin}>
+                <div className="va-form-section">
+                  <p className="va-marks-hint">{t('venueAdmin.loginHint')}</p>
+                  <div className="va-form-grid">
+                    <div className="va-field">
+                      <label className="va-label">{t('venueAdmin.fieldCurrentPassword')}</label>
+                      <input className="input" type="password" required
+                        value={loginForm.currentPassword}
+                        onChange={e => setLoginField('currentPassword', e.target.value)} />
+                    </div>
+                    <div className="va-field">
+                      <label className="va-label">{t('venueAdmin.fieldNewUsername')}</label>
+                      <input className="input" required value={loginForm.username}
+                        onChange={e => setLoginField('username', e.target.value)} />
+                    </div>
+                  </div>
+                  {loginError && <p className="va-account-error">{loginError}</p>}
+                </div>
+                <div className="va-form-footer">
+                  <button type="submit" className="btn btn-dark" disabled={loginSaving}>
+                    {t('venueAdmin.saveAccount')}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {accountTab === 'password' && (
+              <form onSubmit={handleSavePassword}>
+                <div className="va-form-section">
+                  <p className="va-marks-hint">{t('venueAdmin.passwordHint')}</p>
+                  <div className="va-form-grid">
+                    <div className="va-field">
+                      <label className="va-label">{t('venueAdmin.fieldCurrentPassword')}</label>
+                      <input className="input" type="password" required
+                        value={passwordForm.currentPassword}
+                        onChange={e => setPasswordField('currentPassword', e.target.value)} />
+                    </div>
+                    <div />
+                    <div className="va-field">
+                      <label className="va-label">{t('venueAdmin.fieldNewPassword')}</label>
+                      <input className="input" type="password" required value={passwordForm.newPassword}
+                        onChange={e => setPasswordField('newPassword', e.target.value)}
+                        placeholder={t('venueAdmin.newPasswordPh')} />
+                    </div>
+                    <div className="va-field">
+                      <label className="va-label">{t('venueAdmin.fieldConfirmPassword')}</label>
+                      <input className="input" type="password" required value={passwordForm.confirmPassword}
+                        onChange={e => setPasswordField('confirmPassword', e.target.value)} />
+                    </div>
+                  </div>
+                  {passwordError && <p className="va-account-error">{passwordError}</p>}
+                </div>
+                <div className="va-form-footer">
+                  <button type="submit" className="btn btn-dark" disabled={passwordSaving}>
+                    {t('venueAdmin.saveAccount')}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Subscription */}
+        {tab === 'subscription' && (
+          <div className="va-section">
+            <div className="va-section__head">
+              <h2>{t('venueAdmin.subscriptionTitle')}</h2>
+            </div>
+            <div style={{ padding: '20px 28px 0' }}>
+              <p className="va-plans-sub">{t('venueAdmin.subscriptionSub')}</p>
+            </div>
+            <div className="va-plans">
+              {Object.keys(SUBSCRIPTION_TIERS).map(tierKey => {
+                const tierInfo = SUBSCRIPTION_TIERS[tierKey]
+                const isCurrent = (currentUser?.subscriptionTier || 'basic') === tierKey
+                const isPopular = tierKey === 'standard'
+                return (
+                  <div key={tierKey} className={`va-plan-card ${isCurrent ? 'current' : ''} ${isPopular ? 'popular' : ''}`}>
+                    {isPopular && <span className="va-plan-card__badge">{t('venueAdmin.popularBadge')}</span>}
+                    {isCurrent && !isPopular && <span className="va-plan-card__badge va-plan-card__badge--current">{t('venueAdmin.currentPlanBadge')}</span>}
+                    <div className="va-plan-card__name">{t(`subscriptionTiers.${tierKey}`)}</div>
+                    <div className="va-plan-card__price">
+                      <span className="va-plan-card__price-amount">${tierInfo.price}</span>
+                      <span className="va-plan-card__price-period">{t('venueAdmin.perMonth')}</span>
+                    </div>
+                    <ul className="va-plan-card__features">
+                      <li>
+                        <span className="va-plan-card__check">✓</span>
+                        {tierInfo.eventsPerMonth ? t('venueAdmin.eventsLimitText', tierInfo.eventsPerMonth) : t('venueAdmin.eventsUnlimitedText')}
+                      </li>
+                      <li>
+                        <span className="va-plan-card__check">✓</span>
+                        {t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}
+                      </li>
+                    </ul>
+                    <button
+                      type="button"
+                      className={`btn ${isCurrent ? 'btn-outline' : 'btn-dark'} va-plan-card__btn`}
+                      disabled={isCurrent}
+                      onClick={() => setPlanNotice(true)}
+                    >
+                      {isCurrent ? t('venueAdmin.currentPlanBtn') : t('venueAdmin.choosePlanBtn')}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+            {planNotice && <p className="va-plans-notice">{t('venueAdmin.subscriptionComingSoon')}</p>}
+          </div>
+        )}
+        </div>
       </div>
 
       {/* Modals */}
@@ -529,7 +908,16 @@ export default function VenueAdminPage() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M20 6L9 17l-5-5"/>
           </svg>
-          {wasFirstPublish ? 'Заклад опубліковано та збережено' : 'Зміни збережено'}
+          {wasFirstPublish ? t('venueAdmin.publishedToast') : t('venueAdmin.savedToast')}
+        </div>
+      )}
+
+      {accountSaved && (
+        <div className="va-toast">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          {t('venueAdmin.accountSaved')}
         </div>
       )}
 
@@ -537,15 +925,15 @@ export default function VenueAdminPage() {
         <div className="va-modal-overlay" onClick={() => setDeleteConfirm(null)}>
           <div className="va-modal va-modal--sm" onClick={e => e.stopPropagation()}>
             <div className="va-modal__head">
-              <h2>Видалити подію?</h2>
+              <h2>{t('venueAdmin.deleteEventTitle')}</h2>
               <button className="va-modal__close" onClick={() => setDeleteConfirm(null)}>✕</button>
             </div>
             <div style={{ padding: '20px 24px', fontSize: 14, color: 'var(--text-2)' }}>
-              <strong>«{deleteConfirm.title}»</strong> буде видалено назавжди.
+              {t('venueAdmin.deleteEventText', deleteConfirm.title)}
             </div>
             <div className="va-modal__foot">
-              <button className="btn btn-outline" onClick={() => setDeleteConfirm(null)}>Скасувати</button>
-              <button className="btn btn-danger" onClick={handleDeleteEvent}>Видалити</button>
+              <button className="btn btn-outline" onClick={() => setDeleteConfirm(null)}>{t('common.cancel')}</button>
+              <button className="btn btn-danger" onClick={handleDeleteEvent}>{t('common.delete')}</button>
             </div>
           </div>
         </div>

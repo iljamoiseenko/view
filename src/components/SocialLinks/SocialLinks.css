@@ -1,0 +1,23 @@
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.social-links__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  transition: var(--transition);
+}
+.social-links__item:hover {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: #fff;
+}

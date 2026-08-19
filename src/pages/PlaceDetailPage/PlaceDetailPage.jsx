@@ -1,15 +1,19 @@
 import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
-import { PLACE_TYPES } from '../../data/initialData'
+import { useLanguage } from '../../context/LanguageContext'
 import EventCard from '../../components/EventCard/EventCard'
 import PlaceMap from '../../components/PlaceMap/PlaceMap'
+import SocialLinks from '../../components/SocialLinks/SocialLinks'
 import { mapsUrl } from '../../utils/maps'
+import { parseAddresses } from '../../utils/address'
+import { getPlaceTypeLabel } from '../../utils/placeType'
 import './PlaceDetailPage.css'
 
 export default function PlaceDetailPage() {
   const { id } = useParams()
   const { places, getPlaceEvents } = useApp()
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const place = places.find(p => p.id === id)
   const [activePhoto, setActivePhoto] = useState(0)
@@ -18,8 +22,8 @@ export default function PlaceDetailPage() {
   if (!place) {
     return (
       <div className="container" style={{ padding: '80px 24px', textAlign: 'center' }}>
-        <h2>Заклад не знайдено</h2>
-        <Link to="/" className="btn btn-dark" style={{ marginTop: 16, display: 'inline-flex' }}>На головну</Link>
+        <h2>{t('placeDetail.notFoundTitle')}</h2>
+        <Link to="/" className="btn btn-dark" style={{ marginTop: 16, display: 'inline-flex' }}>{t('placeDetail.toHome')}</Link>
       </div>
     )
   }
@@ -27,6 +31,8 @@ export default function PlaceDetailPage() {
   const today = new Date().toISOString().split('T')[0]
   const events = getPlaceEvents(place.id).filter(e => e.date >= today)
   const photos = place.photos?.length ? place.photos : ['https://picsum.photos/seed/default/800/600']
+  const hasSocialLinks = !!(place.website || place.instagramUrl || place.facebookUrl || place.tiktokUrl || place.threadsUrl || place.telegramUrl || place.youtubeUrl)
+  const addresses = parseAddresses(place.address)
 
   const prev = () => setActivePhoto(i => (i - 1 + photos.length) % photos.length)
   const next = () => setActivePhoto(i => (i + 1) % photos.length)
@@ -40,7 +46,7 @@ export default function PlaceDetailPage() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>
-          Назад
+          {t('common.back')}
         </button>
       </div>
 
@@ -78,7 +84,7 @@ export default function PlaceDetailPage() {
         {/* RIGHT: info */}
         <div className="detail__info-col">
           <div className="detail__meta">
-            <span className={`badge badge-${place.type}`}>{PLACE_TYPES[place.type]}</span>
+            <span className={`badge badge-${place.type}`}>{getPlaceTypeLabel(place, t)}</span>
             <span className="detail__city">{place.city}</span>
           </div>
 
@@ -90,55 +96,95 @@ export default function PlaceDetailPage() {
 
           {place.bookingEnabled && place.bookingPhone && (
             <a href={`tel:${place.bookingPhone}`} className="btn btn-dark detail__book-btn">
-              Забронювати
+              {t('placeDetail.book')}
+            </a>
+          )}
+
+          {place.ticketsUrl && (
+            <a href={place.ticketsUrl} target="_blank" rel="noreferrer" className="btn btn-dark detail__book-btn">
+              {t('placeDetail.buyTickets')}
             </a>
           )}
 
           <div className="detail__info-list">
-            {place.address && (
+            {addresses.length === 1 && (
               <div className="detail__info-row">
-                <span className="detail__info-label">Адреса</span>
+                <span className="detail__info-label">{t('placeDetail.address')}</span>
                 <a
-                  href={mapsUrl({ lat: place.lat, lng: place.lng, address: `${place.address}, ${place.city}` })}
+                  href={mapsUrl({ lat: place.lat, lng: place.lng, address: `${addresses[0]}, ${place.city}` })}
                   target="_blank"
                   rel="noreferrer"
                   className="detail__info-val detail__link"
                 >
-                  {place.address}
+                  {addresses[0]}
                 </a>
+              </div>
+            )}
+            {addresses.length > 1 && (
+              <div className="detail__info-row">
+                <span className="detail__info-label">{t('placeDetail.address')}</span>
+                <ul className="detail__address-list">
+                  {addresses.map((addr, i) => (
+                    <li key={i}>
+                      <a
+                        href={mapsUrl({ address: `${addr}, ${place.city}` })}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="detail__info-val detail__link"
+                      >
+                        📍 {addr}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
             {place.workingHours && (
               <div className="detail__info-row">
-                <span className="detail__info-label">Години роботи</span>
+                <span className="detail__info-label">{t('placeDetail.workingHours')}</span>
                 <span className="detail__info-val">{place.workingHours}</span>
               </div>
             )}
             {place.phone && (
               <div className="detail__info-row">
-                <span className="detail__info-label">Телефон</span>
+                <span className="detail__info-label">{t('placeDetail.phone')}</span>
                 <a href={`tel:${place.phone}`} className="detail__info-val detail__link">{place.phone}</a>
               </div>
             )}
             {place.cuisine && (
               <div className="detail__info-row">
-                <span className="detail__info-label">Кухня</span>
+                <span className="detail__info-label">{t('placeDetail.cuisine')}</span>
                 <span className="detail__info-val">{place.cuisine}</span>
               </div>
             )}
-            {place.website && (
+            {hasSocialLinks && (
               <div className="detail__info-row">
-                <span className="detail__info-label">Сайт</span>
-                <a href={place.website} target="_blank" rel="noreferrer" className="detail__info-val detail__link">
-                  {place.website.replace(/^https?:\/\//, '')}
+                <span className="detail__info-label">{t('placeDetail.socialLinks')}</span>
+                <SocialLinks place={place} />
+              </div>
+            )}
+            {place.menuUrl && (
+              <div className="detail__info-row">
+                <span className="detail__info-label">{t('placeDetail.menu')}</span>
+                <a href={place.menuUrl} target="_blank" rel="noreferrer" className="detail__info-val detail__link">
+                  {t('placeDetail.viewMenu')}
                 </a>
+              </div>
+            )}
+            {(place.petsFriendly || place.kidsRoom) && (
+              <div className="detail__info-row">
+                <span className="detail__info-label">{t('placeDetail.amenities')}</span>
+                <span className="detail__info-val detail__amenities">
+                  {place.petsFriendly && <span className="detail__amenity">🐾 {t('placeDetail.petsFriendly')}</span>}
+                  {place.kidsRoom && <span className="detail__amenity">🧸 {t('placeDetail.kidsRoom')}</span>}
+                </span>
               </div>
             )}
           </div>
 
           {place.tags?.length > 0 && (
             <div className="detail__tags">
-              {place.tags.map(t => <span key={t} className="detail__tag">#{t}</span>)}
+              {place.tags.map(tag => <span key={tag} className="detail__tag">#{tag}</span>)}
             </div>
           )}
 
@@ -150,7 +196,7 @@ export default function PlaceDetailPage() {
       {events.length > 0 && (
         <div className="container detail__events">
           <div className="detail__events-head">
-            <h2 className="detail__events-title">Найближчі події</h2>
+            <h2 className="detail__events-title">{t('placeDetail.upcomingEvents')}</h2>
             <span className="detail__events-count">{events.length}</span>
           </div>
           <div className="detail__events-grid">

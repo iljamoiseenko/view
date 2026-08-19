@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useApp } from '../../context/AppContext'
-import { EVENT_TYPES } from '../../data/initialData'
+import { useLanguage } from '../../context/LanguageContext'
 import EventCard from '../../components/EventCard/EventCard'
 import Pagination from '../../components/Pagination/Pagination'
 import './EventsPage.css'
@@ -13,19 +13,12 @@ const addDays = (n) => {
   return d.toISOString().split('T')[0]
 }
 
-const DATE_TABS = [
-  { value: 'all',      label: 'Всі' },
-  { value: 'today',    label: 'Сьогодні' },
-  { value: 'tomorrow', label: 'Завтра' },
-  { value: 'week',     label: 'Тиждень' },
-  { value: 'past',     label: 'Минулі' },
-]
-
-const DAYS_UK   = ['Неділя','Понеділок','Вівторок','Середа','Четвер',"П'ятниця",'Субота']
-const MONTHS_UK = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня']
+const DATE_TAB_VALUES = ['all', 'today', 'tomorrow', 'week', 'past']
+const EVENT_TYPE_VALUES = ['live_music', 'dj', 'jazz', 'wine', 'beer', 'master_class', 'theme_night', 'cocktail', 'other']
 
 export default function EventsPage() {
   const { events, places } = useApp()
+  const { t } = useLanguage()
   const [dateFilter, setDateFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
   const [page, setPage] = useState(1)
@@ -70,20 +63,21 @@ export default function EventsPage() {
 
   const formatDate = (ds) => {
     const d   = new Date(ds + 'T00:00:00')
-    const day = DAYS_UK[d.getDay()]
-    if (ds === today)    return `Сьогодні — ${d.getDate()} ${MONTHS_UK[d.getMonth()]}`
-    if (ds === tomorrow) return `Завтра — ${d.getDate()} ${MONTHS_UK[d.getMonth()]}`
-    return `${day}, ${d.getDate()} ${MONTHS_UK[d.getMonth()]}`
+    const day = t('common.weekdaysShort')[d.getDay()]
+    const monthDay = `${d.getDate()} ${t('common.monthsFull')[d.getMonth()]}`
+    if (ds === today)    return t('events.todayLabel', monthDay)
+    if (ds === tomorrow) return t('events.tomorrowLabel', monthDay)
+    return `${day}, ${monthDay}`
   }
 
   return (
     <div className="events-page">
       <section className="events-hero">
         <div className="container events-hero__inner">
-          <p className="events-hero__label">Афіша подій · Харків</p>
+          <p className="events-hero__label">{t('events.heroLabel')}</p>
           <h1 className="events-hero__title">
-            Івенти<br/>
-            <span>цього тижня</span>
+            {t('events.titleLine1')}<br/>
+            <span>{t('events.titleLine2')}</span>
           </h1>
         </div>
       </section>
@@ -91,25 +85,25 @@ export default function EventsPage() {
       <div className="container">
         <div className="events-filters">
           <div className="events-tabs">
-            {DATE_TABS.map(t => (
+            {DATE_TAB_VALUES.map(v => (
               <button
-                key={t.value}
-                className={`events-tab ${dateFilter === t.value ? 'active' : ''}`}
-                onClick={() => setDateFilter(t.value)}
+                key={v}
+                className={`events-tab ${dateFilter === v ? 'active' : ''}`}
+                onClick={() => setDateFilter(v)}
               >
-                {t.label}
+                {t(`events.tab${v.charAt(0).toUpperCase()}${v.slice(1)}`)}
               </button>
             ))}
           </div>
           <div className="events-chips">
             <button className={`events-chip ${typeFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setTypeFilter('all')}>Всі типи</button>
-            {Object.entries(EVENT_TYPES).map(([k, v]) => (
+              onClick={() => setTypeFilter('all')}>{t('events.typeAll')}</button>
+            {EVENT_TYPE_VALUES.map(v => (
               <button
-                key={k}
-                className={`events-chip ${typeFilter === k ? 'active' : ''}`}
-                onClick={() => setTypeFilter(typeFilter === k ? 'all' : k)}
-              >{v}</button>
+                key={v}
+                className={`events-chip ${typeFilter === v ? 'active' : ''}`}
+                onClick={() => setTypeFilter(typeFilter === v ? 'all' : v)}
+              >{t(`eventTypes.${v}`)}</button>
             ))}
           </div>
         </div>
@@ -117,10 +111,10 @@ export default function EventsPage() {
         {filtered.length === 0 ? (
           <div className="empty-state">
             <span className="empty-state__icon">🎭</span>
-            <h3>Подій не знайдено</h3>
-            <p>Заклади ще не додали події на цей час</p>
+            <h3>{t('events.emptyTitle')}</h3>
+            <p>{t('events.emptyText')}</p>
             <button className="btn btn-dark" onClick={() => { setDateFilter('all'); setTypeFilter('all') }}>
-              Показати всі
+              {t('common.showAll')}
             </button>
           </div>
         ) : (

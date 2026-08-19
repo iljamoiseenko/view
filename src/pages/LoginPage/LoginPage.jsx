@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../context/LanguageContext'
 import './LoginPage.css'
 
 export default function LoginPage() {
   const { login, currentUser } = useAuth()
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -23,7 +25,7 @@ export default function LoginPage() {
       const user = await login(username, password)
       navigate(user.role === 'superadmin' ? '/admin' : '/venue', { replace: true })
     } catch (err) {
-      setError(err.message || 'Невірний email або пароль')
+      setError(err.message || t('login.errorDefault'))
     } finally {
       setLoading(false)
     }
@@ -33,16 +35,16 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-box">
         <div className="login-box__logo">VIEW</div>
-        <h1 className="login-box__title">Вхід в акаунт</h1>
-        <p className="login-box__sub">Для власників закладів та адміністраторів</p>
+        <h1 className="login-box__title">{t('login.title')}</h1>
+        <p className="login-box__sub">{t('login.sub')}</p>
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="login-field">
-            <label className="login-label">Логін</label>
+            <label className="login-label">{t('login.login')}</label>
             <input
               className={`input ${error ? 'input--error' : ''}`}
               type="text"
-              placeholder="your_login"
+              placeholder={t('login.loginPlaceholder')}
               value={username}
               onChange={e => { setUsername(e.target.value); setError('') }}
               required
@@ -51,7 +53,7 @@ export default function LoginPage() {
           </div>
 
           <div className="login-field">
-            <label className="login-label">Пароль</label>
+            <label className="login-label">{t('login.password')}</label>
             <input
               className={`input ${error ? 'input--error' : ''}`}
               type="password"
@@ -66,14 +68,14 @@ export default function LoginPage() {
           {error && <p className="login-error">{error}</p>}
 
           <button type="submit" className="btn btn-dark login-submit" disabled={loading}>
-            {loading ? 'Входимо...' : 'Увійти'}
+            {loading ? t('login.submitting') : t('login.submit')}
           </button>
         </form>
 
         <div className="login-footer-links">
-          <a href="/forgot-password" className="login-forgot">Забув пароль?</a>
+          <a href="/forgot-password" className="login-forgot">{t('login.forgot')}</a>
           <span className="login-footer-sep">·</span>
-          <a href="/register" className="login-forgot">Зареєструватися</a>
+          <a href="/register" className="login-forgot">{t('login.register')}</a>
         </div>
       </div>
     </div>

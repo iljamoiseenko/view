@@ -204,6 +204,20 @@
 }
 .edetail__venue-address:hover { color: var(--text); text-decoration: underline; }
 
+.edetail__venue-address-list {
+  list-style: none;
+  margin: 0;
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.edetail__venue-address-list .edetail__venue-address {
+  padding: 0;
+  border-top: none;
+}
+
 /* ── Responsive ── */
 @media (max-width: 860px) {
   .edetail__layout {
