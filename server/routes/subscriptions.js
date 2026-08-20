@@ -55,10 +55,16 @@ router.post('/checkout', requireAuth, requireRole('venue'), (req, res) => {
 // POST /api/subscriptions/callback — WayForPay's server-to-server webhook.
 // This, not the browser returnUrl, is the source of truth for activating a plan.
 router.post('/callback', (req, res) => {
-  const body = req.body
+  let body
+  try {
+    body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
+  } catch (err) {
+    console.error('[wayforpay] Callback body is not valid JSON:', req.body)
+    return res.status(400).json({ error: 'Invalid body' })
+  }
 
   if (!wfp.verifyCallbackSignature(body)) {
-    console.error('[wayforpay] Invalid callback signature. content-type:', req.headers['content-type'], 'body:', JSON.stringify(body))
+    console.error('[wayforpay] Invalid callback signature. body:', JSON.stringify(body))
     return res.status(400).json({ error: 'Invalid signature' })
   }
 

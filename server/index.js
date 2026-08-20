@@ -12,6 +12,11 @@ if (!isProd) {
   app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'] }))
 }
 
+// WayForPay's webhook sends Content-Type: application/x-www-form-urlencoded but the
+// body is actually raw JSON text — read it as text here, before the generic parsers
+// below would otherwise swallow it as one giant urlencoded key with no value.
+app.use('/api/subscriptions/callback', express.text({ type: () => true }))
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 const uploadsPath = process.env.UPLOADS_PATH || path.join(__dirname, '..', 'data', 'uploads')
