@@ -57,7 +57,7 @@ router.post('/callback', (req, res) => {
   const body = req.body
 
   if (!wfp.verifyCallbackSignature(body)) {
-    console.error('[wayforpay] Invalid callback signature for order', body?.orderReference)
+    console.error('[wayforpay] Invalid callback signature. content-type:', req.headers['content-type'], 'body:', JSON.stringify(body))
     return res.status(400).json({ error: 'Invalid signature' })
   }
 

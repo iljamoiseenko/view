@@ -13,6 +13,7 @@ if (!isProd) {
 }
 
 app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 const uploadsPath = process.env.UPLOADS_PATH || path.join(__dirname, '..', 'data', 'uploads')
 app.use('/uploads', express.static(uploadsPath))
 
@@ -30,7 +31,8 @@ app.get('/api/health', (_, res) => res.json({ ok: true }))
 if (isProd) {
   const distPath = path.join(__dirname, '../dist')
   app.use(express.static(distPath))
-  app.get('*', (req, res) => {
+  // WayForPay's returnUrl redirect comes back as a POST, not GET — accept both
+  app.all('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'))
   })
 }
