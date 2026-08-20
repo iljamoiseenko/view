@@ -175,8 +175,10 @@ export default function VenueAdminPage() {
   const myEvents = events.filter(e => e.placeId === currentUser?.placeId)
     .sort((a, b) => a.date.localeCompare(b.date))
 
-  const [tab, setTab] = useState(searchParams.get('payment') === 'return' ? 'subscription' : 'place')
+  const [tab, setTab] = useState('place')
+  const [thankYouVisible, setThankYouVisible] = useState(searchParams.get('payment') === 'return')
   const [paymentPending, setPaymentPending] = useState(searchParams.get('payment') === 'return')
+  const [paymentActivated, setPaymentActivated] = useState(false)
 
   // Returned from WayForPay — poll a few times for the webhook to land and activate the plan
   useEffect(() => {
@@ -185,7 +187,12 @@ export default function VenueAdminPage() {
     const poll = setInterval(async () => {
       attempts++
       const user = await refreshCurrentUser().catch(() => null)
-      if (user?.subscriptionStatus === 'active' || attempts >= 6) {
+      if (user?.subscriptionStatus === 'active') {
+        clearInterval(poll)
+        setPaymentPending(false)
+        setPaymentActivated(true)
+        setSearchParams({}, { replace: true })
+      } else if (attempts >= 6) {
         clearInterval(poll)
         setPaymentPending(false)
         setSearchParams({}, { replace: true })
@@ -194,6 +201,11 @@ export default function VenueAdminPage() {
     return () => clearInterval(poll)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const handleContinueToAccount = () => {
+    setThankYouVisible(false)
+    setTab('subscription')
+  }
   const [eventModal, setEventModal] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saved, setSaved] = useState(false)
@@ -405,6 +417,24 @@ export default function VenueAdminPage() {
       <div className="container" style={{ padding: '64px 24px', textAlign: 'center' }}>
         <h2>{t('venueAdmin.notFoundTitle')}</h2>
         <p style={{ color: 'var(--text-2)', marginTop: 8 }}>{t('venueAdmin.notFoundText')}</p>
+      </div>
+    )
+  }
+
+  if (thankYouVisible) {
+    const state = paymentActivated ? 'active' : (paymentPending ? 'pending' : 'delayed')
+    return (
+      <div className="va-thankyou">
+        <div className="va-thankyou__card">
+          <div className={`va-thankyou__icon va-thankyou__icon--${state}`}>
+            {state === 'pending' ? <span className="va-thankyou__spinner" /> : (state === 'active' ? '✓' : '!')}
+          </div>
+          <h1 className="va-thankyou__title">{t(`venueAdmin.thankYou${state === 'active' ? '' : state === 'pending' ? 'Pending' : 'Delayed'}Title`)}</h1>
+          <p className="va-thankyou__text">{t(`venueAdmin.thankYou${state === 'active' ? '' : state === 'pending' ? 'Pending' : 'Delayed'}Text`)}</p>
+          <button className="btn btn-dark va-thankyou__btn" onClick={handleContinueToAccount}>
+            {t('venueAdmin.thankYouBtn')}
+          </button>
+        </div>
       </div>
     )
   }
@@ -929,7 +959,6 @@ export default function VenueAdminPage() {
             </div>
             <div style={{ padding: '20px 28px 0' }}>
               <p className="va-plans-sub">{t('venueAdmin.subscriptionSub')}</p>
-              {paymentPending && <p className="va-plans-notice">{t('venueAdmin.paymentPending')}</p>}
             </div>
             <div className="va-plans">
               {Object.keys(SUBSCRIPTION_TIERS).map(tierKey => {
