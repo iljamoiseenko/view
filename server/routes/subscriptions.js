@@ -37,6 +37,7 @@ router.post('/checkout', requireAuth, requireRole('venue'), (req, res) => {
     productName,
     productCount: 1,
     productPrice: amount,
+    regular: true,
   })
 
   const baseUrl = process.env.APP_URL || 'https://viewtoday.site'
@@ -74,9 +75,9 @@ router.post('/callback', (req, res) => {
       .run('approved', JSON.stringify(body), body.orderReference)
 
     db.prepare(`
-      UPDATE users SET subscription_tier = ?, subscription_status = 'active', subscription_renews_at = ?
+      UPDATE users SET subscription_tier = ?, subscription_status = 'active', subscription_renews_at = ?, wayforpay_rec_token = ?
       WHERE id = ?
-    `).run(payment.tier, renewsAt, payment.user_id)
+    `).run(payment.tier, renewsAt, body.orderReference, payment.user_id)
 
     console.log(`[wayforpay] Approved ${body.orderReference} — user ${payment.user_id} → ${payment.tier}`)
   } else {
@@ -88,8 +89,21 @@ router.post('/callback', (req, res) => {
   res.json(wfp.buildWebhookAck(body.orderReference))
 })
 
-// POST /api/subscriptions/cancel — venue owner turns off their own plan immediately
-router.post('/cancel', requireAuth, requireRole('venue'), (req, res) => {
+// POST /api/subscriptions/cancel — venue owner turns off their own plan immediately.
+// Must stop the WayForPay regular payment too, or the card keeps getting charged monthly
+// even though our own DB says the subscription is inactive.
+router.post('/cancel', requireAuth, requireRole('venue'), async (req, res) => {
+  const user = db.prepare('SELECT wayforpay_rec_token FROM users WHERE id = ?').get(req.user.id)
+
+  if (user?.wayforpay_rec_token) {
+    try {
+      await wfp.regularRemove(user.wayforpay_rec_token)
+    } catch (err) {
+      console.error('[wayforpay] Failed to remove regular payment for user', req.user.id, err.message)
+      return res.status(502).json({ error: 'Не вдалося скасувати регулярний платіж у WayForPay. Спробуйте ще раз або зверніться в підтримку.' })
+    }
+  }
+
   db.prepare(`
     UPDATE users SET subscription_tier = 'basic', subscription_status = 'inactive', subscription_renews_at = NULL, wayforpay_rec_token = NULL
     WHERE id = ?

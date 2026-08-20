@@ -1,9 +1,11 @@
 const crypto = require('crypto')
+const fetch = require('node-fetch')
 
 function config() {
   return {
     merchantAccount: process.env.WAYFORPAY_MERCHANT_ACCOUNT,
     merchantSecret: process.env.WAYFORPAY_MERCHANT_SECRET,
+    merchantPassword: process.env.WAYFORPAY_MERCHANT_PASSWORD,
     merchantDomainName: process.env.WAYFORPAY_MERCHANT_DOMAIN || 'viewtoday.site',
   }
 }
@@ -19,8 +21,19 @@ function sign(fields) {
   return crypto.createHmac('md5', merchantSecret).update(str).digest('hex')
 }
 
-// Signature for the PURCHASE form (server -> WayForPay hosted page)
-function buildPurchaseFields({ orderReference, orderDate, amount, currency, productName, productCount, productPrice }) {
+// One month from now, formatted DD.MM.YYYY as WayForPay expects for dateNext
+function oneMonthFromNow() {
+  const d = new Date()
+  d.setMonth(d.getMonth() + 1)
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `${dd}.${mm}.${d.getFullYear()}`
+}
+
+// Signature for the PURCHASE form (server -> WayForPay hosted page).
+// regularMode/dateNext (recurring billing) are NOT part of the signed string —
+// only the base fields WayForPay documents for the Purchase signature are.
+function buildPurchaseFields({ orderReference, orderDate, amount, currency, productName, productCount, productPrice, regular }) {
   const { merchantAccount, merchantDomainName } = config()
   const merchantSignature = sign([
     merchantAccount,
@@ -34,7 +47,7 @@ function buildPurchaseFields({ orderReference, orderDate, amount, currency, prod
     productPrice,
   ])
 
-  return {
+  const fields = {
     merchantAccount,
     merchantDomainName,
     merchantTransactionType: 'AUTO',
@@ -48,6 +61,13 @@ function buildPurchaseFields({ orderReference, orderDate, amount, currency, prod
     'productPrice[]': productPrice,
     merchantSignature,
   }
+
+  if (regular) {
+    fields.regularMode = 'monthly'
+    fields.dateNext = oneMonthFromNow()
+  }
+
+  return fields
 }
 
 // Verify signature on the callback WayForPay POSTs to our webhook
@@ -73,4 +93,28 @@ function buildWebhookAck(orderReference) {
   return { orderReference, status, time, signature }
 }
 
-module.exports = { config, isConfigured, sign, buildPurchaseFields, verifyCallbackSignature, buildWebhookAck }
+// Manage an active regular (recurring) payment — STATUS / SUSPEND / RESUME / REMOVE.
+// Unlike Purchase/callback, this API authenticates with merchantPassword, not an HMAC signature.
+async function regularApiRequest(requestType, orderReference, extra = {}) {
+  const { merchantAccount, merchantPassword } = config()
+  const res = await fetch('https://api.wayforpay.com/regularApi', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requestType, merchantAccount, merchantPassword, orderReference, ...extra }),
+  })
+  const data = await res.json()
+  if (data.reasonCode !== undefined && data.reasonCode !== 1100 && data.reasonCode !== 4100) {
+    throw new Error(`WayForPay regularApi ${requestType} failed: ${data.reason} (code ${data.reasonCode})`)
+  }
+  return data
+}
+
+const regularStatus = (orderReference) => regularApiRequest('STATUS', orderReference)
+const regularSuspend = (orderReference) => regularApiRequest('SUSPEND', orderReference)
+const regularResume = (orderReference) => regularApiRequest('RESUME', orderReference)
+const regularRemove = (orderReference) => regularApiRequest('REMOVE', orderReference)
+
+module.exports = {
+  config, isConfigured, sign, buildPurchaseFields, verifyCallbackSignature, buildWebhookAck,
+  regularStatus, regularSuspend, regularResume, regularRemove,
+}
