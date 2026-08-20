@@ -37,6 +37,8 @@ function publicUser(user) {
     isActive: !!user.is_active,
     avatarUrl: user.avatar_url || null,
     subscriptionTier: user.subscription_tier || 'basic',
+    subscriptionStatus: user.subscription_status || 'inactive',
+    subscriptionRenewsAt: user.subscription_renews_at || null,
   }
 }
 

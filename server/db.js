@@ -70,6 +70,20 @@ db.exec(`
     boosted_at INTEGER NOT NULL,
     FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS payments (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    order_reference TEXT UNIQUE NOT NULL,
+    tier TEXT NOT NULL,
+    amount REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'UAH',
+    status TEXT NOT NULL DEFAULT 'pending',
+    is_recurring_token INTEGER NOT NULL DEFAULT 0,
+    raw_response TEXT,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
 `)
 
 // Migrations
@@ -152,6 +166,12 @@ if (!usersCols.includes('avatar_url')) {
 if (!usersCols.includes('subscription_tier')) {
   db.prepare("ALTER TABLE users ADD COLUMN subscription_tier TEXT NOT NULL DEFAULT 'basic'").run()
   console.log('[db] Migration: added `subscription_tier` column')
+}
+if (!usersCols.includes('subscription_status')) {
+  db.prepare("ALTER TABLE users ADD COLUMN subscription_status TEXT NOT NULL DEFAULT 'inactive'").run()
+  db.prepare('ALTER TABLE users ADD COLUMN subscription_renews_at INTEGER').run()
+  db.prepare('ALTER TABLE users ADD COLUMN wayforpay_rec_token TEXT').run()
+  console.log('[db] Migration: added `subscription_status`/`subscription_renews_at`/`wayforpay_rec_token` columns')
 }
 
 // Seed only superadmin if no users exist

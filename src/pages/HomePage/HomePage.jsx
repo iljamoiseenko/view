@@ -11,7 +11,7 @@ import './HomePage.css'
 const PLACES_PER_PAGE = 16
 const EVENTS_PER_PAGE = 8
 
-const TYPE_FILTER_VALUES = ['all', 'restaurant', 'cafe', 'bar', 'coffee', 'pub', 'lounge', 'theater', 'exhibition']
+const TYPE_FILTER_VALUES = ['all', 'restaurant', 'bar', 'coffee', 'pub', 'lounge', 'theater', 'exhibition']
 const EVENT_DATE_FILTER_VALUES = ['all', 'today', 'tomorrow', 'week']
 const EVENT_TYPE_VALUES = ['live_music', 'dj', 'jazz', 'wine', 'beer', 'master_class', 'theme_night', 'cocktail', 'other']
 

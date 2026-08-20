@@ -36,6 +36,13 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
+  if (user.role === 'venue') {
+    const owner = db.prepare('SELECT subscription_status FROM users WHERE id = ?').get(user.id)
+    if (owner?.subscription_status !== 'active') {
+      return res.status(403).json({ error: 'SUBSCRIPTION_REQUIRED' })
+    }
+  }
+
   const id = 'e' + Date.now()
   db.prepare(`
     INSERT INTO events (id, place_id, title, description, date, time, type, price, image, custom_type)

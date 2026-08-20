@@ -37,8 +37,14 @@ export function AuthProvider({ children }) {
 
   const updateCurrentUser = (patch) => setCurrentUser(u => u ? { ...u, ...patch } : u)
 
+  const refreshCurrentUser = async () => {
+    const { user } = await api.get('/auth/me')
+    setCurrentUser(user)
+    return user
+  }
+
   return (
-    <AuthContext.Provider value={{ currentUser, loading, login, logout, registerUser, updateCurrentUser }}>
+    <AuthContext.Provider value={{ currentUser, loading, login, logout, registerUser, updateCurrentUser, refreshCurrentUser }}>
       {children}
     </AuthContext.Provider>
   )

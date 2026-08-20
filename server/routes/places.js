@@ -200,9 +200,9 @@ router.get('/:id/boost-quota', requireAuth, (req, res) => {
   const place = db.prepare('SELECT boosted_at FROM places WHERE id = ?').get(id)
   if (!place) return res.status(404).json({ error: 'Place not found' })
 
-  const owner = db.prepare('SELECT subscription_tier FROM users WHERE place_id = ?').get(id)
+  const owner = db.prepare('SELECT subscription_tier, subscription_status FROM users WHERE place_id = ?').get(id)
   const tier = owner?.subscription_tier || 'basic'
-  const limit = boostsPerMonth(tier)
+  const limit = owner?.subscription_status === 'active' ? boostsPerMonth(tier) : 0
   const used = db.prepare('SELECT COUNT(*) as c FROM boosts WHERE place_id = ? AND boosted_at >= ?').get(id, startOfMonth()).c
   const topUntil = place.boosted_at ? place.boosted_at + BOOST_DURATION_MS : null
 
@@ -222,9 +222,9 @@ router.post('/:id/boost', requireAuth, (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Place not found' })
 
   if (user.role !== 'superadmin') {
-    const owner = db.prepare('SELECT subscription_tier FROM users WHERE id = ?').get(user.id)
+    const owner = db.prepare('SELECT subscription_tier, subscription_status FROM users WHERE id = ?').get(user.id)
     const tier = owner?.subscription_tier || 'basic'
-    const limit = boostsPerMonth(tier)
+    const limit = owner?.subscription_status === 'active' ? boostsPerMonth(tier) : 0
     const used = db.prepare('SELECT COUNT(*) as c FROM boosts WHERE place_id = ? AND boosted_at >= ?').get(id, startOfMonth()).c
 
     if (used >= limit) {

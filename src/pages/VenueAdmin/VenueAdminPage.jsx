@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
@@ -165,16 +165,35 @@ function EventModal({ initial, placeId, onSave, onClose }) {
 
 // ── Main VenueAdminPage ──────────────────────────────────────────────────────
 export default function VenueAdminPage() {
-  const { currentUser, logout } = useAuth()
+  const { currentUser, logout, refreshCurrentUser } = useAuth()
   const { places, events, updatePlace, addEvent, updateEvent, deleteEvent } = useApp()
   const { t, lang } = useLanguage()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const place = places.find(p => p.id === currentUser?.placeId)
   const myEvents = events.filter(e => e.placeId === currentUser?.placeId)
     .sort((a, b) => a.date.localeCompare(b.date))
 
-  const [tab, setTab] = useState('place')
+  const [tab, setTab] = useState(searchParams.get('payment') === 'return' ? 'subscription' : 'place')
+  const [paymentPending, setPaymentPending] = useState(searchParams.get('payment') === 'return')
+
+  // Returned from WayForPay — poll a few times for the webhook to land and activate the plan
+  useEffect(() => {
+    if (searchParams.get('payment') !== 'return') return
+    let attempts = 0
+    const poll = setInterval(async () => {
+      attempts++
+      const user = await refreshCurrentUser().catch(() => null)
+      if (user?.subscriptionStatus === 'active' || attempts >= 6) {
+        clearInterval(poll)
+        setPaymentPending(false)
+        setSearchParams({}, { replace: true })
+      }
+    }, 3000)
+    return () => clearInterval(poll)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [eventModal, setEventModal] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saved, setSaved] = useState(false)
@@ -218,7 +237,11 @@ export default function VenueAdminPage() {
   const [boostQuota, setBoostQuota] = useState(null)
   const [boosting, setBoosting] = useState(false)
   const [boostError, setBoostError] = useState('')
-  const [planNotice, setPlanNotice] = useState(false)
+  const [checkoutError, setCheckoutError] = useState('')
+  const [checkingOut, setCheckingOut] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
+  const [cancelError, setCancelError] = useState('')
+  const hasActiveSub = currentUser?.subscriptionStatus === 'active'
 
   useEffect(() => {
     if (!place?.id) return
@@ -238,6 +261,43 @@ export default function VenueAdminPage() {
       setBoostError(err.message)
     } finally {
       setBoosting(false)
+    }
+  }
+
+  const handleCancelPlan = async () => {
+    if (!window.confirm(t('venueAdmin.cancelPlanConfirm'))) return
+    setCancelling(true)
+    setCancelError('')
+    try {
+      await api.post('/subscriptions/cancel', {})
+      await refreshCurrentUser()
+    } catch (err) {
+      setCancelError(err.message || t('venueAdmin.cancelPlanError'))
+    } finally {
+      setCancelling(false)
+    }
+  }
+
+  const handleChoosePlan = async (tierKey) => {
+    setCheckingOut(true)
+    setCheckoutError('')
+    try {
+      const { action, fields } = await api.post('/subscriptions/checkout', { tier: tierKey })
+      const form = document.createElement('form')
+      form.method = 'POST'
+      form.action = action
+      Object.entries(fields).forEach(([key, value]) => {
+        const input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = key
+        input.value = value
+        form.appendChild(input)
+      })
+      document.body.appendChild(form)
+      form.submit()
+    } catch (err) {
+      setCheckoutError(err.message)
+      setCheckingOut(false)
     }
   }
 
@@ -384,6 +444,9 @@ export default function VenueAdminPage() {
           <button className={`va-nav-item ${tab === 'place' ? 'active' : ''}`} onClick={() => setTab('place')}>
             {t('venueAdmin.tabVenue')}
           </button>
+          <button className={`va-nav-item ${tab === 'boost' ? 'active' : ''}`} onClick={() => setTab('boost')}>
+            {t('venueAdmin.tabBoost')}
+          </button>
           <button className={`va-nav-item ${tab === 'events' ? 'active' : ''}`} onClick={() => setTab('events')}>
             {t('venueAdmin.tabEvents')}
             <span className="va-nav-item__count">{myEvents.length}</span>
@@ -397,8 +460,8 @@ export default function VenueAdminPage() {
         </div>
 
         <div className="va-content">
-        {/* Tab: Place */}
-        {tab === 'place' && (
+        {/* Tab: Boost */}
+        {tab === 'boost' && (
           <>
             <div className="va-boost-card">
               <div className="va-boost-card__info">
@@ -430,7 +493,12 @@ export default function VenueAdminPage() {
                 )}
               </div>
             </div>
+          </>
+        )}
 
+        {/* Tab: Place */}
+        {tab === 'place' && (
+          <>
             <div className="va-section">
             <div className="va-section__head">
               <h2>{t('venueAdmin.editVenueTitle')}</h2>
@@ -711,12 +779,24 @@ export default function VenueAdminPage() {
           <div className="va-section">
             <div className="va-section__head">
               <h2>{t('venueAdmin.myEventsTitle')}</h2>
-              <button className="btn btn-dark btn-sm" onClick={() => setEventModal({})}>
-                {t('venueAdmin.newEvent')}
-              </button>
+              {hasActiveSub && (
+                <button className="btn btn-dark btn-sm" onClick={() => setEventModal({})}>
+                  {t('venueAdmin.newEvent')}
+                </button>
+              )}
             </div>
 
-            {myEvents.length === 0 && (
+            {!hasActiveSub && (
+              <div className="va-sub-required">
+                <p className="va-sub-required__title">{t('venueAdmin.subRequiredTitle')}</p>
+                <p className="va-sub-required__text">{t('venueAdmin.subRequiredText')}</p>
+                <button className="btn btn-dark" onClick={() => setTab('subscription')}>
+                  {t('venueAdmin.subRequiredBtn')}
+                </button>
+              </div>
+            )}
+
+            {myEvents.length === 0 && hasActiveSub && (
               <div className="va-empty">
                 <p>{t('venueAdmin.noEventsText')}</p>
               </div>
@@ -849,11 +929,12 @@ export default function VenueAdminPage() {
             </div>
             <div style={{ padding: '20px 28px 0' }}>
               <p className="va-plans-sub">{t('venueAdmin.subscriptionSub')}</p>
+              {paymentPending && <p className="va-plans-notice">{t('venueAdmin.paymentPending')}</p>}
             </div>
             <div className="va-plans">
               {Object.keys(SUBSCRIPTION_TIERS).map(tierKey => {
                 const tierInfo = SUBSCRIPTION_TIERS[tierKey]
-                const isCurrent = (currentUser?.subscriptionTier || 'basic') === tierKey
+                const isCurrent = hasActiveSub && currentUser?.subscriptionTier === tierKey
                 const isPopular = tierKey === 'standard'
                 return (
                   <div key={tierKey} className={`va-plan-card ${isCurrent ? 'current' : ''} ${isPopular ? 'popular' : ''}`}>
@@ -877,16 +958,24 @@ export default function VenueAdminPage() {
                     <button
                       type="button"
                       className={`btn ${isCurrent ? 'btn-outline' : 'btn-dark'} va-plan-card__btn`}
-                      disabled={isCurrent}
-                      onClick={() => setPlanNotice(true)}
+                      disabled={isCurrent || checkingOut}
+                      onClick={() => handleChoosePlan(tierKey)}
                     >
-                      {isCurrent ? t('venueAdmin.currentPlanBtn') : t('venueAdmin.choosePlanBtn')}
+                      {isCurrent ? t('venueAdmin.currentPlanBtn') : (checkingOut ? t('venueAdmin.checkoutLoading') : t('venueAdmin.choosePlanBtn'))}
                     </button>
                   </div>
                 )
               })}
             </div>
-            {planNotice && <p className="va-plans-notice">{t('venueAdmin.subscriptionComingSoon')}</p>}
+            {checkoutError && <p className="va-plans-notice va-plans-notice--error">{checkoutError}</p>}
+            {hasActiveSub && (
+              <div style={{ padding: '0 28px 28px' }}>
+                <button type="button" className="btn btn-outline" disabled={cancelling} onClick={handleCancelPlan}>
+                  {cancelling ? t('venueAdmin.cancelPlanLoading') : t('venueAdmin.cancelPlanBtn')}
+                </button>
+                {cancelError && <p className="va-plans-notice va-plans-notice--error">{cancelError}</p>}
+              </div>
+            )}
           </div>
         )}
         </div>

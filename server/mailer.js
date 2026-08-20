@@ -1,38 +1,26 @@
-const nodemailer = require('nodemailer')
-const dns = require('dns')
+const fetch = require('node-fetch')
 
-let transporter = null
+const MAIL_FROM = process.env.MAIL_FROM || 'VIEW <onboarding@resend.dev>'
 
-async function createTransporter() {
-  // Resolve smtp.gmail.com to IPv4 explicitly to avoid IPv6 issues on Railway EU
-  const host = await new Promise((resolve, reject) =>
-    dns.resolve4('smtp.gmail.com', (err, addrs) => err ? reject(err) : resolve(addrs[0]))
-  )
-  console.log(`[mailer] Resolved smtp.gmail.com → ${host}. MAIL_USER=${process.env.MAIL_USER}, MAIL_PASS set=${!!process.env.MAIL_PASS}`)
-  return nodemailer.createTransport({
-    host,
-    port: 465,
-    secure: true,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-    tls: { servername: 'smtp.gmail.com' },
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS,
+async function sendEmail({ to, subject, html }) {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({ from: MAIL_FROM, to, subject, html }),
   })
-}
-
-async function getTransporter() {
-  if (!transporter) transporter = await createTransporter()
-  return transporter
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`Resend API error ${res.status}: ${body}`)
+  }
+  return res.json()
 }
 
 async function sendNewUserNotification({ userName, userEmail, placeName, city }) {
-  if (!process.env.MAIL_USER || !process.env.MAIL_PASS ||
-      process.env.MAIL_USER === 'your-gmail@gmail.com') {
-    console.log('[mailer] Skipped — MAIL_USER/MAIL_PASS not configured in .env')
+  if (!process.env.RESEND_API_KEY) {
+    console.log('[mailer] Skipped — RESEND_API_KEY not configured in .env')
     return
   }
 
@@ -71,20 +59,13 @@ async function sendNewUserNotification({ userName, userEmail, placeName, city })
     </div>
   `
 
-  const t = await getTransporter()
-  const info = await t.sendMail({
-    from: `"VIEW" <${process.env.MAIL_USER}>`,
-    to: process.env.NOTIFY_EMAIL || process.env.MAIL_USER,
-    subject,
-    html,
-  })
-
-  console.log(`[mailer] Notification sent → ${process.env.NOTIFY_EMAIL} messageId=${info.messageId}`)
+  const info = await sendEmail({ to: process.env.NOTIFY_EMAIL || MAIL_FROM, subject, html })
+  console.log(`[mailer] Notification sent → ${process.env.NOTIFY_EMAIL} id=${info.id}`)
 }
 
 async function sendPasswordReset({ toEmail, resetLink }) {
-  if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
-    console.log('[mailer] Skipped password reset — MAIL_USER/MAIL_PASS not set')
+  if (!process.env.RESEND_API_KEY) {
+    console.log('[mailer] Skipped password reset — RESEND_API_KEY not set')
     return
   }
 
@@ -97,15 +78,8 @@ async function sendPasswordReset({ toEmail, resetLink }) {
     </div>
   `
 
-  const t = await getTransporter()
-  const info = await t.sendMail({
-    from: `"VIEW" <${process.env.MAIL_USER}>`,
-    to: toEmail,
-    subject: 'VIEW: відновлення пароля',
-    html,
-  })
-
-  console.log(`[mailer] Password reset sent → ${toEmail} messageId=${info.messageId}`)
+  const info = await sendEmail({ to: toEmail, subject: 'VIEW: відновлення пароля', html })
+  console.log(`[mailer] Password reset sent → ${toEmail} id=${info.id}`)
 }
 
 module.exports = { sendNewUserNotification, sendPasswordReset }

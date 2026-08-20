@@ -19,6 +19,8 @@ function publicUser(u) {
     plainPass: u.plain_pass || null,
     avatarUrl: u.avatar_url || null,
     subscriptionTier: u.subscription_tier || 'basic',
+    subscriptionStatus: u.subscription_status || 'inactive',
+    subscriptionRenewsAt: u.subscription_renews_at || null,
   }
 }
 
