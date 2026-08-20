@@ -152,14 +152,6 @@ router.post('/reset-password', (req, res) => {
   res.json({ ok: true })
 })
 
-// GET /api/auth/reset-subscriptions-once — тимчасовий endpoint для одноразового скидання підписок (видалити після використання)
-router.get('/reset-subscriptions-once', (req, res) => {
-  const result = db.prepare(`
-    UPDATE users SET subscription_tier = 'basic', subscription_status = 'inactive', subscription_renews_at = NULL, wayforpay_rec_token = NULL
-  `).run()
-  res.json({ ok: true, changes: result.changes })
-})
-
 // GET /api/auth/test-mail — тимчасовий endpoint для перевірки пошти
 router.get('/test-mail', async (req, res) => {
   const { sendPasswordReset } = require('../mailer')
