@@ -65,6 +65,8 @@ function buildPurchaseFields({ orderReference, orderDate, amount, currency, prod
   if (regular) {
     fields.regularMode = 'monthly'
     fields.dateNext = oneMonthFromNow()
+    fields.regularOn = 1 // pre-check "make it recurring" — a $X/month plan must actually renew monthly
+    fields.regularBehavior = 'preset' // and lock it so the customer can't uncheck it on WayForPay's page
   }
 
   return fields
