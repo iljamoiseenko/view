@@ -21,10 +21,17 @@ function sign(fields) {
   return crypto.createHmac('md5', merchantSecret).update(str).digest('hex')
 }
 
-// One month from now, formatted DD.MM.YYYY as WayForPay expects for dateNext
-function oneMonthFromNow() {
+// Date of the first recurring charge, formatted DD.MM.YYYY as WayForPay expects.
+// WAYFORPAY_TEST_FAST_RENEWAL=1 schedules it for tomorrow instead of next month —
+// WayForPay's dateNext has day-level granularity only, so "tomorrow" is the fastest
+// a recurring cycle can be exercised end-to-end. Remove the env var before going live.
+function nextChargeDate() {
   const d = new Date()
-  d.setMonth(d.getMonth() + 1)
+  if (process.env.WAYFORPAY_TEST_FAST_RENEWAL === '1') {
+    d.setDate(d.getDate() + 1)
+  } else {
+    d.setMonth(d.getMonth() + 1)
+  }
   const dd = String(d.getDate()).padStart(2, '0')
   const mm = String(d.getMonth() + 1).padStart(2, '0')
   return `${dd}.${mm}.${d.getFullYear()}`
@@ -64,7 +71,7 @@ function buildPurchaseFields({ orderReference, orderDate, amount, currency, prod
 
   if (regular) {
     fields.regularMode = 'monthly'
-    fields.dateNext = oneMonthFromNow()
+    fields.dateNext = nextChargeDate()
     fields.regularOn = 1 // pre-check "make it recurring" — a $X/month plan must actually renew monthly
     fields.regularBehavior = 'preset' // and lock it so the customer can't uncheck it on WayForPay's page
   }

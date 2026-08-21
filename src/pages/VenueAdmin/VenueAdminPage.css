@@ -1,5 +1,91 @@
 .va-page { padding-bottom: 72px; background: var(--bg-2); min-height: calc(100vh - 60px); }
 
+/* ── Onboarding wizard ───────────────────────────────── */
+.va-onboarding {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-2);
+  padding: 24px;
+}
+.va-onboarding__card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  max-width: 760px;
+  width: 100%;
+}
+.va-onboarding__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.va-onboarding__logo { font-size: 14px; font-weight: 900; letter-spacing: -0.04em; }
+.va-onboarding__step-of { font-size: 13px; color: var(--text-3); font-weight: 600; }
+.va-onboarding__progress-track {
+  height: 6px;
+  background: var(--bg-2);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.va-onboarding__progress-bar {
+  height: 100%;
+  background: var(--vivid);
+  border-radius: 999px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.va-onboarding__progress-pct {
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: right;
+  margin-bottom: 28px;
+}
+.va-onboarding__step { animation: va-onboarding-fade 0.35s ease; }
+@keyframes va-onboarding-fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.va-onboarding__title { font-size: 24px; font-weight: 800; margin: 0 0 6px; }
+.va-onboarding__sub { font-size: 14px; color: var(--text-3); margin: 0 0 24px; }
+.va-onboarding__collections-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  margin: 24px 0 10px;
+}
+.va-onboarding__plans { padding: 0; }
+.va-onboarding__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.va-onboarding__skip {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px 4px;
+  transition: color 0.15s ease;
+}
+.va-onboarding__skip:hover { color: var(--text-2); }
+.va-onboarding__next { min-width: 120px; justify-content: center; }
+
+@media (max-width: 600px) {
+  .va-onboarding__card { padding: 28px 20px; }
+  .va-onboarding__plans.va-plans { grid-template-columns: 1fr; }
+}
+
 /* ── Payment thank-you screen ────────────────────────── */
 .va-thankyou {
   min-height: calc(100vh - 60px);
@@ -72,6 +158,10 @@
 .va-topbar__sep { color: rgba(255,255,255,0.3); }
 .va-topbar__name { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.7); }
 .va-topbar__actions { display: flex; align-items: center; gap: 10px; }
+/* .btn-outline's default hover darkens the border toward --dark, which is invisible
+   on this bar's own black background — override with a light-on-dark hover instead */
+.va-topbar__actions .btn-outline { border-color: rgba(255,255,255,0.4); }
+.va-topbar__actions .btn-outline:hover { border-color: #fff; background: rgba(255,255,255,0.1); }
 .va-logout {
   font-size: 13px;
   font-weight: 600;
@@ -655,7 +745,13 @@
   flex-shrink: 0;
 }
 
-.va-plan-card__btn { width: 100%; justify-content: center; }
+.va-plan-card__btn {
+  width: 100%;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .va-plans-notice {
   margin: 0 28px 24px;
@@ -781,6 +877,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
+/* The event modal gets its inter-group spacing from .va-modal-body's flex gap;
+   the onboarding step has no such wrapper, so give its field groups their own. */
+.va-onboarding__step .va-field-group { margin-bottom: 16px; }
 .va-modal__foot {
   display: flex;
   justify-content: flex-end;

@@ -80,6 +80,42 @@ function PhotoInput({ value, onChange, placeholder }) {
   )
 }
 
+// ── Cuisine select with a free-text "Інше" option ────────────────────────────
+// "custom mode" is tracked separately from the value itself — otherwise clearing
+// the free-text field to '' looks identical to "nothing selected" and the field
+// disappears, forcing the user back to the dropdown to re-enter custom mode.
+function CuisineSelect({ value, onChange }) {
+  const { t } = useLanguage()
+  const knownCuisines = CUISINE_LIST.filter(c => c !== 'Інше')
+  const [customMode, setCustomMode] = useState(!!value && !knownCuisines.includes(value))
+
+  const selectVal = customMode ? 'Інше' : (value || '')
+
+  return (
+    <>
+      <select className="input" value={selectVal}
+        onChange={e => {
+          if (e.target.value === 'Інше') {
+            setCustomMode(true)
+            onChange('')
+          } else {
+            setCustomMode(false)
+            onChange(e.target.value)
+          }
+        }}>
+        <option value="">{t('venueAdmin.chooseOption')}</option>
+        {CUISINE_LIST.map(c => <option key={c} value={c}>{c}</option>)}
+      </select>
+      {customMode && (
+        <input className="input" style={{ marginTop: 6 }}
+          placeholder={t('venueAdmin.customCuisinePh')}
+          value={value || ''}
+          onChange={e => onChange(e.target.value)} />
+      )}
+    </>
+  )
+}
+
 // ── Event Modal ──────────────────────────────────────────────────────────────
 function EventModal({ initial, placeId, onSave, onClose }) {
   const { t } = useLanguage()
@@ -206,6 +242,55 @@ export default function VenueAdminPage() {
     setThankYouVisible(false)
     setTab('subscription')
   }
+
+  const ONBOARDING_STEPS = 4
+  const [onboardingVisible, setOnboardingVisible] = useState(searchParams.get('onboarding') === '1')
+  const [onboardingStep, setOnboardingStep] = useState(1)
+  const [onboardingSaving, setOnboardingSaving] = useState(false)
+
+  const finishOnboarding = () => {
+    setOnboardingVisible(false)
+    setSearchParams({}, { replace: true })
+    setTab('place')
+  }
+
+  const saveOnboardingStep = async () => {
+    if (!place) return
+    let data = null
+    if (onboardingStep === 1) {
+      data = { name: placeForm.name, type: placeForm.type, customType: placeForm.customType, city: placeForm.city, address: placeForm.address, cuisine: placeForm.cuisine }
+    } else if (onboardingStep === 2) {
+      data = { photos: (placeForm.photos || []).filter(Boolean) }
+    } else if (onboardingStep === 3) {
+      data = {
+        instagramUrl: placeForm.instagramUrl, facebookUrl: placeForm.facebookUrl, tiktokUrl: placeForm.tiktokUrl,
+        threadsUrl: placeForm.threadsUrl, telegramUrl: placeForm.telegramUrl, youtubeUrl: placeForm.youtubeUrl,
+        collections: placeForm.collections || [],
+      }
+    }
+    if (!data) return
+    setOnboardingSaving(true)
+    try {
+      const updated = await updatePlace(place.id, data)
+      setPlaceForm(f => ({ ...f, ...updated, tags: Array.isArray(updated.tags) ? updated.tags.join(', ') : '', collections: Array.isArray(updated.collections) ? updated.collections : [] }))
+    } catch {
+      // best-effort — the full editor is always there to fix it later
+    } finally {
+      setOnboardingSaving(false)
+    }
+  }
+
+  const handleOnboardingNext = async () => {
+    await saveOnboardingStep()
+    if (onboardingStep < ONBOARDING_STEPS) setOnboardingStep(s => s + 1)
+    else finishOnboarding()
+  }
+
+  const handleOnboardingSkip = () => {
+    if (onboardingStep < ONBOARDING_STEPS) setOnboardingStep(s => s + 1)
+    else finishOnboarding()
+  }
+
   const [eventModal, setEventModal] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saved, setSaved] = useState(false)
@@ -439,6 +524,185 @@ export default function VenueAdminPage() {
     )
   }
 
+  if (onboardingVisible) {
+    const progress = Math.round((onboardingStep / ONBOARDING_STEPS) * 100)
+    return (
+      <div className="va-onboarding">
+        <div className="va-onboarding__card">
+          <div className="va-onboarding__head">
+            <span className="va-onboarding__logo">VIEW</span>
+            <span className="va-onboarding__step-of">{t('venueAdmin.onboardingStepOf', onboardingStep, ONBOARDING_STEPS)}</span>
+          </div>
+          <div className="va-onboarding__progress-track">
+            <div className="va-onboarding__progress-bar" style={{ width: `${progress}%` }} />
+          </div>
+          <div className="va-onboarding__progress-pct">{progress}%</div>
+
+          <div key={onboardingStep} className="va-onboarding__step">
+            {onboardingStep === 1 && (
+              <>
+                <h1 className="va-onboarding__title">{t('venueAdmin.onboardingStep1Title')}</h1>
+                <p className="va-onboarding__sub">{t('venueAdmin.onboardingStep1Sub')}</p>
+                <div className="va-field-group">
+                  <div className="va-field va-field--full">
+                    <label className="va-label">{t('venueAdmin.fieldName')}</label>
+                    <input className="input" value={placeForm.name || ''} onChange={e => setField('name', e.target.value)} />
+                  </div>
+                </div>
+                <div className="va-field-group">
+                  <div className="va-field">
+                    <label className="va-label">{t('venueAdmin.fieldType')}</label>
+                    <select className="input" value={placeForm.type || 'restaurant'} onChange={e => setField('type', e.target.value)}>
+                      {Object.keys(PLACE_TYPES).map(k => <option key={k} value={k}>{t(`placeTypes.${k}`)}</option>)}
+                    </select>
+                    {placeForm.type === 'other' && (
+                      <input className="input" style={{ marginTop: 6 }}
+                        placeholder={t('venueAdmin.customTypePh')}
+                        value={placeForm.customType || ''}
+                        onChange={e => setField('customType', e.target.value)} />
+                    )}
+                  </div>
+                  <div className="va-field">
+                    <label className="va-label">{t('venueAdmin.fieldCity')}</label>
+                    <select className="input" value={placeForm.city || ''} onChange={e => setField('city', e.target.value)}>
+                      {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="va-field-group">
+                  <div className="va-field va-field--full">
+                    <label className="va-label">{t('venueAdmin.fieldAddress')}</label>
+                    <input className="input" value={placeForm.address || ''} onChange={e => setField('address', e.target.value)} />
+                  </div>
+                </div>
+                {!TICKET_TYPES.includes(placeForm.type) && (
+                  <div className="va-field-group">
+                    <div className="va-field va-field--full">
+                      <label className="va-label">{t('venueAdmin.fieldCuisine')}</label>
+                      <CuisineSelect value={placeForm.cuisine} onChange={v => setField('cuisine', v)} />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {onboardingStep === 2 && (
+              <>
+                <h1 className="va-onboarding__title">{t('venueAdmin.onboardingStep2Title')}</h1>
+                <p className="va-onboarding__sub">{t('venueAdmin.onboardingStep2Sub')}</p>
+                <div className="va-photos-list">
+                  {(placeForm.photos || ['']).map((ph, i) => (
+                    <div key={i} className="va-photo-row">
+                      <div className="va-photo-row__num">{i + 1}</div>
+                      <div className="va-photo-row__input">
+                        <PhotoInput value={ph} onChange={v => setPhoto(i, v)} placeholder={t('venueAdmin.photoUrlPh')} />
+                      </div>
+                      {i === 0 ? (
+                        <span className="va-photo-main-badge">{t('venueAdmin.mainPhoto')}</span>
+                      ) : (
+                        <button type="button" className="va-photo-set-main" onClick={() => setMainPhoto(i)} title={t('venueAdmin.setMainTitle')}>
+                          {t('venueAdmin.setMainPhoto')}
+                        </button>
+                      )}
+                      {(placeForm.photos || []).length > 1 && (
+                        <button type="button" className="va-rm-photo" onClick={() => setField('photos', placeForm.photos.filter((_, j) => j !== i))}>✕</button>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" className="btn btn-outline btn-sm va-add-photo" onClick={() => setField('photos', [...(placeForm.photos || []), ''])}>
+                    {t('venueAdmin.addPhoto')}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {onboardingStep === 3 && (
+              <>
+                <h1 className="va-onboarding__title">{t('venueAdmin.onboardingStep3Title')}</h1>
+                <p className="va-onboarding__sub">{t('venueAdmin.onboardingStep3Sub')}</p>
+                <div className="va-form-grid">
+                  <div className="va-field">
+                    <label className="va-label">{t('venueAdmin.fieldInstagram')}</label>
+                    <input className="input" type="url" value={placeForm.instagramUrl || ''} onChange={e => setField('instagramUrl', e.target.value)} placeholder="https://instagram.com/..." />
+                  </div>
+                  <div className="va-field">
+                    <label className="va-label">{t('venueAdmin.fieldFacebook')}</label>
+                    <input className="input" type="url" value={placeForm.facebookUrl || ''} onChange={e => setField('facebookUrl', e.target.value)} placeholder="https://facebook.com/..." />
+                  </div>
+                  <div className="va-field">
+                    <label className="va-label">{t('venueAdmin.fieldTiktok')}</label>
+                    <input className="input" type="url" value={placeForm.tiktokUrl || ''} onChange={e => setField('tiktokUrl', e.target.value)} placeholder="https://tiktok.com/@..." />
+                  </div>
+                  <div className="va-field">
+                    <label className="va-label">{t('venueAdmin.fieldTelegram')}</label>
+                    <input className="input" type="url" value={placeForm.telegramUrl || ''} onChange={e => setField('telegramUrl', e.target.value)} placeholder="https://t.me/..." />
+                  </div>
+                </div>
+                <div className="va-onboarding__collections-title">{t('venueAdmin.sectionCollections')}</div>
+                <div className="va-marks">
+                  {COLLECTIONS.map(c => {
+                    const checked = Array.isArray(placeForm.collections) && placeForm.collections.includes(c.slug)
+                    return (
+                      <label key={c.slug} className={`va-mark-check ${checked ? 'checked' : ''}`}>
+                        <input type="checkbox" checked={checked} onChange={() => setField('collections', checked
+                          ? placeForm.collections.filter(s => s !== c.slug)
+                          : [...(placeForm.collections || []), c.slug])} />
+                        <span className="va-mark-check__icon">{c.icon}</span>
+                        <span>{t(`collectionsList.${c.slug}`)}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            {onboardingStep === 4 && (
+              <>
+                <h1 className="va-onboarding__title">{t('venueAdmin.onboardingStep4Title')}</h1>
+                <p className="va-onboarding__sub">{t('venueAdmin.onboardingStep4Sub')}</p>
+                <div className="va-plans va-onboarding__plans">
+                  {Object.keys(SUBSCRIPTION_TIERS).map(tierKey => {
+                    const tierInfo = SUBSCRIPTION_TIERS[tierKey]
+                    const isPopular = tierKey === 'standard'
+                    return (
+                      <div key={tierKey} className={`va-plan-card ${isPopular ? 'popular' : ''}`}>
+                        {isPopular && <span className="va-plan-card__badge">{t('venueAdmin.popularBadge')}</span>}
+                        <div className="va-plan-card__name">{t(`subscriptionTiers.${tierKey}`)}</div>
+                        <div className="va-plan-card__price">
+                          <span className="va-plan-card__price-amount">${tierInfo.price}</span>
+                          <span className="va-plan-card__price-period">{t('venueAdmin.perMonth')}</span>
+                        </div>
+                        <ul className="va-plan-card__features">
+                          <li><span className="va-plan-card__check">✓</span>{tierInfo.eventsPerMonth ? t('venueAdmin.eventsLimitText', tierInfo.eventsPerMonth) : t('venueAdmin.eventsUnlimitedText')}</li>
+                          <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}</li>
+                        </ul>
+                        <button type="button" className="btn btn-dark va-plan-card__btn" disabled={checkingOut} onClick={() => handleChoosePlan(tierKey)}>
+                          {checkingOut ? t('venueAdmin.checkoutLoading') : t('venueAdmin.choosePlanBtn')}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+                {checkoutError && <p className="va-plans-notice va-plans-notice--error">{checkoutError}</p>}
+              </>
+            )}
+          </div>
+
+          <div className="va-onboarding__actions">
+            <button type="button" className="va-onboarding__skip" onClick={handleOnboardingSkip}>
+              {onboardingStep < ONBOARDING_STEPS ? t('venueAdmin.onboardingSkip') : t('venueAdmin.onboardingSkipToDashboard')}
+            </button>
+            {onboardingStep < ONBOARDING_STEPS && (
+              <button type="button" className="btn btn-dark va-onboarding__next" onClick={handleOnboardingNext} disabled={onboardingSaving}>
+                {onboardingSaving ? t('venueAdmin.onboardingSaving') : t('venueAdmin.onboardingNext')}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="va-page">
       {/* Topbar */}
@@ -590,24 +854,7 @@ export default function VenueAdminPage() {
                   {!isTicketType && (
                     <div className="va-field">
                       <label className="va-label">{t('venueAdmin.fieldCuisine')}</label>
-                      {(() => {
-                        const knownCuisines = CUISINE_LIST.filter(c => c !== 'Інше')
-                        const isCustom = placeForm.cuisine && !knownCuisines.includes(placeForm.cuisine)
-                        const selectVal = isCustom ? 'Інше' : (placeForm.cuisine || '')
-                        return <>
-                          <select className="input" value={selectVal}
-                            onChange={e => setField('cuisine', e.target.value === 'Інше' ? '__custom__' : e.target.value)}>
-                            <option value="">{t('venueAdmin.chooseOption')}</option>
-                            {CUISINE_LIST.map(c => <option key={c} value={c}>{c}</option>)}
-                          </select>
-                          {(selectVal === 'Інше' || placeForm.cuisine === '__custom__') && (
-                            <input className="input" style={{marginTop:6}}
-                              placeholder={t('venueAdmin.customCuisinePh')}
-                              value={isCustom ? placeForm.cuisine : ''}
-                              onChange={e => setField('cuisine', e.target.value)} />
-                          )}
-                        </>
-                      })()}
+                      <CuisineSelect value={placeForm.cuisine} onChange={v => setField('cuisine', v)} />
                     </div>
                   )}
                   <div className="va-field">

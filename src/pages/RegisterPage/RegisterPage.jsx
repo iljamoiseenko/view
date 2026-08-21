@@ -36,7 +36,7 @@ export default function RegisterPage() {
         place: { type: 'restaurant', city: f.city },
       })
       await reload()
-      navigate('/venue')
+      navigate('/venue?onboarding=1')
     } catch (err) {
       setError(err.message || t('register.errDefault'))
     } finally {
