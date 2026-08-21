@@ -335,7 +335,7 @@ export default function VenueAdminPage() {
   const [boosting, setBoosting] = useState(false)
   const [boostError, setBoostError] = useState('')
   const [checkoutError, setCheckoutError] = useState('')
-  const [checkingOut, setCheckingOut] = useState(false)
+  const [checkingOutTier, setCheckingOutTier] = useState(null)
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState('')
   const hasActiveSub = currentUser?.subscriptionStatus === 'active'
@@ -376,7 +376,7 @@ export default function VenueAdminPage() {
   }
 
   const handleChoosePlan = async (tierKey) => {
-    setCheckingOut(true)
+    setCheckingOutTier(tierKey)
     setCheckoutError('')
     try {
       const { action, fields } = await api.post('/subscriptions/checkout', { tier: tierKey })
@@ -394,7 +394,7 @@ export default function VenueAdminPage() {
       form.submit()
     } catch (err) {
       setCheckoutError(err.message)
-      setCheckingOut(false)
+      setCheckingOutTier(null)
     }
   }
 
@@ -676,8 +676,8 @@ export default function VenueAdminPage() {
                           <li><span className="va-plan-card__check">✓</span>{tierInfo.eventsPerMonth ? t('venueAdmin.eventsLimitText', tierInfo.eventsPerMonth) : t('venueAdmin.eventsUnlimitedText')}</li>
                           <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}</li>
                         </ul>
-                        <button type="button" className="btn btn-dark va-plan-card__btn" disabled={checkingOut} onClick={() => handleChoosePlan(tierKey)}>
-                          {checkingOut ? t('venueAdmin.checkoutLoading') : t('venueAdmin.choosePlanBtn')}
+                        <button type="button" className="btn btn-dark va-plan-card__btn" disabled={!!checkingOutTier} onClick={() => handleChoosePlan(tierKey)}>
+                          {checkingOutTier === tierKey ? t('venueAdmin.checkoutLoading') : t('venueAdmin.choosePlanBtn')}
                         </button>
                       </div>
                     )
@@ -1234,10 +1234,10 @@ export default function VenueAdminPage() {
                     <button
                       type="button"
                       className={`btn ${isCurrent ? 'btn-outline' : 'btn-dark'} va-plan-card__btn`}
-                      disabled={isCurrent || checkingOut}
+                      disabled={isCurrent || !!checkingOutTier}
                       onClick={() => handleChoosePlan(tierKey)}
                     >
-                      {isCurrent ? t('venueAdmin.currentPlanBtn') : (checkingOut ? t('venueAdmin.checkoutLoading') : t('venueAdmin.choosePlanBtn'))}
+                      {isCurrent ? t('venueAdmin.currentPlanBtn') : (checkingOutTier === tierKey ? t('venueAdmin.checkoutLoading') : t('venueAdmin.choosePlanBtn'))}
                     </button>
                   </div>
                 )
