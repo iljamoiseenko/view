@@ -6,7 +6,9 @@ const { SUBSCRIPTION_TIERS } = require('../subscriptionTiers')
 
 const router = express.Router()
 
-// Public WayForPay test merchant — force $1 charges so we don't need real pricing to test the flow
+// Public WayForPay test merchant — force $1 charges so we don't need real pricing to test the flow.
+// WAYFORPAY_FORCE_1USD=1 does the same for a real merchant while it's still being tested on prod —
+// remove that env var once real tier prices should actually charge.
 const TEST_MERCHANT_ACCOUNTS = ['test_merch_n1']
 
 // POST /api/subscriptions/checkout — venue owner picks a plan, we hand back a signed
@@ -21,7 +23,7 @@ router.post('/checkout', requireAuth, requireRole('venue'), (req, res) => {
   if (!tierInfo) return res.status(400).json({ error: 'Unknown plan' })
 
   const { merchantAccount } = wfp.config()
-  const isTestMerchant = TEST_MERCHANT_ACCOUNTS.includes(merchantAccount)
+  const isTestMerchant = TEST_MERCHANT_ACCOUNTS.includes(merchantAccount) || process.env.WAYFORPAY_FORCE_1USD === '1'
   const amount = isTestMerchant ? 1 : tierInfo.price
   const currency = 'USD'
 
