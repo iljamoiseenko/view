@@ -677,7 +677,7 @@ export default function VenueAdminPage() {
                           <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}</li>
                         </ul>
                         <button type="button" className="btn btn-dark va-plan-card__btn" disabled={!!checkingOutTier} onClick={() => handleChoosePlan(tierKey)}>
-                          {checkingOutTier === tierKey ? t('venueAdmin.checkoutLoading') : t('venueAdmin.choosePlanBtn')}
+                          {t('venueAdmin.choosePlanBtn')}
                         </button>
                       </div>
                     )
@@ -1237,7 +1237,7 @@ export default function VenueAdminPage() {
                       disabled={isCurrent || !!checkingOutTier}
                       onClick={() => handleChoosePlan(tierKey)}
                     >
-                      {isCurrent ? t('venueAdmin.currentPlanBtn') : (checkingOutTier === tierKey ? t('venueAdmin.checkoutLoading') : t('venueAdmin.choosePlanBtn'))}
+                      {isCurrent ? t('venueAdmin.currentPlanBtn') : t('venueAdmin.choosePlanBtn')}
                     </button>
                   </div>
                 )
