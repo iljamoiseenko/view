@@ -546,7 +546,10 @@ export default function VenueAdminPage() {
                 <div className="va-field-group">
                   <div className="va-field va-field--full">
                     <label className="va-label">{t('venueAdmin.fieldName')}</label>
-                    <input className="input" value={placeForm.name || ''} onChange={e => setField('name', e.target.value)} />
+                    <input className="input"
+                      value={placeForm.name === 'Мій заклад' ? '' : (placeForm.name || '')}
+                      placeholder={t('venueAdmin.onboardingNamePh')}
+                      onChange={e => setField('name', e.target.value)} />
                   </div>
                 </div>
                 <div className="va-field-group">
