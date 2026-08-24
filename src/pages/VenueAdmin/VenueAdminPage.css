@@ -656,6 +656,12 @@
   max-width: 560px;
   line-height: 1.6;
 }
+.va-plans-renewal {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dark);
+  margin-top: 8px;
+}
 
 .va-plans {
   display: grid;
