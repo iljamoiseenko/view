@@ -1211,9 +1211,7 @@ export default function VenueAdminPage() {
               <p className="va-plans-sub">{t('venueAdmin.subscriptionSub')}</p>
               {hasActiveSub && currentUser?.subscriptionRenewsAt && (
                 <p className="va-plans-renewal">
-                  {t('venueAdmin.subscriptionActiveUntil', new Date(currentUser.subscriptionRenewsAt).toLocaleDateString(lang === 'uk' ? 'uk-UA' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }))}
-                  {' · '}
-                  {t('venueAdmin.nextChargeOn', new Date(currentUser.subscriptionRenewsAt).toLocaleDateString(lang === 'uk' ? 'uk-UA' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }))}
+                  {t('venueAdmin.nextRenewalOn', new Date(currentUser.subscriptionRenewsAt).toLocaleDateString(lang === 'uk' ? 'uk-UA' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }))}
                 </p>
               )}
             </div>
