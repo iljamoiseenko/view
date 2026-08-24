@@ -152,6 +152,17 @@ router.post('/reset-password', (req, res) => {
   res.json({ ok: true })
 })
 
+// GET /api/auth/fix-renews-at-once — тимчасовий endpoint, виправляє renews_at, записаний
+// до фіксу синхронізації з WAYFORPAY_TEST_FAST_RENEWAL (видалити після використання)
+router.get('/fix-renews-at-once', (req, res) => {
+  const renewsAt = Date.now() + 24 * 60 * 60 * 1000
+  const result = db.prepare(`
+    UPDATE users SET subscription_renews_at = ?
+    WHERE id = 'u1787337477856' AND subscription_status = 'active'
+  `).run(renewsAt)
+  res.json({ ok: true, changes: result.changes, renewsAt })
+})
+
 // GET /api/auth/test-mail — тимчасовий endpoint для перевірки пошти
 router.get('/test-mail', async (req, res) => {
   const { sendPasswordReset } = require('../mailer')
