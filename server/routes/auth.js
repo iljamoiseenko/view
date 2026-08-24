@@ -152,6 +152,12 @@ router.post('/reset-password', (req, res) => {
   res.json({ ok: true })
 })
 
+// GET /api/auth/debug-payment-once — тимчасовий endpoint для діагностики регулярного платежу (видалити після використання)
+router.get('/debug-payment-once', (req, res) => {
+  const rows = db.prepare('SELECT id, user_id, order_reference, status, raw_response, created_at FROM payments ORDER BY created_at DESC LIMIT 3').all()
+  res.json(rows)
+})
+
 // GET /api/auth/test-mail — тимчасовий endpoint для перевірки пошти
 router.get('/test-mail', async (req, res) => {
   const { sendPasswordReset } = require('../mailer')
