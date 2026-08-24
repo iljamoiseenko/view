@@ -77,7 +77,7 @@ router.post('/callback', (req, res) => {
   }
 
   if (body.transactionStatus === 'Approved') {
-    const renewsAt = Date.now() + 30 * 24 * 60 * 60 * 1000
+    const renewsAt = Date.now() + wfp.renewalPeriodMs()
 
     db.prepare('UPDATE payments SET status = ?, raw_response = ? WHERE order_reference = ?')
       .run('approved', JSON.stringify(body), body.orderReference)

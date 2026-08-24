@@ -27,18 +27,21 @@ function formatDate(d) {
   return `${dd}.${mm}.${d.getFullYear()}`
 }
 
+// How long a billing period lasts. WAYFORPAY_TEST_FAST_RENEWAL=1 shortens it to a day
+// so a full renewal cycle can be tested without waiting a month — used both for the
+// dateNext we send WayForPay and for our own subscription_renews_at, so the two stay
+// in sync. Remove the env var before going live.
+function renewalPeriodMs() {
+  return process.env.WAYFORPAY_TEST_FAST_RENEWAL === '1'
+    ? 24 * 60 * 60 * 1000
+    : 30 * 24 * 60 * 60 * 1000
+}
+
 // Date of the first recurring charge, formatted DD.MM.YYYY as WayForPay expects.
-// WAYFORPAY_TEST_FAST_RENEWAL=1 schedules it for tomorrow instead of next month —
-// WayForPay's dateNext has day-level granularity only, so "tomorrow" is the fastest
-// a recurring cycle can be exercised end-to-end. Remove the env var before going live.
+// WayForPay's dateNext has day-level granularity only, so during fast-renewal testing
+// "tomorrow" is the fastest a recurring cycle can be exercised end-to-end.
 function nextChargeDate() {
-  const d = new Date()
-  if (process.env.WAYFORPAY_TEST_FAST_RENEWAL === '1') {
-    d.setDate(d.getDate() + 1)
-  } else {
-    d.setMonth(d.getMonth() + 1)
-  }
-  return formatDate(d)
+  return formatDate(new Date(Date.now() + renewalPeriodMs()))
 }
 
 // Without an explicit dateEnd, WayForPay appears to silently skip creating the
@@ -140,5 +143,5 @@ const regularRemove = (orderReference) => regularApiRequest('REMOVE', orderRefer
 
 module.exports = {
   config, isConfigured, sign, buildPurchaseFields, verifyCallbackSignature, buildWebhookAck,
-  regularStatus, regularSuspend, regularResume, regularRemove,
+  regularStatus, regularSuspend, regularResume, regularRemove, renewalPeriodMs,
 }
