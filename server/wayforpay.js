@@ -21,6 +21,12 @@ function sign(fields) {
   return crypto.createHmac('md5', merchantSecret).update(str).digest('hex')
 }
 
+function formatDate(d) {
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `${dd}.${mm}.${d.getFullYear()}`
+}
+
 // Date of the first recurring charge, formatted DD.MM.YYYY as WayForPay expects.
 // WAYFORPAY_TEST_FAST_RENEWAL=1 schedules it for tomorrow instead of next month —
 // WayForPay's dateNext has day-level granularity only, so "tomorrow" is the fastest
@@ -32,9 +38,17 @@ function nextChargeDate() {
   } else {
     d.setMonth(d.getMonth() + 1)
   }
-  const dd = String(d.getDate()).padStart(2, '0')
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  return `${dd}.${mm}.${d.getFullYear()}`
+  return formatDate(d)
+}
+
+// Without an explicit dateEnd, WayForPay appears to silently skip creating the
+// regular-payment rule (confirmed via regularApi STATUS returning "Rule is not
+// found" after a live charge) — so give it a far-future end date instead of
+// leaving the subscription open-ended.
+function farFutureEndDate() {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() + 10)
+  return formatDate(d)
 }
 
 // Signature for the PURCHASE form (server -> WayForPay hosted page).
@@ -72,6 +86,7 @@ function buildPurchaseFields({ orderReference, orderDate, amount, currency, prod
   if (regular) {
     fields.regularMode = 'monthly'
     fields.dateNext = nextChargeDate()
+    fields.dateEnd = farFutureEndDate()
     fields.regularOn = 1 // pre-check "make it recurring" — a $X/month plan must actually renew monthly
     fields.regularBehavior = 'preset' // and lock it so the customer can't uncheck it on WayForPay's page
   }
