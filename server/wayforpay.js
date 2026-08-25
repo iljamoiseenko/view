@@ -37,19 +37,20 @@ function renewalPeriodMs() {
     : 30 * 24 * 60 * 60 * 1000
 }
 
-// Date of the first recurring charge, formatted DD.MM.YYYY as WayForPay expects.
-// WayForPay's dateNext has day-level granularity only, so during fast-renewal testing
-// "tomorrow" is the fastest a recurring cycle can be exercised end-to-end.
-function nextChargeDate() {
-  return formatDate(new Date(Date.now() + renewalPeriodMs()))
+// Date of the first recurring charge. WayForPay's dateNext has day-level granularity
+// only, so during fast-renewal testing "tomorrow" is the fastest a recurring cycle
+// can be exercised end-to-end.
+function nextChargeDateObj() {
+  return new Date(Date.now() + renewalPeriodMs())
 }
 
 // Without an explicit dateEnd, WayForPay appears to silently skip creating the
 // regular-payment rule (confirmed via regularApi STATUS returning "Rule is not
 // found" after a live charge) — so give it a far-future end date instead of
-// leaving the subscription open-ended.
-function farFutureEndDate() {
-  const d = new Date()
+// leaving the subscription open-ended. Based on the SAME date as dateNext (not
+// "now") so the two line up on day/month, matching WayForPay's own display.
+function farFutureEndDate(fromDate) {
+  const d = new Date(fromDate)
   d.setFullYear(d.getFullYear() + 10)
   return formatDate(d)
 }
@@ -87,9 +88,10 @@ function buildPurchaseFields({ orderReference, orderDate, amount, currency, prod
   }
 
   if (regular) {
+    const nextCharge = nextChargeDateObj()
     fields.regularMode = 'monthly'
-    fields.dateNext = nextChargeDate()
-    fields.dateEnd = farFutureEndDate()
+    fields.dateNext = formatDate(nextCharge)
+    fields.dateEnd = farFutureEndDate(nextCharge)
     fields.regularOn = 1 // pre-check "make it recurring" — a $X/month plan must actually renew monthly
     fields.regularBehavior = 'preset' // and lock it so the customer can't uncheck it on WayForPay's page
   }
