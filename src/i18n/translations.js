@@ -261,6 +261,9 @@ export const translations = {
       morning_coffee: 'Ранкова кава',
       live_music_night: 'Вечір живої музики',
       summer_terrace_spot: 'Літня тераса',
+      karaoke_night: 'Караоке',
+      dance_night: 'Потанцювати',
+      date_spot: 'Побачення',
     },
     subscriptionTiers: {
       basic: 'Базова',
@@ -865,6 +868,9 @@ export const translations = {
       morning_coffee: 'Morning coffee',
       live_music_night: 'Live music night',
       summer_terrace_spot: 'Summer terrace',
+      karaoke_night: 'Karaoke',
+      dance_night: 'Dancing',
+      date_spot: 'Date spot',
     },
     subscriptionTiers: {
       basic: 'Basic',

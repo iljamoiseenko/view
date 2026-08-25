@@ -31,6 +31,9 @@ export const COLLECTIONS = [
   { slug: 'morning_coffee', icon: '☕' },
   { slug: 'live_music_night', icon: '🎸' },
   { slug: 'summer_terrace_spot', icon: '🌿' },
+  { slug: 'karaoke_night', icon: '🎤' },
+  { slug: 'dance_night', icon: '💃' },
+  { slug: 'date_spot', icon: '💑' },
 ]
 
 // Subscription plans (payment processing not wired up yet —
