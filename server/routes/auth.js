@@ -152,6 +152,31 @@ router.post('/reset-password', (req, res) => {
   res.json({ ok: true })
 })
 
+// GET /api/auth/backfill-renewal-once — тимчасовий endpoint: записує пропущене
+// автосписання (яке відбулось до фіксу _WFPREG-суфіксу) і синхронізує дату
+// продовження з реальною датою WayForPay (видалити після використання)
+router.get('/backfill-renewal-once', (req, res) => {
+  const userId = 'u1787337477856'
+  const baseOrderReference = 'sub_u1787337477856_1787598452950'
+  const renewalOrderReference = 'sub_u1787337477856_1787598452950_WFPREG-541278-1'
+  const renewsAt = Date.UTC(2026, 8, 25) // 25.09.2026, matches WayForPay's own nextPaymentDate
+
+  const user = db.prepare('SELECT subscription_tier FROM users WHERE id = ?').get(userId)
+  const existing = db.prepare('SELECT id FROM payments WHERE order_reference = ?').get(renewalOrderReference)
+
+  if (!existing) {
+    db.prepare(`
+      INSERT INTO payments (id, user_id, order_reference, tier, amount, currency, status, created_at)
+      VALUES (?, ?, ?, ?, 1, 'USD', 'approved', ?)
+    `).run('pay' + Date.now(), userId, renewalOrderReference, user.subscription_tier, Date.now())
+  }
+
+  db.prepare('UPDATE users SET subscription_renews_at = ?, wayforpay_rec_token = ? WHERE id = ?')
+    .run(renewsAt, baseOrderReference, userId)
+
+  res.json({ ok: true, inserted: !existing, renewsAt })
+})
+
 // GET /api/auth/test-mail — тимчасовий endpoint для перевірки пошти
 router.get('/test-mail', async (req, res) => {
   const { sendPasswordReset } = require('../mailer')
