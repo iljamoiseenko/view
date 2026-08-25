@@ -70,27 +70,42 @@ router.post('/callback', (req, res) => {
     return res.status(400).json({ error: 'Invalid signature' })
   }
 
-  const payment = db.prepare('SELECT * FROM payments WHERE order_reference = ?').get(body.orderReference)
+  // Recurring charges arrive with our original orderReference plus a WayForPay-appended
+  // suffix (e.g. "..._WFPREG-541278-1") — strip it to find the payment/user it belongs to.
+  const baseOrderReference = body.orderReference.split('_WFPREG-')[0]
+  const payment = db.prepare('SELECT * FROM payments WHERE order_reference = ?').get(baseOrderReference)
   if (!payment) {
     console.error('[wayforpay] Callback for unknown order reference', body.orderReference)
     return res.json(wfp.buildWebhookAck(body.orderReference))
   }
+  const isRenewal = body.orderReference !== baseOrderReference
 
   if (body.transactionStatus === 'Approved') {
     const renewsAt = Date.now() + wfp.renewalPeriodMs()
 
-    db.prepare('UPDATE payments SET status = ?, raw_response = ? WHERE order_reference = ?')
-      .run('approved', JSON.stringify(body), body.orderReference)
+    if (isRenewal) {
+      db.prepare(`
+        INSERT INTO payments (id, user_id, order_reference, tier, amount, currency, status, raw_response, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'approved', ?, ?)
+      `).run('pay' + Date.now(), payment.user_id, body.orderReference, payment.tier, body.amount, body.currency, JSON.stringify(body), Date.now())
+    } else {
+      db.prepare('UPDATE payments SET status = ?, raw_response = ? WHERE order_reference = ?')
+        .run('approved', JSON.stringify(body), baseOrderReference)
+    }
 
+    // wayforpay_rec_token stays the BASE orderReference — regularApi (status/suspend/remove)
+    // is keyed to the original order, not to each individual renewal's suffixed reference.
     db.prepare(`
       UPDATE users SET subscription_tier = ?, subscription_status = 'active', subscription_renews_at = ?, wayforpay_rec_token = ?
       WHERE id = ?
-    `).run(payment.tier, renewsAt, body.orderReference, payment.user_id)
+    `).run(payment.tier, renewsAt, baseOrderReference, payment.user_id)
 
-    console.log(`[wayforpay] Approved ${body.orderReference} — user ${payment.user_id} → ${payment.tier}`)
+    console.log(`[wayforpay] Approved ${body.orderReference} — user ${payment.user_id} → ${payment.tier}${isRenewal ? ' (renewal)' : ''}`)
   } else {
-    db.prepare('UPDATE payments SET status = ?, raw_response = ? WHERE order_reference = ?')
-      .run('failed', JSON.stringify(body), body.orderReference)
+    if (!isRenewal) {
+      db.prepare('UPDATE payments SET status = ?, raw_response = ? WHERE order_reference = ?')
+        .run('failed', JSON.stringify(body), baseOrderReference)
+    }
     console.log(`[wayforpay] Not approved ${body.orderReference} — status=${body.transactionStatus}`)
   }
 
