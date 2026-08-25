@@ -983,7 +983,7 @@ export default function VenueAdminPage() {
                 </div>
               </div>
 
-              {/* ── Group: Підбірки ── */}
+              {/* ── Group: Добірки ── */}
               <div className="va-form-section">
                 <div className="va-form-section__title">{t('venueAdmin.sectionCollections')}</div>
                 <p className="va-marks-hint">{t('venueAdmin.collectionsHint')}</p>
