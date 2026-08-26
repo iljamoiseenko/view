@@ -245,11 +245,22 @@ export default function VenueAdminPage() {
 
   const ONBOARDING_STEPS = 4
   const [onboardingVisible, setOnboardingVisible] = useState(searchParams.get('onboarding') === '1')
-  const [onboardingStep, setOnboardingStep] = useState(1)
+  const [onboardingStep, setOnboardingStep] = useState(() => {
+    const saved = Number(localStorage.getItem('view_onboarding_step'))
+    return saved >= 1 && saved <= ONBOARDING_STEPS ? saved : 1
+  })
   const [onboardingSaving, setOnboardingSaving] = useState(false)
+
+  // Survive a reload mid-onboarding (e.g. after coming back from the WayForPay page) —
+  // each step's own data is already saved to the server on "Далі", so only the step
+  // index itself needs to persist client-side.
+  useEffect(() => {
+    if (onboardingVisible) localStorage.setItem('view_onboarding_step', String(onboardingStep))
+  }, [onboardingStep, onboardingVisible])
 
   const finishOnboarding = () => {
     setOnboardingVisible(false)
+    localStorage.removeItem('view_onboarding_step')
     setSearchParams({}, { replace: true })
     setTab('place')
   }
@@ -334,8 +345,20 @@ export default function VenueAdminPage() {
   const [boostQuota, setBoostQuota] = useState(null)
   const [boosting, setBoosting] = useState(false)
   const [boostError, setBoostError] = useState('')
+  const [statsData, setStatsData] = useState(null)
+  const [statsLoading, setStatsLoading] = useState(false)
+  const [statsLocked, setStatsLocked] = useState(false)
   const [checkoutError, setCheckoutError] = useState('')
   const [checkingOutTier, setCheckingOutTier] = useState(null)
+
+  // If the user navigates to WayForPay and then hits the browser's back button, some
+  // browsers restore this page from bfcache exactly as it was mid-checkout — button
+  // stuck disabled forever. Clear the loading state whenever the page is restored this way.
+  useEffect(() => {
+    const onPageShow = (e) => { if (e.persisted) setCheckingOutTier(null) }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState('')
   const hasActiveSub = currentUser?.subscriptionStatus === 'active'
@@ -344,6 +367,18 @@ export default function VenueAdminPage() {
     if (!place?.id) return
     api.get(`/places/${place.id}/boost-quota`).then(setBoostQuota).catch(() => {})
   }, [place?.id])
+
+  useEffect(() => {
+    if (tab !== 'stats' || !place?.id) return
+    setStatsLoading(true)
+    setStatsLocked(false)
+    api.get(`/places/${place.id}/stats`)
+      .then(data => setStatsData(data))
+      .catch(err => {
+        if (err.message === 'ANALYTICS_REQUIRES_UPGRADE') setStatsLocked(true)
+      })
+      .finally(() => setStatsLoading(false))
+  }, [tab, place?.id])
 
   const handleBoost = async () => {
     if (!place) return
@@ -678,6 +713,7 @@ export default function VenueAdminPage() {
                         <ul className="va-plan-card__features">
                           <li><span className="va-plan-card__check">✓</span>{tierInfo.eventsPerMonth ? t('venueAdmin.eventsLimitText', tierInfo.eventsPerMonth) : t('venueAdmin.eventsUnlimitedText')}</li>
                           <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}</li>
+                          {tierKey !== 'basic' && <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.analyticsFeatureText')}</li>}
                         </ul>
                         <button type="button" className="btn btn-dark va-plan-card__btn" disabled={!!checkingOutTier} onClick={() => handleChoosePlan(tierKey)}>
                           {t('venueAdmin.choosePlanBtn')}
@@ -747,6 +783,9 @@ export default function VenueAdminPage() {
           <button className={`va-nav-item ${tab === 'events' ? 'active' : ''}`} onClick={() => setTab('events')}>
             {t('venueAdmin.tabEvents')}
             <span className="va-nav-item__count">{myEvents.length}</span>
+          </button>
+          <button className={`va-nav-item ${tab === 'stats' ? 'active' : ''}`} onClick={() => setTab('stats')}>
+            {t('venueAdmin.tabStats')}
           </button>
           <button className={`va-nav-item ${tab === 'account' ? 'active' : ''}`} onClick={() => setTab('account')}>
             {t('venueAdmin.tabAccount')}
@@ -1122,6 +1161,55 @@ export default function VenueAdminPage() {
           </div>
         )}
 
+        {/* Tab: Stats */}
+        {tab === 'stats' && (
+          <div className="va-section">
+            <div className="va-section__head">
+              <h2>{t('venueAdmin.statsTitle')}</h2>
+            </div>
+            {statsLocked && (
+              <div className="va-sub-required">
+                <p className="va-sub-required__title">{t('venueAdmin.statsLockedTitle')}</p>
+                <p className="va-sub-required__text">{t('venueAdmin.statsLockedText')}</p>
+                <button className="btn btn-dark" onClick={() => setTab('subscription')}>{t('venueAdmin.subRequiredBtn')}</button>
+              </div>
+            )}
+            {!statsLocked && statsLoading && (
+              <div className="va-empty"><p>{t('venueAdmin.statsLoading')}</p></div>
+            )}
+            {!statsLocked && !statsLoading && statsData && (
+              <div style={{ padding: '20px 28px 28px' }}>
+                <div className="va-stats-cards">
+                  <div className="va-stats-card">
+                    <div className="va-stats-card__value">{statsData.total}</div>
+                    <div className="va-stats-card__label">{t('venueAdmin.statsTotalViews')}</div>
+                  </div>
+                  <div className="va-stats-card">
+                    <div className="va-stats-card__value">{statsData.last7}</div>
+                    <div className="va-stats-card__label">{t('venueAdmin.statsLast7')}</div>
+                  </div>
+                  <div className="va-stats-card">
+                    <div className="va-stats-card__value">{statsData.last30}</div>
+                    <div className="va-stats-card__label">{t('venueAdmin.statsLast30')}</div>
+                  </div>
+                </div>
+                <div className="va-stats-chart-title">{t('venueAdmin.statsChartTitle')}</div>
+                <div className="va-stats-chart">
+                  {(() => {
+                    const max = Math.max(1, ...statsData.daily.map(d => d.count))
+                    return statsData.daily.map(d => (
+                      <div key={d.date} className="va-stats-bar" title={`${new Date(d.date).toLocaleDateString(lang === 'uk' ? 'uk-UA' : 'en-US')}: ${d.count}`}>
+                        <div className="va-stats-bar__fill" style={{ height: `${Math.max(Math.round((d.count / max) * 100), d.count > 0 ? 6 : 2)}%` }} />
+                        <div className="va-stats-bar__day">{new Date(d.date).getDate()}</div>
+                      </div>
+                    ))
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Tab: Account */}
         {tab === 'account' && (
           <div className="va-section">
@@ -1211,7 +1299,8 @@ export default function VenueAdminPage() {
               <p className="va-plans-sub">{t('venueAdmin.subscriptionSub')}</p>
               {hasActiveSub && currentUser?.subscriptionRenewsAt && (
                 <p className="va-plans-renewal">
-                  {t('venueAdmin.nextRenewalOn', new Date(currentUser.subscriptionRenewsAt).toLocaleDateString(lang === 'uk' ? 'uk-UA' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }))}
+                  {t(currentUser.subscriptionAutoRenew ? 'venueAdmin.nextRenewalOn' : 'venueAdmin.activeUntilCancelled',
+                    new Date(currentUser.subscriptionRenewsAt).toLocaleDateString(lang === 'uk' ? 'uk-UA' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }))}
                 </p>
               )}
             </div>
@@ -1238,6 +1327,12 @@ export default function VenueAdminPage() {
                         <span className="va-plan-card__check">✓</span>
                         {t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}
                       </li>
+                      {tierKey !== 'basic' && (
+                        <li>
+                          <span className="va-plan-card__check">✓</span>
+                          {t('venueAdmin.analyticsFeatureText')}
+                        </li>
+                      )}
                     </ul>
                     <button
                       type="button"
@@ -1252,7 +1347,7 @@ export default function VenueAdminPage() {
               })}
             </div>
             {checkoutError && <p className="va-plans-notice va-plans-notice--error">{checkoutError}</p>}
-            {hasActiveSub && (
+            {hasActiveSub && currentUser?.subscriptionAutoRenew && (
               <div style={{ padding: '0 28px 28px' }}>
                 <button type="button" className="btn btn-outline" disabled={cancelling} onClick={handleCancelPlan}>
                   {cancelling ? t('venueAdmin.cancelPlanLoading') : t('venueAdmin.cancelPlanBtn')}

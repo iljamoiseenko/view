@@ -2,7 +2,7 @@ const express = require('express')
 const db = require('../db')
 const { requireAuth, requireRole } = require('../middleware/auth')
 const { geocodeAddress } = require('../geocode')
-const { BOOST_DURATION_MS, boostsPerMonth } = require('../subscriptionTiers')
+const { BOOST_DURATION_MS, boostsPerMonth, expireIfPastDue } = require('../subscriptionTiers')
 
 const router = express.Router()
 
@@ -200,6 +200,8 @@ router.get('/:id/boost-quota', requireAuth, (req, res) => {
   const place = db.prepare('SELECT boosted_at FROM places WHERE id = ?').get(id)
   if (!place) return res.status(404).json({ error: 'Place not found' })
 
+  const ownerId = db.prepare('SELECT id FROM users WHERE place_id = ?').get(id)?.id
+  if (ownerId) expireIfPastDue(db, ownerId)
   const owner = db.prepare('SELECT subscription_tier, subscription_status FROM users WHERE place_id = ?').get(id)
   const tier = owner?.subscription_tier || 'basic'
   const limit = owner?.subscription_status === 'active' ? boostsPerMonth(tier) : 0
@@ -222,6 +224,7 @@ router.post('/:id/boost', requireAuth, (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Place not found' })
 
   if (user.role !== 'superadmin') {
+    expireIfPastDue(db, user.id)
     const owner = db.prepare('SELECT subscription_tier, subscription_status FROM users WHERE id = ?').get(user.id)
     const tier = owner?.subscription_tier || 'basic'
     const limit = owner?.subscription_status === 'active' ? boostsPerMonth(tier) : 0
@@ -258,6 +261,54 @@ router.delete('/:id', requireAuth, requireRole('superadmin'), (req, res) => {
   const result = db.prepare('DELETE FROM places WHERE id = ?').run(req.params.id)
   if (result.changes === 0) return res.status(404).json({ error: 'Place not found' })
   res.json({ ok: true })
+})
+
+// POST /api/places/:id/view  — public, logs one page view of the venue's public page
+router.post('/:id/view', (req, res) => {
+  const { id } = req.params
+  const existing = db.prepare('SELECT id FROM places WHERE id = ?').get(id)
+  if (!existing) return res.status(404).json({ error: 'Place not found' })
+  db.prepare('INSERT INTO place_views (place_id, viewed_at) VALUES (?, ?)').run(id, Date.now())
+  res.json({ ok: true })
+})
+
+// GET /api/places/:id/stats  — owner (Standard/Pro only) or superadmin
+router.get('/:id/stats', requireAuth, (req, res) => {
+  const { id } = req.params
+  const user = req.user
+  if (user.role !== 'superadmin' && user.placeId !== id) {
+    return res.status(403).json({ error: 'Forbidden' })
+  }
+
+  if (user.role !== 'superadmin') {
+    expireIfPastDue(db, user.id)
+    const owner = db.prepare('SELECT subscription_tier, subscription_status FROM users WHERE id = ?').get(user.id)
+    const hasAnalytics = owner?.subscription_status === 'active' && owner.subscription_tier !== 'basic'
+    if (!hasAnalytics) {
+      return res.status(403).json({ error: 'ANALYTICS_REQUIRES_UPGRADE' })
+    }
+  }
+
+  const place = db.prepare('SELECT id FROM places WHERE id = ?').get(id)
+  if (!place) return res.status(404).json({ error: 'Place not found' })
+
+  const now = Date.now()
+  const DAY = 24 * 60 * 60 * 1000
+  const total = db.prepare('SELECT COUNT(*) as c FROM place_views WHERE place_id = ?').get(id).c
+  const last7 = db.prepare('SELECT COUNT(*) as c FROM place_views WHERE place_id = ? AND viewed_at >= ?').get(id, now - 7 * DAY).c
+  const last30 = db.prepare('SELECT COUNT(*) as c FROM place_views WHERE place_id = ? AND viewed_at >= ?').get(id, now - 30 * DAY).c
+
+  // Daily breakdown for the last 14 days (oldest first) for a small bar chart
+  const daily = []
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now - i * DAY)
+    const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    const endOfDay = startOfDay + DAY
+    const count = db.prepare('SELECT COUNT(*) as c FROM place_views WHERE place_id = ? AND viewed_at >= ? AND viewed_at < ?').get(id, startOfDay, endOfDay).c
+    daily.push({ date: startOfDay, count })
+  }
+
+  res.json({ total, last7, last30, daily })
 })
 
 module.exports = router

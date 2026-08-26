@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
+import { api } from '../../api/client'
 import EventCard from '../../components/EventCard/EventCard'
 import PlaceMap from '../../components/PlaceMap/PlaceMap'
 import SocialLinks from '../../components/SocialLinks/SocialLinks'
@@ -18,6 +19,16 @@ export default function PlaceDetailPage() {
   const place = places.find(p => p.id === id)
   const [activePhoto, setActivePhoto] = useState(0)
   const [lightbox, setLightbox] = useState(false)
+
+  // Log one view per place per browser session — enough for owner-facing stats
+  // without letting a single visitor inflate the count by refreshing repeatedly.
+  useEffect(() => {
+    if (!id) return
+    const key = `view_logged_${id}`
+    if (sessionStorage.getItem(key)) return
+    sessionStorage.setItem(key, '1')
+    api.post(`/places/${id}/view`, {}).catch(() => {})
+  }, [id])
 
   if (!place) {
     return (

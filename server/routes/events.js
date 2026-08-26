@@ -1,6 +1,7 @@
 const express = require('express')
 const db = require('../db')
 const { requireAuth } = require('../middleware/auth')
+const { expireIfPastDue } = require('../subscriptionTiers')
 
 const router = express.Router()
 
@@ -37,6 +38,7 @@ router.post('/', requireAuth, (req, res) => {
   }
 
   if (user.role === 'venue') {
+    expireIfPastDue(db, user.id)
     const owner = db.prepare('SELECT subscription_status FROM users WHERE id = ?').get(user.id)
     if (owner?.subscription_status !== 'active') {
       return res.status(403).json({ error: 'SUBSCRIPTION_REQUIRED' })

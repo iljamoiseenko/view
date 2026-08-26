@@ -84,6 +84,14 @@ db.exec(`
     created_at INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS place_views (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    place_id TEXT NOT NULL,
+    viewed_at INTEGER NOT NULL,
+    FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_place_views_place_date ON place_views (place_id, viewed_at);
 `)
 
 // Migrations

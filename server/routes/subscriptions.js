@@ -112,9 +112,9 @@ router.post('/callback', (req, res) => {
   res.json(wfp.buildWebhookAck(body.orderReference))
 })
 
-// POST /api/subscriptions/cancel — venue owner turns off their own plan immediately.
-// Must stop the WayForPay regular payment too, or the card keeps getting charged monthly
-// even though our own DB says the subscription is inactive.
+// POST /api/subscriptions/cancel — stops future auto-renewal, but the venue keeps full
+// access until the already-paid period (subscription_renews_at) actually runs out —
+// see expireIfPastDue for how that expiry is then enforced without a cron job.
 router.post('/cancel', requireAuth, requireRole('venue'), async (req, res) => {
   const user = db.prepare('SELECT wayforpay_rec_token FROM users WHERE id = ?').get(req.user.id)
 
@@ -127,10 +127,7 @@ router.post('/cancel', requireAuth, requireRole('venue'), async (req, res) => {
     }
   }
 
-  db.prepare(`
-    UPDATE users SET subscription_tier = 'basic', subscription_status = 'inactive', subscription_renews_at = NULL, wayforpay_rec_token = NULL
-    WHERE id = ?
-  `).run(req.user.id)
+  db.prepare('UPDATE users SET wayforpay_rec_token = NULL WHERE id = ?').run(req.user.id)
   res.json({ ok: true })
 })
 

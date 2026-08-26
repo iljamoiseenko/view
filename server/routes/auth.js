@@ -5,6 +5,7 @@ const db = require('../db')
 const { requireAuth, JWT_SECRET } = require('../middleware/auth')
 const crypto = require('crypto')
 const { sendNewUserNotification, sendPasswordReset } = require('../mailer')
+const { expireIfPastDue } = require('../subscriptionTiers')
 
 const router = express.Router()
 
@@ -39,6 +40,7 @@ function publicUser(user) {
     subscriptionTier: user.subscription_tier || 'basic',
     subscriptionStatus: user.subscription_status || 'inactive',
     subscriptionRenewsAt: user.subscription_renews_at || null,
+    subscriptionAutoRenew: !!user.wayforpay_rec_token,
   }
 }
 
@@ -55,6 +57,9 @@ router.post('/login', (req, res) => {
   if (!user.is_active) {
     return res.status(403).json({ error: 'Акаунт заблоковано' })
   }
+
+  expireIfPastDue(db, user.id)
+  user.subscription_status = db.prepare('SELECT subscription_status FROM users WHERE id = ?').get(user.id).subscription_status
 
   res.json({ token: makeToken(user), user: publicUser(user) })
 })
@@ -168,6 +173,7 @@ router.get('/test-mail', async (req, res) => {
 
 // GET /api/auth/me
 router.get('/me', requireAuth, (req, res) => {
+  expireIfPastDue(db, req.user.id)
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id)
   if (!user) return res.status(404).json({ error: 'User not found' })
   res.json({ user: publicUser(user) })
