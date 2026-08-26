@@ -59,6 +59,15 @@ router.get('/', (req, res) => {
   res.json(rows.map(parsePlace))
 })
 
+// GET /api/places/views-summary  — superadmin only, total view count per place for the admin table.
+// Must be registered before GET /:id, or "views-summary" gets swallowed as an :id.
+router.get('/views-summary', requireAuth, requireRole('superadmin'), (req, res) => {
+  const rows = db.prepare('SELECT place_id, COUNT(*) as c FROM place_views GROUP BY place_id').all()
+  const summary = {}
+  rows.forEach(r => { summary[r.place_id] = r.c })
+  res.json(summary)
+})
+
 // GET /api/places/:id
 router.get('/:id', (req, res) => {
   const row = db.prepare('SELECT * FROM places WHERE id = ?').get(req.params.id)

@@ -97,6 +97,50 @@ function ImageInput({ value, onChange, placeholder }) {
   )
 }
 
+// ── Place Stats (view analytics — superadmin bypasses the Standard/Pro gate) ──
+function PlaceStats({ placeId }) {
+  const { t, lang } = useLanguage()
+  const [data, setData] = useState(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    api.get(`/places/${placeId}/stats`).then(setData).catch(err => setError(err.message))
+  }, [placeId])
+
+  if (error) return <div className="sa-modal-body"><p className="sa-empty">{error}</p></div>
+  if (!data) return <div className="sa-modal-body"><p className="sa-empty">{t('venueAdmin.statsLoading')}</p></div>
+
+  const max = Math.max(1, ...data.daily.map(d => d.count))
+
+  return (
+    <div className="sa-modal-body">
+      <div className="va-stats-cards">
+        <div className="va-stats-card">
+          <div className="va-stats-card__value">{data.total}</div>
+          <div className="va-stats-card__label">{t('venueAdmin.statsTotalViews')}</div>
+        </div>
+        <div className="va-stats-card">
+          <div className="va-stats-card__value">{data.last7}</div>
+          <div className="va-stats-card__label">{t('venueAdmin.statsLast7')}</div>
+        </div>
+        <div className="va-stats-card">
+          <div className="va-stats-card__value">{data.last30}</div>
+          <div className="va-stats-card__label">{t('venueAdmin.statsLast30')}</div>
+        </div>
+      </div>
+      <div className="va-stats-chart-title">{t('venueAdmin.statsChartTitle')}</div>
+      <div className="va-stats-chart">
+        {data.daily.map(d => (
+          <div key={d.date} className="va-stats-bar" title={`${new Date(d.date).toLocaleDateString(lang === 'uk' ? 'uk-UA' : 'en-US')}: ${d.count}`}>
+            <div className="va-stats-bar__fill" style={{ height: `${Math.max(Math.round((d.count / max) * 100), d.count > 0 ? 6 : 2)}%` }} />
+            <div className="va-stats-bar__day">{new Date(d.date).getDate()}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Place Form ───────────────────────────────────────────────────────────────
 function PlaceForm({ initial, onSave, onClose }) {
   const { t } = useLanguage()
@@ -396,9 +440,14 @@ export default function SuperAdminPage() {
   const [venueUsers, setVenueUsers] = useState([])
   const [geocoding, setGeocoding] = useState(false)
   const [geocodeResult, setGeocodeResult] = useState(null)
+  const [viewsSummary, setViewsSummary] = useState({})
 
   useEffect(() => {
     api.get('/users').then(users => setVenueUsers(users.filter(u => u.role === 'venue'))).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    api.get('/places/views-summary').then(setViewsSummary).catch(() => {})
   }, [])
 
   const handleSavePlace = async (data) => {
@@ -534,7 +583,7 @@ export default function SuperAdminPage() {
               <table className="sa-table">
                 <thead><tr>
                   <th>{t('superAdmin.thPhoto')}</th><th>{t('superAdmin.thName')}</th><th>{t('superAdmin.thType')}</th><th>{t('superAdmin.thCity')}</th>
-                  <th>{t('superAdmin.thCollections')}</th><th>{t('superAdmin.thRating')}</th><th>{t('superAdmin.thEvents')}</th><th>{t('superAdmin.thActions')}</th>
+                  <th>{t('superAdmin.thCollections')}</th><th>{t('superAdmin.thRating')}</th><th>{t('superAdmin.thEvents')}</th><th>{t('superAdmin.thViews')}</th><th>{t('superAdmin.thActions')}</th>
                 </tr></thead>
                 <tbody>
                   {places.map(p => {
@@ -558,6 +607,11 @@ export default function SuperAdminPage() {
                       </td>
                       <td>{p.rating ? `${p.rating}` : '—'}</td>
                       <td className="sa-center">{events.filter(e => e.placeId === p.id).length}</td>
+                      <td className="sa-center">
+                        <button className="sa-views-btn" onClick={() => setModal({ type: 'stats', data: p })}>
+                          {viewsSummary[p.id] || 0}
+                        </button>
+                      </td>
                       <td>
                         <div className="sa-actions">
                           <button
@@ -725,6 +779,11 @@ export default function SuperAdminPage() {
       {modal?.type === 'place' && (
         <Modal title={modal.data ? t('superAdmin.modalEditVenue') : t('superAdmin.modalNewVenue')} onClose={() => setModal(null)}>
           <PlaceForm initial={modal.data} onSave={handleSavePlace} onClose={() => setModal(null)} />
+        </Modal>
+      )}
+      {modal?.type === 'stats' && (
+        <Modal title={`${t('venueAdmin.statsTitle')} — ${modal.data.name}`} onClose={() => setModal(null)}>
+          <PlaceStats placeId={modal.data.id} />
         </Modal>
       )}
       {modal?.type === 'event' && (
