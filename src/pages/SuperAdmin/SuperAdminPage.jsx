@@ -204,7 +204,7 @@ function PlaceForm({ initial, onSave, onClose }) {
         <div className="sa-col2"><label className="sa-label">{t('superAdmin.fieldMenuUrl')}</label>
           <input className="input" type="url" value={f.menuUrl || ''} onChange={e => set('menuUrl', e.target.value)} placeholder={t('superAdmin.menuUrlPh')} /></div>
         <div className="sa-col2"><label className="sa-label">{t('superAdmin.fieldDescription')}</label>
-          <textarea className="input textarea" rows={3} required value={f.description} onChange={e => set('description', e.target.value)} /></div>
+          <textarea className="input textarea" rows={3} value={f.description} onChange={e => set('description', e.target.value)} /></div>
         <div className="sa-col2"><label className="sa-label">{t('superAdmin.fieldTags')}</label>
           <input className="input" value={f.tags} onChange={e => set('tags', e.target.value)} placeholder={t('superAdmin.fieldTagsPh')} /></div>
         {/* Socials */}

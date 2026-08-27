@@ -282,7 +282,9 @@ export default function VenueAdminPage() {
     if (!data) return
     setOnboardingSaving(true)
     try {
-      const updated = await updatePlace(place.id, data)
+      // Onboarding only drafts data — the venue goes live via a deliberate "Зберегти
+      // зміни" in the full editor, not just by clicking through the wizard.
+      const updated = await updatePlace(place.id, { ...data, skipPublish: true })
       setPlaceForm(f => ({ ...f, ...updated, tags: Array.isArray(updated.tags) ? updated.tags.join(', ') : '', collections: Array.isArray(updated.collections) ? updated.collections : [] }))
     } catch {
       // best-effort — the full editor is always there to fix it later
@@ -877,7 +879,7 @@ export default function VenueAdminPage() {
                   </div>
                   <div className="va-field va-field--full">
                     <label className="va-label">{t('venueAdmin.fieldDescription')}</label>
-                    <textarea className="input textarea" rows={4} required
+                    <textarea className="input textarea" rows={4}
                       value={placeForm.description || ''}
                       onChange={e => setField('description', e.target.value)} />
                   </div>

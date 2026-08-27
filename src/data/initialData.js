@@ -34,6 +34,7 @@ export const COLLECTIONS = [
   { slug: 'karaoke_night', icon: '🎤' },
   { slug: 'dance_night', icon: '💃' },
   { slug: 'date_spot', icon: '💑' },
+  { slug: 'beer_spot', icon: '🍺' },
 ]
 
 // Subscription plans (payment processing not wired up yet —

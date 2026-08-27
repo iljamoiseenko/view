@@ -109,7 +109,7 @@ router.put('/:id', requireAuth, async (req, res) => {
   const existing = db.prepare('SELECT * FROM places WHERE id = ?').get(id)
   if (!existing) return res.status(404).json({ error: 'Place not found' })
 
-  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, collections, rating, bookingEnabled, bookingPhone, menuUrl, petsFriendly, kidsRoom, ticketsUrl, customType } = req.body
+  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, collections, rating, bookingEnabled, bookingPhone, menuUrl, petsFriendly, kidsRoom, ticketsUrl, customType, skipPublish } = req.body
 
   // Re-geocode only if the address or city actually changed
   let coords = null
@@ -150,7 +150,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       tickets_url = COALESCE(?, tickets_url),
       custom_type = COALESCE(?, custom_type),
       ${socialSet},
-      published = 1
+      published = ${skipPublish ? 'published' : '1'}
     WHERE id = ?
   `).run(
     name ?? null, type ?? null, city ?? null, address ?? null,
