@@ -264,7 +264,9 @@ export const translations = {
       karaoke_night: 'Караоке',
       dance_night: 'Потанцювати',
       date_spot: 'Побачення',
-      beer_spot: 'Попити пиво',
+      beer_spot: 'Випити пиво',
+      pizza_spot: 'Піца',
+      burger_spot: 'Бургери',
     },
     subscriptionTiers: {
       basic: 'Базова',
@@ -884,6 +886,8 @@ export const translations = {
       dance_night: 'Dancing',
       date_spot: 'Date spot',
       beer_spot: 'Beer time',
+      pizza_spot: 'Pizza',
+      burger_spot: 'Burgers',
     },
     subscriptionTiers: {
       basic: 'Basic',
