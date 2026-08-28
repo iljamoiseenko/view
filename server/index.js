@@ -29,6 +29,7 @@ app.use('/api/users', require('./routes/users'))
 app.use('/api/upload', require('./routes/upload'))
 app.use('/api/banners', require('./routes/banners'))
 app.use('/api/subscriptions', require('./routes/subscriptions'))
+app.use('/api/feedback', require('./routes/feedback'))
 
 app.get('/api/health', (_, res) => res.json({ ok: true }))
 

@@ -135,6 +135,103 @@
   color: #fff;
 }
 
+/* ── Feedback CTA ── */
+.footer__feedback-row {
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding: 16px 0;
+}
+.footer__feedback-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px dashed rgba(255,255,255,0.2);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.footer__feedback-btn:hover {
+  border-color: rgba(255,255,255,0.4);
+  border-style: solid;
+  color: #fff;
+}
+
+/* ── Feedback modal ── */
+.footer__feedback-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.footer__feedback-modal {
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  color: var(--text);
+}
+.footer__feedback-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.footer__feedback-modal__head h3 { font-size: 16px; font-weight: 800; margin: 0; }
+.footer__feedback-modal__close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-2);
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.footer__feedback-prompt {
+  font-size: 13px;
+  color: var(--text-2);
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+.footer__feedback-textarea { width: 100%; margin-bottom: 14px; }
+.footer__feedback-submit { width: 100%; justify-content: center; border-radius: var(--radius-md); }
+
+.footer__feedback-sent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 20px 0 8px;
+}
+.footer__feedback-sent__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--dark);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 900;
+}
+.footer__feedback-sent p { font-size: 14px; color: var(--text-2); margin: 0 0 6px; }
+.footer__feedback-sent .btn { width: 100%; justify-content: center; border-radius: var(--radius-md); }
+
 /* ── Mobile ── */
 @media (max-width: 768px) {
   .footer__inner {

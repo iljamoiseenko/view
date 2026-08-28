@@ -326,7 +326,11 @@
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
-.home__filter-modal__foot .btn { flex: 1; }
+.home__filter-modal__foot .btn {
+  flex: 1;
+  justify-content: center;
+  border-radius: var(--radius-md);
+}
 
 .home__filter-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; margin-left: auto; }
 .home__count { font-size: 13px; color: var(--text-3); }

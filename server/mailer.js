@@ -82,4 +82,28 @@ async function sendPasswordReset({ toEmail, resetLink }) {
   console.log(`[mailer] Password reset sent → ${toEmail} id=${info.id}`)
 }
 
-module.exports = { sendNewUserNotification, sendPasswordReset }
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+async function sendFeedbackNotification({ message }) {
+  if (!process.env.RESEND_API_KEY) {
+    console.log('[mailer] Skipped feedback — RESEND_API_KEY not configured in .env')
+    return
+  }
+
+  const sentAt = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; color: #111;">
+      <h2 style="margin:0 0 16px; font-size:20px;">Новий відгук з VIEW</h2>
+      <p style="font-size:14px; line-height:1.6; white-space:pre-wrap; background:#f7f7f7; padding:14px 16px; border-radius:8px;">${escapeHtml(message)}</p>
+      <p style="font-size:12px; color:#999; margin:16px 0 0;">${sentAt}</p>
+    </div>
+  `
+
+  const info = await sendEmail({ to: process.env.NOTIFY_EMAIL || MAIL_FROM, subject: 'VIEW: новий відгук', html })
+  console.log(`[mailer] Feedback sent → ${process.env.NOTIFY_EMAIL} id=${info.id}`)
+}
+
+module.exports = { sendNewUserNotification, sendPasswordReset, sendFeedbackNotification }
