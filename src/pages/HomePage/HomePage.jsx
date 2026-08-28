@@ -34,6 +34,7 @@ export default function HomePage() {
   const tickerFull = [...t('home.ticker'), ...t('home.ticker')]
 
   const [activeTab, setActiveTab] = useState('venues')
+  const [filterModalOpen, setFilterModalOpen] = useState(false)
 
   // ── Venues tab state ──────────────────────────────
   const [typeFilter,  setTypeFilter]  = useState('all')
@@ -124,6 +125,75 @@ export default function HomePage() {
   const hasVenueFilters = typeFilter !== 'all' || quickFilter !== 'all' || search
   const hasEventFilters = evDate !== 'all' || evType !== 'all'
 
+  // Shared between the inline desktop filter row and the mobile filter popup.
+  const renderQuickFilters = () => (
+    <div className="home__quick">
+      <button
+        className={`home__quick-btn ${quickFilter === 'now' ? 'active' : ''}`}
+        onClick={() => setQuickFilter(q => q === 'now' ? 'all' : 'now')}
+      >
+        <span className="home__live-dot" />
+        {t('home.quickNow')}
+      </button>
+      <button
+        className={`home__quick-btn ${quickFilter === 'today' ? 'active' : ''}`}
+        onClick={() => setQuickFilter(q => q === 'today' ? 'all' : 'today')}
+      >
+        {t('home.quickToday')}
+      </button>
+    </div>
+  )
+
+  const renderTypeFilters = () => (
+    <>
+      {TYPE_FILTER_VALUES.map(v => (
+        <button
+          key={v}
+          className={`home__filter-btn ${typeFilter === v ? 'active' : ''}`}
+          onClick={() => setTypeFilter(v)}
+        >
+          {t(`home.typeFilter.${v}`)}
+        </button>
+      ))}
+    </>
+  )
+
+  const renderDateFilters = () => (
+    <>
+      {EVENT_DATE_FILTER_VALUES.map(v => (
+        <button
+          key={v}
+          className={`home__filter-btn ${evDate === v ? 'active' : ''}`}
+          onClick={() => setEvDate(v)}
+        >
+          {t(`home.dateFilter.${v}`)}
+        </button>
+      ))}
+    </>
+  )
+
+  const renderEventTypeFilters = () => (
+    <>
+      <button
+        className={`home__filter-btn ${evType === 'all' ? 'active' : ''}`}
+        onClick={() => setEvType('all')}
+      >
+        {t('home.eventTypeAll')}
+      </button>
+      {EVENT_TYPE_VALUES.map(val => (
+        <button
+          key={val}
+          className={`home__filter-btn ${evType === val ? 'active' : ''}`}
+          onClick={() => setEvType(val)}
+        >
+          {t(`eventTypes.${val}`)}
+        </button>
+      ))}
+    </>
+  )
+
+  const hasActiveFilters = activeTab === 'venues' ? hasVenueFilters : hasEventFilters
+
   return (
     <div className="home">
 
@@ -181,32 +251,26 @@ export default function HomePage() {
             <>
               <div className="home__filters">
                 <div className="home__filter-group">
-                  <div className="home__quick">
-                    <button
-                      className={`home__quick-btn ${quickFilter === 'now' ? 'active' : ''}`}
-                      onClick={() => setQuickFilter(q => q === 'now' ? 'all' : 'now')}
-                    >
-                      <span className="home__live-dot" />
-                      {t('home.quickNow')}
-                    </button>
-                    <button
-                      className={`home__quick-btn ${quickFilter === 'today' ? 'active' : ''}`}
-                      onClick={() => setQuickFilter(q => q === 'today' ? 'all' : 'today')}
-                    >
-                      {t('home.quickToday')}
-                    </button>
-                  </div>
+                  {renderQuickFilters()}
                   <div className="home__filter-divider" />
-                  {TYPE_FILTER_VALUES.map(v => (
-                    <button
-                      key={v}
-                      className={`home__filter-btn ${typeFilter === v ? 'active' : ''}`}
-                      onClick={() => setTypeFilter(v)}
-                    >
-                      {t(`home.typeFilter.${v}`)}
-                    </button>
-                  ))}
+                  {renderTypeFilters()}
                 </div>
+                <button
+                  type="button"
+                  className={`home__filter-icon-btn ${hasVenueFilters ? 'has-active' : ''}`}
+                  onClick={() => setFilterModalOpen(true)}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="4" y1="6" x2="20" y2="6"/>
+                    <circle cx="9" cy="6" r="2" fill="var(--bg)"/>
+                    <line x1="4" y1="12" x2="20" y2="12"/>
+                    <circle cx="16" cy="12" r="2" fill="var(--bg)"/>
+                    <line x1="4" y1="18" x2="20" y2="18"/>
+                    <circle cx="11" cy="18" r="2" fill="var(--bg)"/>
+                  </svg>
+                  {t('home.filtersTitle')}
+                  {hasVenueFilters && <span className="home__filter-icon-btn__dot" />}
+                </button>
                 <div className="home__filter-right">
                   <div className="home__search">
                     <svg className="home__search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -262,32 +326,26 @@ export default function HomePage() {
             <>
               <div className="home__filters">
                 <div className="home__filter-group">
-                  {EVENT_DATE_FILTER_VALUES.map(v => (
-                    <button
-                      key={v}
-                      className={`home__filter-btn ${evDate === v ? 'active' : ''}`}
-                      onClick={() => setEvDate(v)}
-                    >
-                      {t(`home.dateFilter.${v}`)}
-                    </button>
-                  ))}
+                  {renderDateFilters()}
                   <div className="home__filter-divider" />
-                  <button
-                    className={`home__filter-btn ${evType === 'all' ? 'active' : ''}`}
-                    onClick={() => setEvType('all')}
-                  >
-                    {t('home.eventTypeAll')}
-                  </button>
-                  {EVENT_TYPE_VALUES.map(val => (
-                    <button
-                      key={val}
-                      className={`home__filter-btn ${evType === val ? 'active' : ''}`}
-                      onClick={() => setEvType(val)}
-                    >
-                      {t(`eventTypes.${val}`)}
-                    </button>
-                  ))}
+                  {renderEventTypeFilters()}
                 </div>
+                <button
+                  type="button"
+                  className={`home__filter-icon-btn ${hasEventFilters ? 'has-active' : ''}`}
+                  onClick={() => setFilterModalOpen(true)}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="4" y1="6" x2="20" y2="6"/>
+                    <circle cx="9" cy="6" r="2" fill="var(--bg)"/>
+                    <line x1="4" y1="12" x2="20" y2="12"/>
+                    <circle cx="16" cy="12" r="2" fill="var(--bg)"/>
+                    <line x1="4" y1="18" x2="20" y2="18"/>
+                    <circle cx="11" cy="18" r="2" fill="var(--bg)"/>
+                  </svg>
+                  {t('home.filtersTitle')}
+                  {hasEventFilters && <span className="home__filter-icon-btn__dot" />}
+                </button>
                 <div className="home__filter-right">
                   <span className="home__count">
                     {t('home.countEvents', allFilteredEvents.length)}
@@ -323,6 +381,44 @@ export default function HomePage() {
 
         </div>
       </div>
+
+      {/* ── Mobile filter popup ── */}
+      {filterModalOpen && (
+        <div className="home__filter-modal-overlay" onClick={() => setFilterModalOpen(false)}>
+          <div className="home__filter-modal" onClick={e => e.stopPropagation()}>
+            <div className="home__filter-modal__head">
+              <h3>{t('home.filtersTitle')}</h3>
+              <button className="home__filter-modal__close" onClick={() => setFilterModalOpen(false)}>✕</button>
+            </div>
+            <div className="home__filter-modal__body">
+              {activeTab === 'venues' ? (
+                <>
+                  {renderQuickFilters()}
+                  <div className="home__filter-modal__group">{renderTypeFilters()}</div>
+                </>
+              ) : (
+                <>
+                  <div className="home__filter-modal__group">{renderDateFilters()}</div>
+                  <div className="home__filter-modal__group">{renderEventTypeFilters()}</div>
+                </>
+              )}
+            </div>
+            <div className="home__filter-modal__foot">
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => { activeTab === 'venues' ? resetVenues() : resetEvents() }}
+                disabled={!hasActiveFilters}
+              >
+                {t('common.reset')}
+              </button>
+              <button type="button" className="btn btn-dark" onClick={() => setFilterModalOpen(false)}>
+                {t('common.done')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -100,12 +100,16 @@
   padding-top: 4px !important;
   padding-bottom: 4px !important;
 }
-.ts-slide {
-  height: auto;
-}
-/* Card fills the slide fully */
+/* No explicit height here — swiper/css already sets .swiper-slide{height:100%},
+   which (via the default flex align-items:stretch) equalizes every slide in a
+   row to the tallest one's content height. An earlier `height:auto` override
+   used to defeat that; don't reintroduce it. */
+
+/* Card fills the slide fully — keeps all cards in a row the same height
+   even when titles/meta wrap to a different number of lines. */
 .ts-slide .ts-card {
   width: 100%;
+  height: 100%;
 }
 
 /* ── Event card ─────────────────────────────────────────── */
@@ -265,6 +269,7 @@
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
+  margin-top: auto;
 }
 .ts-card__place,
 .ts-card__time {

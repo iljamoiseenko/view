@@ -240,6 +240,94 @@
   font-weight: 700;
 }
 
+/* ── Mobile filter icon button (opens the popup) ── */
+.home__filter-icon-btn {
+  display: none; /* shown only ≤640px, see media query */
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+.home__filter-icon-btn:hover { border-color: var(--dark); }
+.home__filter-icon-btn.has-active { border-color: var(--dark); }
+.home__filter-icon-btn__dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--vivid);
+  border: 2px solid var(--bg);
+}
+
+/* ── Mobile filter popup ── */
+.home__filter-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+}
+.home__filter-modal {
+  width: 100%;
+  max-height: 80vh;
+  background: var(--bg);
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.home__filter-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.home__filter-modal__head h3 { font-size: 16px; font-weight: 800; margin: 0; }
+.home__filter-modal__close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-2);
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+}
+.home__filter-modal__body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.home__filter-modal__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.home__filter-modal__foot {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.home__filter-modal__foot .btn { flex: 1; }
+
 .home__filter-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; margin-left: auto; }
 .home__count { font-size: 13px; color: var(--text-3); }
 
@@ -351,24 +439,10 @@
 }
 @media (max-width: 640px) {
   .home__filters { min-width: 0; }
-  .home__filter-group {
-    width: 100%;
-    min-width: 0;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    margin: 0 -16px;
-    padding: 2px 16px 6px;
-    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
-  }
-  .home__filter-group::-webkit-scrollbar { display: none; }
-  .home__filter-btn,
-  .home__quick-btn,
-  .home__filter-divider,
-  .home__quick { flex-shrink: 0; }
+  /* Replaced by the "Фільтри" icon button + popup below this width — the
+     horizontally-scrolling pill row was easy to miss on mobile. */
+  .home__filter-group { display: none; }
+  .home__filter-icon-btn { display: inline-flex; }
 }
 @media (max-width: 480px) {
   .home__filters { flex-direction: column; align-items: flex-start; }
