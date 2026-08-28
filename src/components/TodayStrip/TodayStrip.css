@@ -61,31 +61,6 @@
 }
 .ts-section__left { display: flex; align-items: center; gap: 12px; }
 
-.ts-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--dark);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-}
-.ts-tag__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--live);
-  animation: ts-blink 1.5s ease-in-out infinite;
-}
-@keyframes ts-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.25; }
-}
-
 .ts-section__title {
   font-size: 20px;
   font-weight: 800;
@@ -159,7 +134,7 @@
 /* Card image */
 .ts-card__img-wrap {
   position: relative;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
   background: var(--bg-3);
 }

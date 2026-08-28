@@ -96,10 +96,6 @@ export default function TodayStrip() {
         <section className="ts-section">
           <div className="container ts-section__head">
             <div className="ts-section__left">
-              <span className="ts-tag">
-                {isToday && <span className="ts-tag__dot" />}
-                {isToday ? t('todayStrip.todayTag') : t('todayStrip.upcomingTag')}
-              </span>
               <h2 className="ts-section__title">{isToday ? t('todayStrip.whatsOn') : t('todayStrip.upcomingTitle')}</h2>
             </div>
             <div className="ts-section__controls">
