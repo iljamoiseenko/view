@@ -325,8 +325,10 @@ function EventForm({ initial, places, onSave, onClose }) {
           <input className="input" type="time" required value={f.time} onChange={e => set('time', e.target.value)} /></div>
         <div className="sa-col2"><label className="sa-label">{t('superAdmin.fieldDescription')}</label>
           <textarea className="input textarea" rows={3} required value={f.description} onChange={e => set('description', e.target.value)} /></div>
-        <div className="sa-col2"><label className="sa-label">{t('superAdmin.fieldImage')}</label>
-          <input className="input" type="url" value={f.image} onChange={e => set('image', e.target.value)} placeholder="https://..." /></div>
+        <div className="sa-col2">
+          <label className="sa-label">{t('superAdmin.fieldImage')}</label>
+          <ImageInput value={f.image} onChange={v => set('image', v)} placeholder="https://..." />
+        </div>
       </div>
       <div className="sa-modal__foot">
         <button type="button" className="btn btn-outline" onClick={onClose}>{t('common.cancel')}</button>
