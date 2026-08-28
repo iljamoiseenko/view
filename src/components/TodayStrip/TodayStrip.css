@@ -186,8 +186,13 @@
   50% { opacity: 0.3; transform: scale(0.65); }
 }
 
+.ts-card__badges-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
 .ts-card__type {
-  background: rgba(0,0,0,0.72);
   color: rgba(255,255,255,0.9);
   font-size: 9px;
   font-weight: 700;
@@ -196,7 +201,30 @@
   padding: 3px 7px;
   border-radius: 3px;
   background: rgba(0,0,0,0.55);
-  margin-left: auto;
+}
+.ts-card__date {
+  flex-shrink: 0;
+  background: var(--vivid);
+  border-radius: 3px;
+  padding: 4px 7px;
+  text-align: center;
+  min-width: 34px;
+}
+.ts-card__date-day {
+  display: block;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+}
+.ts-card__date-month {
+  display: block;
+  font-size: 8px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 1px;
 }
 .ts-card__free {
   position: absolute;

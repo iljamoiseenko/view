@@ -131,8 +131,8 @@ export default function TodayStrip() {
               speed={400}
               className="ts-swiper"
               breakpoints={{
-                0:    { slidesPerView: 1.2, slidesPerGroup: 1 },
-                480:  { slidesPerView: 2,   slidesPerGroup: 2 },
+                0:    { slidesPerView: 1.8, slidesPerGroup: 1 },
+                480:  { slidesPerView: 2.4, slidesPerGroup: 2 },
                 768:  { slidesPerView: 3,   slidesPerGroup: 3 },
                 1024: { slidesPerView: 4,   slidesPerGroup: 4 },
               }}
@@ -156,12 +156,18 @@ export default function TodayStrip() {
                         }
                         <div className="ts-card__img-overlay" />
                         <div className="ts-card__top-badges">
-                          {happening && (
-                            <span className="ts-card__live">
-                              <span className="ts-card__live-dot" /> {t('common.now')}
-                            </span>
-                          )}
-                          <span className="ts-card__type">{typeName}</span>
+                          <div className="ts-card__badges-left">
+                            {happening && (
+                              <span className="ts-card__live">
+                                <span className="ts-card__live-dot" /> {t('common.now')}
+                              </span>
+                            )}
+                            <span className="ts-card__type">{typeName}</span>
+                          </div>
+                          <div className="ts-card__date">
+                            <span className="ts-card__date-day">{evDate.getDate()}</span>
+                            <span className="ts-card__date-month">{t('common.monthsShort')[evDate.getMonth()]}</span>
+                          </div>
                         </div>
                         {ev.price === 0 && <span className="ts-card__free">FREE</span>}
                       </div>
