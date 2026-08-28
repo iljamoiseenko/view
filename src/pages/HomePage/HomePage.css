@@ -171,7 +171,7 @@
 .home__quick-btn.active {
   background: var(--vivid);
   border-color: var(--vivid);
-  color: var(--vivid-text);
+  color: #fff;
   font-weight: 700;
 }
 .home__quick-btn--link {
@@ -236,7 +236,7 @@
 .home__filter-btn.active {
   background: var(--vivid);
   border-color: var(--vivid);
-  color: var(--vivid-text);
+  color: #fff;
   font-weight: 700;
 }
 
@@ -361,7 +361,8 @@
     scrollbar-width: none;
     margin: 0 -16px;
     padding: 2px 16px 6px;
-    mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
   }
   .home__filter-group::-webkit-scrollbar { display: none; }
   .home__filter-btn,

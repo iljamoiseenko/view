@@ -36,29 +36,29 @@ export default function TodayStrip() {
     [places]
   )
 
+  // Used only for the "events today" stat in the bar above the strip.
   const todayEvents = useMemo(() =>
-    events
-      .filter(e => e.date === TODAY && publishedPlaceIds.has(e.placeId))
-      .sort((a, b) => {
-        const aNow = isHappeningNow(a.time) ? 0 : 1
-        const bNow = isHappeningNow(b.time) ? 0 : 1
-        if (aNow !== bNow) return aNow - bNow
-        return (a.time || '').localeCompare(b.time || '')
-      }),
+    events.filter(e => e.date === TODAY && publishedPlaceIds.has(e.placeId)),
     [events, publishedPlaceIds]
   )
 
-  // No events today? Fall back to the nearest upcoming events instead of an empty block
-  const upcomingEvents = useMemo(() => {
-    if (todayEvents.length > 0) return []
-    return events
-      .filter(e => e.date > TODAY && publishedPlaceIds.has(e.placeId))
-      .sort((a, b) => a.date === b.date ? (a.time || '').localeCompare(b.time || '') : a.date.localeCompare(b.date))
-      .slice(0, 12)
-  }, [events, todayEvents, publishedPlaceIds])
-
-  const isToday = todayEvents.length > 0
-  const displayEvents = isToday ? todayEvents : upcomingEvents
+  // The strip itself always shows the nearest events — today's (soonest/live
+  // first) followed by the closest upcoming ones — instead of only today's.
+  const nearestEvents = useMemo(() =>
+    events
+      .filter(e => e.date >= TODAY && publishedPlaceIds.has(e.placeId))
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date)
+        if (a.date === TODAY) {
+          const aNow = isHappeningNow(a.time) ? 0 : 1
+          const bNow = isHappeningNow(b.time) ? 0 : 1
+          if (aNow !== bNow) return aNow - bNow
+        }
+        return (a.time || '').localeCompare(b.time || '')
+      })
+      .slice(0, 12),
+    [events, publishedPlaceIds]
+  )
 
   const placeById = useMemo(() => {
     const m = {}
@@ -92,11 +92,11 @@ export default function TodayStrip() {
       </div>
 
       {/* Events strip */}
-      {displayEvents.length > 0 ? (
+      {nearestEvents.length > 0 ? (
         <section className="ts-section">
           <div className="container ts-section__head">
             <div className="ts-section__left">
-              <h2 className="ts-section__title">{isToday ? t('todayStrip.whatsOn') : t('todayStrip.upcomingTitle')}</h2>
+              <h2 className="ts-section__title">{t('todayStrip.upcomingTitle')}</h2>
             </div>
             <div className="ts-section__controls">
               <button
@@ -137,10 +137,11 @@ export default function TodayStrip() {
                 1024: { slidesPerView: 4,   slidesPerGroup: 4 },
               }}
             >
-              {displayEvents.map(ev => {
+              {nearestEvents.map(ev => {
                 const place = placeById[ev.placeId]
                 const typeName = getEventTypeLabel(ev, t)
-                const happening = isToday && isHappeningNow(ev.time)
+                const evIsToday = ev.date === TODAY
+                const happening = evIsToday && isHappeningNow(ev.time)
                 const evDate = new Date(ev.date)
 
                 return (
@@ -183,7 +184,7 @@ export default function TodayStrip() {
                               {place.name}
                             </span>
                           )}
-                          {!isToday && (
+                          {!evIsToday && (
                             <span className="ts-card__time">
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                 <path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
