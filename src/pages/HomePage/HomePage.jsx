@@ -192,8 +192,6 @@ export default function HomePage() {
     </>
   )
 
-  const hasActiveFilters = activeTab === 'venues' ? hasVenueFilters : hasEventFilters
-
   return (
     <div className="home">
 
@@ -404,16 +402,8 @@ export default function HomePage() {
               )}
             </div>
             <div className="home__filter-modal__foot">
-              <button
-                type="button"
-                className="btn btn-outline"
-                onClick={() => { activeTab === 'venues' ? resetVenues() : resetEvents() }}
-                disabled={!hasActiveFilters}
-              >
-                {t('common.reset')}
-              </button>
               <button type="button" className="btn btn-dark" onClick={() => setFilterModalOpen(false)}>
-                {t('common.done')}
+                {t('common.apply')}
               </button>
             </div>
           </div>
