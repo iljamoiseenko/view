@@ -112,33 +112,6 @@ router.post('/callback', (req, res) => {
   res.json(wfp.buildWebhookAck(body.orderReference))
 })
 
-// TEMP DEBUG — remove after diagnosing the "renews once then stops" report.
-// GET /api/subscriptions/debug-recurring-once — read-only, superadmin only.
-router.get('/debug-recurring-once', requireAuth, requireRole('superadmin'), async (req, res) => {
-  const rows = db.prepare(`
-    SELECT u.id, u.email, u.wayforpay_rec_token, u.subscription_status, u.subscription_renews_at,
-           u.subscription_tier
-    FROM users u
-    WHERE u.wayforpay_rec_token IS NOT NULL
-    ORDER BY u.id DESC
-    LIMIT 10
-  `).all()
-
-  const results = []
-  for (const u of rows) {
-    let status = null
-    try {
-      status = await wfp.regularStatus(u.wayforpay_rec_token)
-    } catch (err) {
-      status = { error: err.message }
-    }
-    const payments = db.prepare('SELECT order_reference, status, created_at FROM payments WHERE user_id = ? ORDER BY created_at DESC LIMIT 5').all(u.id)
-    results.push({ user: u, wfpStatus: status, recentPayments: payments })
-  }
-
-  res.json(results)
-})
-
 // POST /api/subscriptions/cancel — stops future auto-renewal, but the venue keeps full
 // access until the already-paid period (subscription_renews_at) actually runs out —
 // see expireIfPastDue for how that expiry is then enforced without a cron job.

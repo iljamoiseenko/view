@@ -89,7 +89,13 @@ function buildPurchaseFields({ orderReference, orderDate, amount, currency, prod
 
   if (regular) {
     const nextCharge = nextChargeDateObj()
-    fields.regularMode = 'monthly'
+    // dateNext only schedules the FIRST recurring charge — WayForPay then uses
+    // regularMode as the interval for every charge after that. Hardcoding this to
+    // 'monthly' meant fast-renewal testing (WAYFORPAY_TEST_FAST_RENEWAL=1) only ever
+    // sped up that first renewal: confirmed live via regularApi STATUS after a real
+    // test charge — mode:"monthly", nextPaymentDate a full month out instead of the
+    // next day, matching the "renews once then stops" symptom exactly.
+    fields.regularMode = process.env.WAYFORPAY_TEST_FAST_RENEWAL === '1' ? 'daily' : 'monthly'
     fields.dateNext = formatDate(nextCharge)
     fields.dateEnd = farFutureEndDate(nextCharge)
     fields.regularOn = 1 // pre-check "make it recurring" — a $X/month plan must actually renew monthly
