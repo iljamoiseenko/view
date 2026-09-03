@@ -65,10 +65,18 @@ router.put('/:id', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
-  const { title, description, date, time, type, price, image, customType } = req.body
+  const { placeId, title, description, date, time, type, price, image, customType } = req.body
+
+  // Only superadmin may reassign an event to a different venue — a venue
+  // owner's own placeId is fixed client-side anyway, but reject a mismatched
+  // one here too rather than silently ignoring it.
+  if (placeId && user.role !== 'superadmin' && placeId !== user.placeId) {
+    return res.status(403).json({ error: 'Forbidden' })
+  }
 
   db.prepare(`
     UPDATE events SET
+      place_id = COALESCE(?, place_id),
       title = COALESCE(?, title),
       description = COALESCE(?, description),
       date = COALESCE(?, date),
@@ -79,7 +87,7 @@ router.put('/:id', requireAuth, (req, res) => {
       custom_type = COALESCE(?, custom_type)
     WHERE id = ?
   `).run(
-    title ?? null, description ?? null, date ?? null,
+    placeId ?? null, title ?? null, description ?? null, date ?? null,
     time ?? null, type ?? null,
     price !== undefined ? Number(price) : null,
     image ?? null, customType ?? null, req.params.id
