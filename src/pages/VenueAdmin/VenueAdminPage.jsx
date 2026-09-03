@@ -80,6 +80,173 @@ function PhotoInput({ value, onChange, placeholder }) {
   )
 }
 
+// ── Photo grid input (multi-upload, drag & drop, cover tile) ────────────────
+// ── Address list input (multiple locations via a "+" button) ─────────────────
+// Internally works with the same address string format PlaceDetailPage etc.
+// already parse — entries joined by the 📍 pin emoji. Mount this with a `key`
+// tied to the place's id (see usages below) — placeForm hydrates asynchronously
+// after the venue's data arrives, and this component's own list state is only
+// derived from `value` once, on mount.
+function AddressListInput({ value, onChange, placeholder }) {
+  const { t } = useLanguage()
+  const [addresses, setAddresses] = useState(() => {
+    const parsed = (value || '').split(/📍|\n/).map(s => s.trim()).filter(Boolean)
+    return parsed.length ? parsed : ['']
+  })
+
+  const commit = (next) => {
+    setAddresses(next)
+    onChange(next.filter(s => s.trim()).join('📍'))
+  }
+  const setAt = (i, v) => { const next = [...addresses]; next[i] = v; commit(next) }
+  const addOne = () => commit([...addresses, ''])
+  const removeAt = (i) => commit(addresses.filter((_, j) => j !== i))
+
+  return (
+    <div className="va-address-list">
+      {addresses.map((addr, i) => (
+        <div key={i} className="va-address-row">
+          <input
+            className="input"
+            required={i === 0}
+            value={addr}
+            onChange={e => setAt(i, e.target.value)}
+            placeholder={placeholder}
+          />
+          {addresses.length > 1 && (
+            <button type="button" className="va-rm-photo" onClick={() => removeAt(i)}>✕</button>
+          )}
+        </div>
+      ))}
+      <button type="button" className="btn btn-outline btn-sm" onClick={addOne}>
+        + {t('venueAdmin.addAddress')}
+      </button>
+    </div>
+  )
+}
+
+const MAX_PHOTOS = 10
+
+function PhotoGridInput({ value, onChange }) {
+  const { t } = useLanguage()
+  const fileInputRef = useRef()
+  const menuRef = useRef()
+  const [uploading, setUploading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const [urlDraft, setUrlDraft] = useState(null)
+  const [openMenu, setOpenMenu] = useState(null)
+
+  const photos = value.filter(Boolean)
+  const atLimit = photos.length >= MAX_PHOTOS
+
+  useEffect(() => {
+    if (openMenu === null) return
+    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setOpenMenu(null) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [openMenu])
+
+  const uploadFiles = async (fileList) => {
+    const files = Array.from(fileList).filter(f => f.type.startsWith('image/')).slice(0, MAX_PHOTOS - photos.length)
+    if (!files.length) return
+    setUploading(true)
+    try {
+      const token = localStorage.getItem('view_token')
+      const urls = []
+      for (const file of files) {
+        const form = new FormData()
+        form.append('image', file)
+        const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
+        const data = await res.json()
+        if (data.url) urls.push(data.url)
+      }
+      if (urls.length) onChange([...photos, ...urls].slice(0, MAX_PHOTOS))
+    } catch { /* silently fail */ }
+    finally { setUploading(false) }
+  }
+
+  const handleFileInput = (e) => { uploadFiles(e.target.files); e.target.value = '' }
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setDragOver(false)
+    if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files)
+  }
+  const makeCover = (i) => {
+    if (i === 0) return
+    const next = [...photos]
+    const [item] = next.splice(i, 1)
+    next.unshift(item)
+    onChange(next)
+  }
+  const removeAt = (i) => onChange(photos.filter((_, j) => j !== i))
+  const addUrl = () => {
+    if (urlDraft && urlDraft.trim() && !atLimit) onChange([...photos, urlDraft.trim()].slice(0, MAX_PHOTOS))
+    setUrlDraft(null)
+  }
+
+  return (
+    <div className="va-photo-grid">
+      {!atLimit && (
+        <div
+          className={`va-photo-drop ${dragOver ? 'va-photo-drop--over' : ''}`}
+          onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+        >
+          <div className="va-photo-drop__icon">🖼️</div>
+          <p className="va-photo-drop__text">{t('venueAdmin.dragToUpload')}</p>
+          <div className="va-photo-drop__actions">
+            <button type="button" className="btn btn-dark btn-sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+              {uploading ? '...' : t('venueAdmin.uploadFile')}
+            </button>
+            <button type="button" className="btn btn-outline btn-sm" onClick={() => setUrlDraft(v => v === null ? '' : null)}>
+              {t('venueAdmin.addByUrl')}
+            </button>
+          </div>
+          {urlDraft !== null && (
+            <div className="va-photo-url-row" onClick={e => e.stopPropagation()}>
+              <input
+                className="input" autoFocus value={urlDraft} placeholder="https://..."
+                onChange={e => setUrlDraft(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addUrl() } }}
+              />
+              <button type="button" className="btn btn-dark btn-sm" onClick={addUrl}>{t('common.add')}</button>
+            </div>
+          )}
+          <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleFileInput} />
+        </div>
+      )}
+
+      <div className="va-photo-tiles">
+        {photos.map((ph, i) => (
+          <div key={i} className="va-photo-tile">
+            <img src={ph} alt="" />
+            {i === 0 && <span className="va-photo-tile__cover">{t('venueAdmin.coverLabel')}</span>}
+            <button type="button" className="va-photo-tile__menu-btn" onClick={e => { e.stopPropagation(); setOpenMenu(m => m === i ? null : i) }}>⋯</button>
+            {openMenu === i && (
+              <div className="va-photo-tile__menu" ref={menuRef}>
+                {i !== 0 && (
+                  <button type="button" onClick={() => { makeCover(i); setOpenMenu(null) }}>{t('venueAdmin.useAsCover')}</button>
+                )}
+                <button type="button" className="va-photo-tile__menu-remove" onClick={() => { removeAt(i); setOpenMenu(null) }}>{t('common.delete')}</button>
+              </div>
+            )}
+          </div>
+        ))}
+        {Array.from({ length: MAX_PHOTOS - photos.length }).map((_, idx) => (
+          <button
+            type="button"
+            key={`empty-${idx}`}
+            className="va-photo-tile va-photo-tile--empty"
+            onClick={() => fileInputRef.current?.click()}
+          />
+        ))}
+      </div>
+      <span className="va-photo-count">{photos.length} / {MAX_PHOTOS}</span>
+    </div>
+  )
+}
+
 // ── Cuisine select with a free-text "Інше" option ────────────────────────────
 // "custom mode" is tracked separately from the value itself — otherwise clearing
 // the free-text field to '' looks identical to "nothing selected" and the field
@@ -305,6 +472,7 @@ export default function VenueAdminPage() {
   }
 
   const [eventModal, setEventModal] = useState(null)
+  const [eventError, setEventError] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saved, setSaved] = useState(false)
   const [wasFirstPublish, setWasFirstPublish] = useState(false)
@@ -436,18 +604,6 @@ export default function VenueAdminPage() {
   }
 
   const setField = (k, v) => setPlaceForm(f => ({ ...f, [k]: v }))
-  const setPhoto = (i, v) => {
-    const p = [...(placeForm.photos || [''])]
-    p[i] = v
-    setField('photos', p)
-  }
-
-  const setMainPhoto = (i) => {
-    if (i === 0) return
-    const p = [...(placeForm.photos || [])]
-    const [main] = p.splice(i, 1)
-    setField('photos', [main, ...p])
-  }
 
   const handleSavePlace = async (e) => {
     e.preventDefault()
@@ -466,9 +622,24 @@ export default function VenueAdminPage() {
   }
 
   const handleSaveEvent = async (data) => {
-    if (data.id) await updateEvent(data.id, data)
-    else await addEvent(data)
-    setEventModal(null)
+    try {
+      if (data.id) await updateEvent(data.id, data)
+      else await addEvent(data)
+      setEventModal(null)
+    } catch (err) {
+      if (err.message === 'SUBSCRIPTION_REQUIRED') {
+        // The locally cached subscription status was stale (e.g. it expired
+        // since login) — the server correctly rejected the save; resync so
+        // the "Додати" button/gate reflect the real state, and close the
+        // form instead of leaving it stuck with no feedback.
+        await refreshCurrentUser().catch(() => null)
+        setEventModal(null)
+        setEventError(t('venueAdmin.subRequiredText'))
+      } else {
+        setEventError(err.message || t('venueAdmin.saveEventError'))
+      }
+      setTimeout(() => setEventError(null), 5000)
+    }
   }
 
   const handleDeleteEvent = async () => {
@@ -612,7 +783,7 @@ export default function VenueAdminPage() {
                 <div className="va-field-group">
                   <div className="va-field va-field--full">
                     <label className="va-label">{t('venueAdmin.fieldAddress')}</label>
-                    <input className="input" value={placeForm.address || ''} onChange={e => setField('address', e.target.value)} />
+                    <AddressListInput key={placeForm.id || 'new'} value={placeForm.address} onChange={v => setField('address', v)} />
                   </div>
                 </div>
                 {!TICKET_TYPES.includes(placeForm.type) && (
@@ -630,29 +801,7 @@ export default function VenueAdminPage() {
               <>
                 <h1 className="va-onboarding__title">{t('venueAdmin.onboardingStep2Title')}</h1>
                 <p className="va-onboarding__sub">{t('venueAdmin.onboardingStep2Sub')}</p>
-                <div className="va-photos-list">
-                  {(placeForm.photos || ['']).map((ph, i) => (
-                    <div key={i} className="va-photo-row">
-                      <div className="va-photo-row__num">{i + 1}</div>
-                      <div className="va-photo-row__input">
-                        <PhotoInput value={ph} onChange={v => setPhoto(i, v)} placeholder={t('venueAdmin.photoUrlPh')} />
-                      </div>
-                      {i === 0 ? (
-                        <span className="va-photo-main-badge">{t('venueAdmin.mainPhoto')}</span>
-                      ) : (
-                        <button type="button" className="va-photo-set-main" onClick={() => setMainPhoto(i)} title={t('venueAdmin.setMainTitle')}>
-                          {t('venueAdmin.setMainPhoto')}
-                        </button>
-                      )}
-                      {(placeForm.photos || []).length > 1 && (
-                        <button type="button" className="va-rm-photo" onClick={() => setField('photos', placeForm.photos.filter((_, j) => j !== i))}>✕</button>
-                      )}
-                    </div>
-                  ))}
-                  <button type="button" className="btn btn-outline btn-sm va-add-photo" onClick={() => setField('photos', [...(placeForm.photos || []), ''])}>
-                    {t('venueAdmin.addPhoto')}
-                  </button>
-                </div>
+                <PhotoGridInput value={placeForm.photos || ['']} onChange={v => setField('photos', v.length ? v : [''])} />
               </>
             )}
 
@@ -874,8 +1023,7 @@ export default function VenueAdminPage() {
                   </div>
                   <div className="va-field va-field--full">
                     <label className="va-label">{t('venueAdmin.fieldAddress')}</label>
-                    <input className="input" required value={placeForm.address || ''}
-                      onChange={e => setField('address', e.target.value)} />
+                    <AddressListInput key={placeForm.id || 'new'} value={placeForm.address} onChange={v => setField('address', v)} />
                   </div>
                   <div className="va-field va-field--full">
                     <label className="va-label">{t('venueAdmin.fieldDescription')}</label>
@@ -916,11 +1064,6 @@ export default function VenueAdminPage() {
                     <label className="va-label">{t('venueAdmin.fieldMenuUrl')}</label>
                     <input className="input" type="url" value={placeForm.menuUrl || ''}
                       onChange={e => setField('menuUrl', e.target.value)} placeholder={t('venueAdmin.menuUrlPh')} />
-                  </div>
-                  <div className="va-field va-field--full">
-                    <label className="va-label">{t('venueAdmin.fieldTags')}</label>
-                    <input className="input" value={placeForm.tags || ''}
-                      onChange={e => setField('tags', e.target.value)} placeholder={t('venueAdmin.tagsPh')} />
                   </div>
                 </div>
               </div>
@@ -1052,39 +1195,7 @@ export default function VenueAdminPage() {
               {/* ── Group 3: Фотографії ── */}
               <div className="va-form-section">
                 <div className="va-form-section__title">{t('venueAdmin.sectionPhotos')}</div>
-                <div className="va-photos-list">
-                  {(placeForm.photos || ['']).map((ph, i) => (
-                    <div key={i} className="va-photo-row">
-                      <div className="va-photo-row__num">{i + 1}</div>
-                      <div className="va-photo-row__input">
-                        <PhotoInput
-                          value={ph}
-                          onChange={v => setPhoto(i, v)}
-                          placeholder={t('venueAdmin.photoUrlPh')}
-                        />
-                      </div>
-                      {i === 0 ? (
-                        <span className="va-photo-main-badge">{t('venueAdmin.mainPhoto')}</span>
-                      ) : (
-                        <button type="button" className="va-photo-set-main"
-                          onClick={() => setMainPhoto(i)}
-                          title={t('venueAdmin.setMainTitle')}>
-                          {t('venueAdmin.setMainPhoto')}
-                        </button>
-                      )}
-                      {(placeForm.photos || []).length > 1 && (
-                        <button type="button" className="va-rm-photo"
-                          onClick={() => setField('photos', placeForm.photos.filter((_, j) => j !== i))}>
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button type="button" className="btn btn-outline btn-sm va-add-photo"
-                    onClick={() => setField('photos', [...(placeForm.photos || []), ''])}>
-                    {t('venueAdmin.addPhoto')}
-                  </button>
-                </div>
+                <PhotoGridInput value={placeForm.photos || ['']} onChange={v => setField('photos', v.length ? v : [''])} />
               </div>
 
               <div className="va-form-footer">
@@ -1388,6 +1499,15 @@ export default function VenueAdminPage() {
             <path d="M20 6L9 17l-5-5"/>
           </svg>
           {t('venueAdmin.accountSaved')}
+        </div>
+      )}
+
+      {eventError && (
+        <div className="va-toast va-toast--error">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          {eventError}
         </div>
       )}
 

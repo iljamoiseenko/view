@@ -141,6 +141,170 @@ function PlaceStats({ placeId }) {
   )
 }
 
+// ── Address list input (multiple locations via a "+" button) ─────────────────
+// Internally works with the same address string format PlaceDetailPage etc.
+// already parse — entries joined by the 📍 pin emoji.
+function AddressListInput({ value, onChange, placeholder }) {
+  const { t } = useLanguage()
+  const [addresses, setAddresses] = useState(() => {
+    const parsed = (value || '').split(/📍|\n/).map(s => s.trim()).filter(Boolean)
+    return parsed.length ? parsed : ['']
+  })
+
+  const commit = (next) => {
+    setAddresses(next)
+    onChange(next.filter(s => s.trim()).join('📍'))
+  }
+  const setAt = (i, v) => { const next = [...addresses]; next[i] = v; commit(next) }
+  const addOne = () => commit([...addresses, ''])
+  const removeAt = (i) => commit(addresses.filter((_, j) => j !== i))
+
+  return (
+    <div className="sa-address-list">
+      {addresses.map((addr, i) => (
+        <div key={i} className="sa-address-row">
+          <input
+            className="input"
+            required={i === 0}
+            value={addr}
+            onChange={e => setAt(i, e.target.value)}
+            placeholder={placeholder}
+          />
+          {addresses.length > 1 && (
+            <button type="button" className="sa-rm-btn" onClick={() => removeAt(i)}>✕</button>
+          )}
+        </div>
+      ))}
+      <button type="button" className="btn btn-outline btn-sm" onClick={addOne}>
+        + {t('superAdmin.addAddress')}
+      </button>
+    </div>
+  )
+}
+
+// ── Photo Grid Input (multi-upload, drag & drop, ⋯ menu, 10-photo cap) ────────
+const MAX_PHOTOS = 10
+
+function PhotoGridInput({ value, onChange }) {
+  const { t } = useLanguage()
+  const fileInputRef = useRef()
+  const menuRef = useRef()
+  const [uploading, setUploading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const [urlDraft, setUrlDraft] = useState(null)
+  const [openMenu, setOpenMenu] = useState(null)
+
+  const photos = value.filter(Boolean)
+  const atLimit = photos.length >= MAX_PHOTOS
+
+  useEffect(() => {
+    if (openMenu === null) return
+    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setOpenMenu(null) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [openMenu])
+
+  const uploadFiles = async (fileList) => {
+    const files = Array.from(fileList).filter(f => f.type.startsWith('image/')).slice(0, MAX_PHOTOS - photos.length)
+    if (!files.length) return
+    setUploading(true)
+    try {
+      const token = localStorage.getItem('view_token')
+      const urls = []
+      for (const file of files) {
+        const form = new FormData()
+        form.append('image', file)
+        const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
+        const data = await res.json()
+        if (data.url) urls.push(data.url)
+      }
+      if (urls.length) onChange([...photos, ...urls].slice(0, MAX_PHOTOS))
+    } catch { /* silently fail */ }
+    finally { setUploading(false) }
+  }
+
+  const handleFileInput = (e) => { uploadFiles(e.target.files); e.target.value = '' }
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setDragOver(false)
+    if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files)
+  }
+  const makeCover = (i) => {
+    if (i === 0) return
+    const next = [...photos]
+    const [item] = next.splice(i, 1)
+    next.unshift(item)
+    onChange(next)
+  }
+  const removeAt = (i) => onChange(photos.filter((_, j) => j !== i))
+  const addUrl = () => {
+    if (urlDraft && urlDraft.trim() && !atLimit) onChange([...photos, urlDraft.trim()].slice(0, MAX_PHOTOS))
+    setUrlDraft(null)
+  }
+
+  return (
+    <div className="sa-photo-grid">
+      {!atLimit && (
+        <div
+          className={`sa-photo-drop ${dragOver ? 'sa-photo-drop--over' : ''}`}
+          onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+        >
+          <div className="sa-photo-drop__icon">🖼️</div>
+          <p className="sa-photo-drop__text">{t('superAdmin.dragToUpload')}</p>
+          <div className="sa-photo-drop__actions">
+            <button type="button" className="btn btn-dark btn-sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+              {uploading ? '...' : t('superAdmin.uploadFile')}
+            </button>
+            <button type="button" className="btn btn-outline btn-sm" onClick={() => setUrlDraft(v => v === null ? '' : null)}>
+              {t('superAdmin.addByUrl')}
+            </button>
+          </div>
+          {urlDraft !== null && (
+            <div className="sa-photo-url-row" onClick={e => e.stopPropagation()}>
+              <input
+                className="input" autoFocus value={urlDraft} placeholder="https://..."
+                onChange={e => setUrlDraft(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addUrl() } }}
+              />
+              <button type="button" className="btn btn-dark btn-sm" onClick={addUrl}>{t('common.add')}</button>
+            </div>
+          )}
+          <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleFileInput} />
+        </div>
+      )}
+
+      <div className="sa-photo-tiles">
+        {photos.map((ph, i) => (
+          <div key={i} className="sa-photo-tile">
+            <img src={ph} alt="" />
+            {i === 0 && <span className="sa-photo-tile__cover">{t('superAdmin.coverLabel')}</span>}
+            <button type="button" className="sa-photo-tile__menu-btn" onClick={e => { e.stopPropagation(); setOpenMenu(m => m === i ? null : i) }}>⋯</button>
+            {openMenu === i && (
+              <div className="sa-photo-tile__menu" ref={menuRef}>
+                {i !== 0 && (
+                  <button type="button" onClick={() => { makeCover(i); setOpenMenu(null) }}>{t('superAdmin.useAsCover')}</button>
+                )}
+                <button type="button" className="sa-photo-tile__menu-remove" onClick={() => { removeAt(i); setOpenMenu(null) }}>{t('common.delete')}</button>
+              </div>
+            )}
+          </div>
+        ))}
+        {Array.from({ length: MAX_PHOTOS - photos.length }).map((_, idx) => (
+          <button
+            type="button"
+            key={`empty-${idx}`}
+            className="sa-photo-tile sa-photo-tile--empty"
+            onClick={() => fileInputRef.current?.click()}
+          />
+        ))}
+      </div>
+      <span className="sa-photo-count">{photos.length} / {MAX_PHOTOS}</span>
+    </div>
+  )
+}
+
 // ── Place Form ───────────────────────────────────────────────────────────────
 function PlaceForm({ initial, onSave, onClose }) {
   const { t } = useLanguage()
@@ -153,7 +317,6 @@ function PlaceForm({ initial, onSave, onClose }) {
   })
   const isTicketType = TICKET_TYPES.includes(f.type)
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
-  const setPhoto = (i, v) => { const a = [...f.photos]; a[i] = v; set('photos', a) }
   const toggleCollection = (slug) => {
     set('collections', f.collections.includes(slug) ? f.collections.filter(c => c !== slug) : [...f.collections, slug])
   }
@@ -186,8 +349,10 @@ function PlaceForm({ initial, onSave, onClose }) {
         <div><label className="sa-label">{t('superAdmin.fieldCity')}</label>
           <select className="input" value={f.city} onChange={e => set('city', e.target.value)}>
             {CITIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-        <div className="sa-col2"><label className="sa-label">{t('superAdmin.fieldAddress')}</label>
-          <input className="input" required value={f.address} onChange={e => set('address', e.target.value)} /></div>
+        <div className="sa-col2">
+          <label className="sa-label">{t('superAdmin.fieldAddress')}</label>
+          <AddressListInput value={f.address} onChange={v => set('address', v)} />
+        </div>
         {!isTicketType && (
           <div><label className="sa-label">{t('superAdmin.fieldCuisine')}</label>
             <input className="input" list="sa-cuisine" value={f.cuisine} onChange={e => set('cuisine', e.target.value)} />
@@ -277,13 +442,7 @@ function PlaceForm({ initial, onSave, onClose }) {
         </div>
         <div className="sa-col2">
           <label className="sa-label">{t('superAdmin.fieldPhotos')}</label>
-          {f.photos.map((ph, i) => (
-            <div key={i} className="sa-photo-row">
-              <input className="input" value={ph} placeholder="https://..." onChange={e => setPhoto(i, e.target.value)} />
-              {f.photos.length > 1 && <button type="button" className="sa-rm-btn" onClick={() => set('photos', f.photos.filter((_, j) => j !== i))}>✕</button>}
-            </div>
-          ))}
-          <button type="button" className="btn btn-outline btn-sm" onClick={() => set('photos', [...f.photos, ''])}>{t('superAdmin.addPhoto')}</button>
+          <PhotoGridInput value={f.photos} onChange={v => set('photos', v.length ? v : [''])} />
         </div>
       </div>
       <div className="sa-modal__foot">

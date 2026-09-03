@@ -37,6 +37,8 @@ export const COLLECTIONS = [
   { slug: 'beer_spot', icon: '🍺' },
   { slug: 'pizza_spot', icon: '🍕' },
   { slug: 'burger_spot', icon: '🍔' },
+  { slug: 'hookah_spot', icon: '💨' },
+  { slug: 'sushi_spot', icon: '🍣' },
 ]
 
 // Subscription plans (payment processing not wired up yet —
