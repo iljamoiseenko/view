@@ -911,6 +911,7 @@ export default function SuperAdminPage() {
                           value={u.subscriptionTier || 'basic'}
                           onChange={e => handleChangeTier(u, e.target.value)}
                         >
+                          <option value="basic">{t('superAdmin.noTierOption')}</option>
                           {Object.keys(SUBSCRIPTION_TIERS).map(tier => (
                             <option key={tier} value={tier}>{t(`subscriptionTiers.${tier}`)}</option>
                           ))}

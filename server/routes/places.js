@@ -292,7 +292,7 @@ router.get('/:id/stats', requireAuth, (req, res) => {
   if (user.role !== 'superadmin') {
     expireIfPastDue(db, user.id)
     const owner = db.prepare('SELECT subscription_tier, subscription_status FROM users WHERE id = ?').get(user.id)
-    const hasAnalytics = owner?.subscription_status === 'active' && owner.subscription_tier !== 'basic'
+    const hasAnalytics = owner?.subscription_status === 'active' && owner.subscription_tier === 'pro'
     if (!hasAnalytics) {
       return res.status(403).json({ error: 'ANALYTICS_REQUIRES_UPGRADE' })
     }

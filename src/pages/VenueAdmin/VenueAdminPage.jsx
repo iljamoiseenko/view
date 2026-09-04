@@ -864,7 +864,8 @@ export default function VenueAdminPage() {
                         <ul className="va-plan-card__features">
                           <li><span className="va-plan-card__check">✓</span>{tierInfo.eventsPerMonth ? t('venueAdmin.eventsLimitText', tierInfo.eventsPerMonth) : t('venueAdmin.eventsUnlimitedText')}</li>
                           <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}</li>
-                          {tierKey !== 'basic' && <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.analyticsFeatureText')}</li>}
+                          {tierKey === 'pro' && <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.analyticsFeatureText')}</li>}
+                          <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.supportFeatureText')}</li>
                         </ul>
                         <button type="button" className="btn btn-dark va-plan-card__btn" disabled={!!checkingOutTier} onClick={() => handleChoosePlan(tierKey)}>
                           {t('venueAdmin.choosePlanBtn')}
@@ -1440,12 +1441,16 @@ export default function VenueAdminPage() {
                         <span className="va-plan-card__check">✓</span>
                         {t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}
                       </li>
-                      {tierKey !== 'basic' && (
+                      {tierKey === 'pro' && (
                         <li>
                           <span className="va-plan-card__check">✓</span>
                           {t('venueAdmin.analyticsFeatureText')}
                         </li>
                       )}
+                      <li>
+                        <span className="va-plan-card__check">✓</span>
+                        {t('venueAdmin.supportFeatureText')}
+                      </li>
                     </ul>
                     <button
                       type="button"

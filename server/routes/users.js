@@ -91,7 +91,9 @@ router.put('/:id', requireAuth, (req, res) => {
   if (isAdmin && placeId !== undefined) db.prepare('UPDATE users SET place_id = ? WHERE id = ?').run(placeId || null, id)
   if (isAdmin && isActive !== undefined) db.prepare('UPDATE users SET is_active = ? WHERE id = ?').run(isActive ? 1 : 0, id)
   if (isAdmin && subscriptionTier !== undefined) {
-    if (!Object.keys(SUBSCRIPTION_TIERS).includes(subscriptionTier)) {
+    // 'basic' isn't a purchasable tier (removed from SUBSCRIPTION_TIERS) — it's the
+    // "no active plan" sentinel value, which superadmin can still explicitly set.
+    if (subscriptionTier !== 'basic' && !Object.keys(SUBSCRIPTION_TIERS).includes(subscriptionTier)) {
       return res.status(400).json({ error: 'Invalid subscription tier' })
     }
     db.prepare('UPDATE users SET subscription_tier = ? WHERE id = ?').run(subscriptionTier, id)
