@@ -32,10 +32,12 @@ const PlaceCard = memo(function PlaceCard({ place, todayEventCount = 0, hasNow =
         />
         <div className="pcard__overlay" />
 
-        {openingDateLabel && (
+        {isOpeningSoon && (
           <div className="pcard__opening-date">
-            <span className="pcard__opening-date-label">{t('common.openingSoonLabel')}</span>
-            <span className="pcard__opening-date-value">{openingDateLabel}</span>
+            <span className="pcard__opening-date-value">SOON</span>
+            {openingDateLabel && (
+              <span className="pcard__opening-date-label">{t('common.openingSoonLabel')} · {openingDateLabel}</span>
+            )}
           </div>
         )}
 
@@ -60,9 +62,7 @@ const PlaceCard = memo(function PlaceCard({ place, todayEventCount = 0, hasNow =
               {getPlaceTypeLabel(place, t)}
             </span>
           </div>
-          {isOpeningSoon ? (
-            <span className="pcard__opening-badge pcard__opening-badge--soon">SOON</span>
-          ) : isNewlyOpened ? (
+          {isNewlyOpened ? (
             <span className="pcard__opening-badge pcard__opening-badge--new">NEW</span>
           ) : nowEvents.length > 0 ? (
             <span className="pcard__live">
