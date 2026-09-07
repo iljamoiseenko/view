@@ -39,12 +39,16 @@ export const COLLECTIONS = [
   { slug: 'burger_spot', icon: '🍔' },
   { slug: 'hookah_spot', icon: '💨' },
   { slug: 'sushi_spot', icon: '🍣' },
+  { slug: 'cocktail_spot', icon: '🍸' },
+  { slug: 'board_games_spot', icon: '🎲' },
+  { slug: 'playstation_spot', icon: '🎮' },
+  { slug: 'cultural_event', icon: '🎭' },
 ]
 
 // Subscription plans (payment processing not wired up yet —
 // tier is set manually by superadmin on the account)
 export const SUBSCRIPTION_TIERS = {
-  standard: { price: 9.99, boostsPerMonth: 4, eventsPerMonth: 4 },
+  standard: { price: 9.99, boostsPerMonth: 0, eventsPerMonth: 4 },
   pro: { price: 19.99, boostsPerMonth: 12, eventsPerMonth: 10 },
 }
 

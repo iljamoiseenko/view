@@ -29,6 +29,56 @@
 
 .pcard:hover .pcard__img { transform: scale(1.06); }
 
+/* "Ще не відкрились?" — hides the venue photo until it opens */
+.pcard__img--blur {
+  filter: blur(22px) saturate(1.15);
+  transform: scale(1.18);
+}
+.pcard:hover .pcard__img--blur { transform: scale(1.18); }
+
+.pcard__opening-badge {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 3px;
+}
+.pcard__opening-badge--soon { background: var(--dark); color: #fff; }
+.pcard__opening-badge--new { background: var(--vivid); color: #fff; }
+
+/* Card isn't a link while "SOON" — no pointer, no hover lift */
+.pcard--soon { cursor: default; }
+.pcard--soon:hover { transform: none; box-shadow: none; }
+
+.pcard__opening-date {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  padding: 0 12px;
+}
+.pcard__opening-date-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.75);
+}
+.pcard__opening-date-value {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+
 /* Overlay */
 .pcard__overlay {
   position: absolute;

@@ -10,16 +10,34 @@ const PlaceCard = memo(function PlaceCard({ place, todayEventCount = 0, hasNow =
   const nowEvents   = { length: hasNow ? 1 : 0 }
   const isTop = !!(place.topUntil && place.topUntil > Date.now())
 
-  return (
-    <Link to={`/place/${place.id}`} className="pcard">
+  // "Ще не відкрились?" — blurred + SOON while no opening date is set yet, or it's
+  // still in the future; once the date arrives the blur lifts and it reads NEW.
+  // While still "soon", the venue's detail page has nothing to show yet, so the
+  // card isn't a link at all — just a static preview.
+  const today = new Date().toISOString().slice(0, 10)
+  const isOpeningSoon = place.openingSoon && (!place.openingDate || place.openingDate > today)
+  const isNewlyOpened = place.openingSoon && !!place.openingDate && place.openingDate <= today
+
+  const openingDateLabel = isOpeningSoon && place.openingDate
+    ? `${new Date(place.openingDate).getDate()} ${t('common.monthsFull')[new Date(place.openingDate).getMonth()]}`
+    : null
+
+  const content = (
       <div className="pcard__img-wrap">
         <img
           src={place.photos?.[0] || 'https://picsum.photos/seed/default/400/600'}
           alt={place.name}
-          className="pcard__img"
+          className={`pcard__img ${isOpeningSoon ? 'pcard__img--blur' : ''}`}
           loading="lazy"
         />
         <div className="pcard__overlay" />
+
+        {openingDateLabel && (
+          <div className="pcard__opening-date">
+            <span className="pcard__opening-date-label">{t('common.openingSoonLabel')}</span>
+            <span className="pcard__opening-date-value">{openingDateLabel}</span>
+          </div>
+        )}
 
         {/* Top ribbon */}
         {isTop && (
@@ -42,7 +60,11 @@ const PlaceCard = memo(function PlaceCard({ place, todayEventCount = 0, hasNow =
               {getPlaceTypeLabel(place, t)}
             </span>
           </div>
-          {nowEvents.length > 0 ? (
+          {isOpeningSoon ? (
+            <span className="pcard__opening-badge pcard__opening-badge--soon">SOON</span>
+          ) : isNewlyOpened ? (
+            <span className="pcard__opening-badge pcard__opening-badge--new">NEW</span>
+          ) : nowEvents.length > 0 ? (
             <span className="pcard__live">
               <span className="pcard__live-dot" />
               {t('common.now')}
@@ -69,8 +91,11 @@ const PlaceCard = memo(function PlaceCard({ place, todayEventCount = 0, hasNow =
           )}
         </div>
       </div>
-    </Link>
   )
+
+  return isOpeningSoon
+    ? <div className="pcard pcard--soon">{content}</div>
+    : <Link to={`/place/${place.id}`} className="pcard">{content}</Link>
 })
 
 export default PlaceCard

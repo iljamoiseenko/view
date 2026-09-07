@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { getEventTypeLabel } from '../../utils/eventType'
+import { formatEventTime } from '../../utils/eventTime'
 import './EventCard.css'
 
 export default function EventCard({ event }) {
@@ -43,7 +44,7 @@ export default function EventCard({ event }) {
         )}
 
         <div className="ecard__footer">
-          <span className="ecard__time">{event.time}</span>
+          <span className="ecard__time">{formatEventTime(event.time, t)}</span>
           <span className={`ecard__price ${event.price === 0 ? 'free' : ''}`}>
             {event.price === 0 ? t('common.free') : `${event.price} ${t('common.currency')}`}
           </span>

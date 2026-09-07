@@ -6,6 +6,7 @@ import EventCard from '../../components/EventCard/EventCard'
 import TodayStrip from '../../components/TodayStrip/TodayStrip'
 import BannerSlider from '../../components/BannerSlider/BannerSlider'
 import Pagination from '../../components/Pagination/Pagination'
+import { isAllDay } from '../../utils/eventTime'
 import './HomePage.css'
 
 const PLACES_PER_PAGE = 16
@@ -21,6 +22,7 @@ const WEEK_END = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10
 
 function isHappeningNow(time) {
   if (!time) return false
+  if (isAllDay(time)) return true
   const now = new Date()
   const [h, m] = time.split(':').map(Number)
   const evMin  = h * 60 + m

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
@@ -19,6 +19,10 @@ export default function PlaceDetailPage() {
   const place = places.find(p => p.id === id)
   const [activePhoto, setActivePhoto] = useState(0)
   const [lightbox, setLightbox] = useState(false)
+  // Touch swipe for the gallery + lightbox on mobile — refs must be declared
+  // unconditionally here (not after the early `!place` return below).
+  const touchStartRef = useRef({ x: 0, y: 0 })
+  const didSwipeRef = useRef(false)
 
   // Log one view per place per browser session — enough for owner-facing stats
   // without letting a single visitor inflate the count by refreshing repeatedly.
@@ -40,6 +44,27 @@ export default function PlaceDetailPage() {
   }
 
   const today = new Date().toISOString().split('T')[0]
+
+  // "Ще не відкрились?" — the page has nothing to show yet, so block direct
+  // navigation too (not just the card link on listing pages).
+  const isOpeningSoon = place.openingSoon && (!place.openingDate || place.openingDate > today)
+  if (isOpeningSoon) {
+    const openingDateLabel = place.openingDate
+      ? `${new Date(place.openingDate).getDate()} ${t('common.monthsFull')[new Date(place.openingDate).getMonth()]}`
+      : null
+    return (
+      <div className="container" style={{ padding: '80px 24px', textAlign: 'center' }}>
+        <h2>{place.name}</h2>
+        <p style={{ marginTop: 8, color: 'var(--text-3)' }}>{t('placeDetail.openingSoonText')}</p>
+        {openingDateLabel && (
+          <p style={{ marginTop: 4, fontWeight: 800, fontSize: 20 }}>
+            {t('common.openingSoonLabel')} · {openingDateLabel}
+          </p>
+        )}
+        <Link to="/" className="btn btn-dark" style={{ marginTop: 16, display: 'inline-flex' }}>{t('placeDetail.toHome')}</Link>
+      </div>
+    )
+  }
   const events = getPlaceEvents(place.id).filter(e => e.date >= today)
   const photos = place.photos?.length ? place.photos : ['https://picsum.photos/seed/default/800/600']
   const hasSocialLinks = !!(place.website || place.instagramUrl || place.facebookUrl || place.tiktokUrl || place.threadsUrl || place.telegramUrl || place.youtubeUrl)
@@ -47,6 +72,31 @@ export default function PlaceDetailPage() {
 
   const prev = () => setActivePhoto(i => (i - 1 + photos.length) % photos.length)
   const next = () => setActivePhoto(i => (i + 1) % photos.length)
+
+  // Swipe is resolved on touchend (no live drag-follow) to keep this simple;
+  // didSwipeRef suppresses the tap-to-open-lightbox click right after a swipe.
+  const SWIPE_THRESHOLD = 40
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0]
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY }
+  }
+  const handleTouchEnd = (e) => {
+    if (photos.length <= 1) { didSwipeRef.current = false; return }
+    const touch = e.changedTouches[0]
+    const dx = touch.clientX - touchStartRef.current.x
+    const dy = touch.clientY - touchStartRef.current.y
+    const isSwipe = Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)
+    // Always reflect this gesture — never leave a stale `true` from an earlier
+    // swipe around to wrongly suppress a later, unrelated tap's click.
+    didSwipeRef.current = isSwipe
+    if (isSwipe) {
+      if (dx < 0) next(); else prev()
+    }
+  }
+  const handleGalleryClick = () => {
+    if (didSwipeRef.current) { didSwipeRef.current = false; return }
+    setLightbox(true)
+  }
 
   return (
     <div className="detail">
@@ -66,7 +116,12 @@ export default function PlaceDetailPage() {
 
         {/* LEFT: gallery */}
         <div className="detail__gallery">
-          <div className="detail__main-photo" onClick={() => setLightbox(true)}>
+          <div
+            className="detail__main-photo"
+            onClick={handleGalleryClick}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             <img src={photos[activePhoto]} alt={place.name} />
             {photos.length > 1 && (
               <>
@@ -225,6 +280,8 @@ export default function PlaceDetailPage() {
             alt={place.name}
             className="lightbox__img"
             onClick={e => e.stopPropagation()}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           />
           {photos.length > 1 && (
             <div className="lightbox__nav" onClick={e => e.stopPropagation()}>

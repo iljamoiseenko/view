@@ -46,6 +46,10 @@ function parsePlace(row) {
     boostedAt: row.boosted_at,
     boosted_at: undefined,
     topUntil: row.boosted_at ? row.boosted_at + BOOST_DURATION_MS : null,
+    openingSoon: row.opening_soon === 1,
+    opening_soon: undefined,
+    openingDate: row.opening_date,
+    opening_date: undefined,
   }
 }
 
@@ -109,7 +113,7 @@ router.put('/:id', requireAuth, async (req, res) => {
   const existing = db.prepare('SELECT * FROM places WHERE id = ?').get(id)
   if (!existing) return res.status(404).json({ error: 'Place not found' })
 
-  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, collections, rating, bookingEnabled, bookingPhone, menuUrl, petsFriendly, kidsRoom, ticketsUrl, customType, skipPublish } = req.body
+  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, collections, rating, bookingEnabled, bookingPhone, menuUrl, petsFriendly, kidsRoom, ticketsUrl, customType, openingSoon, openingDate, skipPublish } = req.body
 
   // Re-geocode only if the address or city actually changed
   let coords = null
@@ -149,6 +153,8 @@ router.put('/:id', requireAuth, async (req, res) => {
       kids_room = COALESCE(?, kids_room),
       tickets_url = COALESCE(?, tickets_url),
       custom_type = COALESCE(?, custom_type),
+      opening_soon = COALESCE(?, opening_soon),
+      opening_date = COALESCE(?, opening_date),
       ${socialSet},
       published = ${skipPublish ? 'published' : '1'}
     WHERE id = ?
@@ -169,6 +175,8 @@ router.put('/:id', requireAuth, async (req, res) => {
     kidsRoom !== undefined ? (kidsRoom ? 1 : 0) : null,
     ticketsUrl !== undefined ? ticketsUrl : null,
     customType !== undefined ? customType : null,
+    openingSoon !== undefined ? (openingSoon ? 1 : 0) : null,
+    openingDate !== undefined ? openingDate : null,
     ...socialParams,
     id
   )
@@ -179,7 +187,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 
 // POST /api/places  — superadmin only
 router.post('/', requireAuth, requireRole('superadmin'), async (req, res) => {
-  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, collections, rating, bookingEnabled, bookingPhone, menuUrl, petsFriendly, kidsRoom, ticketsUrl, customType } = req.body
+  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, collections, rating, bookingEnabled, bookingPhone, menuUrl, petsFriendly, kidsRoom, ticketsUrl, customType, openingSoon, openingDate } = req.body
   if (!name || !type || !city || !address) return res.status(400).json({ error: 'name, type, city, address required' })
 
   const coords = await geocodeAddress(address, city)
@@ -190,9 +198,9 @@ router.post('/', requireAuth, requireRole('superadmin'), async (req, res) => {
 
   const id = 'p' + Date.now()
   db.prepare(`
-    INSERT INTO places (id, name, type, city, address, description, cuisine, phone, working_hours, website, photos, tags, collections, rating, lat, lng, booking_enabled, booking_phone, menu_url, pets_friendly, kids_room, tickets_url, custom_type, ${socialCols})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${socialPlaceholders})
-  `).run(id, name, type, city, address, description ?? '', cuisine ?? '', phone ?? '', workingHours ?? '', website ?? '', JSON.stringify(photos ?? []), JSON.stringify(tags ?? []), JSON.stringify(collections ?? []), rating ?? null, coords?.lat ?? null, coords?.lng ?? null, bookingEnabled ? 1 : 0, bookingPhone ?? null, menuUrl ?? null, petsFriendly ? 1 : 0, kidsRoom ? 1 : 0, ticketsUrl ?? null, customType ?? null, ...socialValues)
+    INSERT INTO places (id, name, type, city, address, description, cuisine, phone, working_hours, website, photos, tags, collections, rating, lat, lng, booking_enabled, booking_phone, menu_url, pets_friendly, kids_room, tickets_url, custom_type, opening_soon, opening_date, ${socialCols})
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${socialPlaceholders})
+  `).run(id, name, type, city, address, description ?? '', cuisine ?? '', phone ?? '', workingHours ?? '', website ?? '', JSON.stringify(photos ?? []), JSON.stringify(tags ?? []), JSON.stringify(collections ?? []), rating ?? null, coords?.lat ?? null, coords?.lng ?? null, bookingEnabled ? 1 : 0, bookingPhone ?? null, menuUrl ?? null, petsFriendly ? 1 : 0, kidsRoom ? 1 : 0, ticketsUrl ?? null, customType ?? null, openingSoon ? 1 : 0, openingDate ?? null, ...socialValues)
 
   const created = db.prepare('SELECT * FROM places WHERE id = ?').get(id)
   res.status(201).json(parsePlace(created))

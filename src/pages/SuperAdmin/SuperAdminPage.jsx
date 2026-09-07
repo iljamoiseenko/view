@@ -7,6 +7,7 @@ import { api } from '../../api/client'
 import { PLACE_TYPES, EVENT_TYPES, CITIES, CUISINE_LIST, TICKET_TYPES, COLLECTIONS, SUBSCRIPTION_TIERS } from '../../data/initialData'
 import { getPlaceTypeLabel } from '../../utils/placeType'
 import { getEventTypeLabel } from '../../utils/eventType'
+import { ALL_DAY_TIME, isAllDay, formatEventTime } from '../../utils/eventTime'
 import './SuperAdminPage.css'
 
 const EMPTY_PLACE = {
@@ -14,11 +15,12 @@ const EMPTY_PLACE = {
   description: '', cuisine: '', phone: '', workingHours: '',
   website: '', menuUrl: '', photos: [''], tags: '', collections: [], rating: '',
   petsFriendly: false, kidsRoom: false, ticketsUrl: '', customType: '',
+  openingSoon: false, openingDate: '',
   instagramUrl: '', facebookUrl: '', tiktokUrl: '', threadsUrl: '', telegramUrl: '', youtubeUrl: '',
 }
 const EMPTY_EVENT = {
   placeId: '', title: '', description: '', date: '',
-  time: '19:00', type: 'live_music', price: 0, image: '', customType: '',
+  time: '19:00', type: 'live_music', price: 0, image: '', customType: '', registrationUrl: null,
 }
 const EMPTY_ACCOUNT = { name: '', username: '', password: '', placeId: '' }
 const EMPTY_BANNER = {
@@ -372,6 +374,19 @@ function PlaceForm({ initial, onSave, onClose }) {
           <textarea className="input textarea" rows={3} value={f.description} onChange={e => set('description', e.target.value)} /></div>
         <div className="sa-col2"><label className="sa-label">{t('superAdmin.fieldTags')}</label>
           <input className="input" value={f.tags} onChange={e => set('tags', e.target.value)} placeholder={t('superAdmin.fieldTagsPh')} /></div>
+        {/* Opening soon */}
+        <div className="sa-col2">
+          <label className="sa-label">{t('superAdmin.sectionOpening')}</label>
+          <label className="toggle-switch">
+            <input type="checkbox" checked={!!f.openingSoon} onChange={e => set('openingSoon', e.target.checked)} />
+            <span className="toggle-switch__track" />
+            <span className="toggle-switch__label">{t('superAdmin.openingSoonToggle')}</span>
+          </label>
+          {f.openingSoon && (
+            <input className="input" type="date" style={{ marginTop: 10, maxWidth: 200 }}
+              value={f.openingDate || ''} onChange={e => set('openingDate', e.target.value)} />
+          )}
+        </div>
         {/* Socials */}
         <div className="sa-col2">
           <label className="sa-label">{t('superAdmin.sectionSocials')}</label>
@@ -481,12 +496,33 @@ function EventForm({ initial, places, onSave, onClose }) {
         <div><label className="sa-label">{t('superAdmin.fieldDate')}</label>
           <input className="input" type="date" required value={f.date} onChange={e => set('date', e.target.value)} /></div>
         <div><label className="sa-label">{t('superAdmin.fieldTime')}</label>
-          <input className="input" type="time" required value={f.time} onChange={e => set('time', e.target.value)} /></div>
+          {!isAllDay(f.time) && (
+            <input className="input" type="time" required value={f.time} onChange={e => set('time', e.target.value)} />
+          )}
+          <label className="toggle-switch" style={{ marginTop: isAllDay(f.time) ? 0 : 8 }}>
+            <input type="checkbox" checked={isAllDay(f.time)} onChange={e => set('time', e.target.checked ? ALL_DAY_TIME : '19:00')} />
+            <span className="toggle-switch__track" />
+            <span className="toggle-switch__label">{t('superAdmin.allDayToggle')}</span>
+          </label>
+        </div>
         <div className="sa-col2"><label className="sa-label">{t('superAdmin.fieldDescription')}</label>
           <textarea className="input textarea" rows={3} required value={f.description} onChange={e => set('description', e.target.value)} /></div>
         <div className="sa-col2">
           <label className="sa-label">{t('superAdmin.fieldImage')}</label>
           <ImageInput value={f.image} onChange={v => set('image', v)} placeholder="https://..." />
+        </div>
+        <div className="sa-col2">
+          <label className="toggle-switch">
+            <input type="checkbox" checked={f.registrationUrl != null}
+              onChange={e => set('registrationUrl', e.target.checked ? '' : null)} />
+            <span className="toggle-switch__track" />
+            <span className="toggle-switch__label">{t('superAdmin.registrationToggle')}</span>
+          </label>
+          {f.registrationUrl != null && (
+            <input className="input" type="url" required style={{ marginTop: 10 }}
+              value={f.registrationUrl} onChange={e => set('registrationUrl', e.target.value)}
+              placeholder={t('superAdmin.registrationUrlPh')} />
+          )}
         </div>
       </div>
       <div className="sa-modal__foot">
@@ -817,7 +853,7 @@ export default function SuperAdminPage() {
                       <td><span className={`badge badge-event-${ev.type}`}>{getEventTypeLabel(ev, t)}</span></td>
                       <td className="sa-muted">{getPlaceName(ev.placeId)}</td>
                       <td>{ev.date}</td>
-                      <td>{ev.time}</td>
+                      <td>{formatEventTime(ev.time, t)}</td>
                       <td>{ev.price === 0 ? <span className="sa-free">{t('common.free')}</span> : `${ev.price} ${t('common.currency')}`}</td>
                       <td>
                         <div className="sa-actions">

@@ -7,6 +7,7 @@ import { parseAddresses } from '../../utils/address'
 import { buildEventTimes, addToDeviceCalendar } from '../../utils/calendar'
 import { getPlaceTypeLabel } from '../../utils/placeType'
 import { getEventTypeLabel } from '../../utils/eventType'
+import { formatEventTime } from '../../utils/eventTime'
 import './EventDetailPage.css'
 
 export default function EventDetailPage() {
@@ -32,9 +33,9 @@ export default function EventDetailPage() {
   const dateStr = `${date.getDate()} ${t('common.monthsFull')[date.getMonth()]} · ${t('common.weekdaysFull')[date.getDay()]}`
 
   const handleAddToCalendar = () => {
-    const { start, end } = buildEventTimes(event.date, event.time)
+    const { start, end, allDay } = buildEventTimes(event.date, event.time)
     const location = place ? [place.name, place.address].filter(Boolean).join(', ') : ''
-    addToDeviceCalendar({ title: event.title, description: event.description, location, start, end })
+    addToDeviceCalendar({ title: event.title, description: event.description, location, start, end, allDay })
   }
 
   return (
@@ -75,7 +76,7 @@ export default function EventDetailPage() {
           <div className="edetail__date-row">
             <span className="edetail__date">{dateStr}</span>
             <span className="edetail__sep">·</span>
-            <span className="edetail__time">{event.time}</span>
+            <span className="edetail__time">{formatEventTime(event.time, t)}</span>
           </div>
 
           <h1 className="edetail__title">{event.title}</h1>
@@ -99,6 +100,11 @@ export default function EventDetailPage() {
             {place?.ticketsUrl && (
               <a href={place.ticketsUrl} target="_blank" rel="noreferrer" className="btn btn-outline">
                 {t('eventDetail.buyTickets')}
+              </a>
+            )}
+            {event.registrationUrl && (
+              <a href={event.registrationUrl} target="_blank" rel="noreferrer" className="btn btn-outline">
+                {t('eventDetail.register')}
               </a>
             )}
           </div>

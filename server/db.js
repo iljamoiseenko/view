@@ -149,11 +149,20 @@ if (!placesCols.includes('collections')) {
   db.prepare("ALTER TABLE places ADD COLUMN collections TEXT DEFAULT '[]'").run()
   console.log('[db] Migration: added `collections` column to places')
 }
+if (!placesCols.includes('opening_soon')) {
+  db.prepare('ALTER TABLE places ADD COLUMN opening_soon INTEGER NOT NULL DEFAULT 0').run()
+  db.prepare('ALTER TABLE places ADD COLUMN opening_date TEXT').run()
+  console.log('[db] Migration: added `opening_soon`/`opening_date` columns to places')
+}
 
 const eventsCols = db.prepare('PRAGMA table_info(events)').all().map(c => c.name)
 if (!eventsCols.includes('custom_type')) {
   db.prepare('ALTER TABLE events ADD COLUMN custom_type TEXT').run()
   console.log('[db] Migration: added `custom_type` column to events')
+}
+if (!eventsCols.includes('registration_url')) {
+  db.prepare('ALTER TABLE events ADD COLUMN registration_url TEXT').run()
+  console.log('[db] Migration: added `registration_url` column to events')
 }
 
 const usersCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)

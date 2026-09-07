@@ -786,7 +786,7 @@
 
 .va-plans {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 20px;
   padding: 20px 28px 28px;
 }
@@ -813,7 +813,8 @@
 .va-plan-card__badge {
   position: absolute;
   top: -12px;
-  left: 24px;
+  left: 50%;
+  transform: translateX(-50%);
   background: var(--dark);
   color: #fff;
   font-size: 10px;
@@ -831,6 +832,13 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-2);
+}
+.va-plan-card__name--vivid {
+  align-self: flex-start;
+  background: var(--vivid);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
 }
 
 .va-plan-card__price {

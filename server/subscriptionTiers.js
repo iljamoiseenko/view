@@ -1,7 +1,7 @@
 // Subscription plans. Payment processing is not wired up yet —
 // for now a superadmin sets `subscription_tier` on a venue account manually.
 const SUBSCRIPTION_TIERS = {
-  standard: { price: 9.99, boostsPerMonth: 4, eventsPerMonth: 4 },
+  standard: { price: 9.99, boostsPerMonth: 0, eventsPerMonth: 4 },
   pro: { price: 19.99, boostsPerMonth: 12, eventsPerMonth: 10 },
 }
 

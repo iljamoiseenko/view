@@ -6,6 +6,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { api } from '../../api/client'
 import { PLACE_TYPES, EVENT_TYPES, CITIES, CUISINE_LIST, TICKET_TYPES, COLLECTIONS, SUBSCRIPTION_TIERS } from '../../data/initialData'
 import { getEventTypeLabel } from '../../utils/eventType'
+import { ALL_DAY_TIME, isAllDay, formatEventTime } from '../../utils/eventTime'
 import './VenueAdminPage.css'
 
 const EMPTY_LOGIN_FORM = { currentPassword: '', username: '' }
@@ -13,7 +14,7 @@ const EMPTY_PASSWORD_FORM = { currentPassword: '', newPassword: '', confirmPassw
 
 const EMPTY_EVENT = {
   title: '', description: '', date: '', time: '19:00',
-  type: 'live_music', price: 0, image: '', customType: '',
+  type: 'live_music', price: 0, image: '', customType: '', registrationUrl: null,
 }
 
 // ── Photo input with file upload + URL fallback ──────────────────────────────
@@ -334,8 +335,16 @@ function EventModal({ initial, placeId, onSave, onClose }) {
               </div>
               <div className="va-field">
                 <label className="va-label">{t('venueAdmin.fieldEventTime')}</label>
-                <input className="input" type="time" required value={form.time}
-                  onChange={e => set('time', e.target.value)} />
+                {!isAllDay(form.time) && (
+                  <input className="input" type="time" required value={form.time}
+                    onChange={e => set('time', e.target.value)} />
+                )}
+                <label className="toggle-switch" style={{ marginTop: isAllDay(form.time) ? 0 : 8 }}>
+                  <input type="checkbox" checked={isAllDay(form.time)}
+                    onChange={e => set('time', e.target.checked ? ALL_DAY_TIME : '19:00')} />
+                  <span className="toggle-switch__track" />
+                  <span className="toggle-switch__label">{t('venueAdmin.allDayToggle')}</span>
+                </label>
               </div>
             </div>
 
@@ -351,6 +360,22 @@ function EventModal({ initial, placeId, onSave, onClose }) {
               <div className="va-field va-field--full">
                 <label className="va-label">{t('venueAdmin.fieldEventPhoto')}</label>
                 <PhotoInput value={form.image} onChange={v => set('image', v)} />
+              </div>
+            </div>
+
+            <div className="va-field-group">
+              <div className="va-field va-field--full">
+                <label className="toggle-switch">
+                  <input type="checkbox" checked={form.registrationUrl != null}
+                    onChange={e => set('registrationUrl', e.target.checked ? '' : null)} />
+                  <span className="toggle-switch__track" />
+                  <span className="toggle-switch__label">{t('venueAdmin.registrationToggle')}</span>
+                </label>
+                {form.registrationUrl != null && (
+                  <input className="input" type="url" required style={{ marginTop: 10 }}
+                    value={form.registrationUrl} onChange={e => set('registrationUrl', e.target.value)}
+                    placeholder={t('venueAdmin.registrationUrlPh')} />
+                )}
               </div>
             </div>
           </div>
@@ -852,18 +877,18 @@ export default function VenueAdminPage() {
                 <div className="va-plans va-onboarding__plans">
                   {Object.keys(SUBSCRIPTION_TIERS).map(tierKey => {
                     const tierInfo = SUBSCRIPTION_TIERS[tierKey]
-                    const isPopular = tierKey === 'standard'
+                    const isPopular = tierKey === 'pro'
                     return (
                       <div key={tierKey} className={`va-plan-card ${isPopular ? 'popular' : ''}`}>
                         {isPopular && <span className="va-plan-card__badge">{t('venueAdmin.popularBadge')}</span>}
-                        <div className="va-plan-card__name">{t(`subscriptionTiers.${tierKey}`)}</div>
+                        <div className="va-plan-card__name va-plan-card__name--vivid">{t(`subscriptionTiers.${tierKey}`)}</div>
                         <div className="va-plan-card__price">
                           <span className="va-plan-card__price-amount">${tierInfo.price}</span>
                           <span className="va-plan-card__price-period">{t('venueAdmin.perMonth')}</span>
                         </div>
                         <ul className="va-plan-card__features">
                           <li><span className="va-plan-card__check">✓</span>{tierInfo.eventsPerMonth ? t('venueAdmin.eventsLimitText', tierInfo.eventsPerMonth) : t('venueAdmin.eventsUnlimitedText')}</li>
-                          <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}</li>
+                          {tierInfo.boostsPerMonth > 0 && <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}</li>}
                           {tierKey === 'pro' && <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.analyticsFeatureText')}</li>}
                           <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.supportFeatureText')}</li>
                         </ul>
@@ -1033,6 +1058,27 @@ export default function VenueAdminPage() {
                       onChange={e => setField('description', e.target.value)} />
                   </div>
                 </div>
+              </div>
+
+              {/* ── Group: Відкриття закладу ── */}
+              <div className="va-form-section">
+                <div className="va-form-section__title">{t('venueAdmin.sectionOpening')}</div>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={!!placeForm.openingSoon}
+                    onChange={e => setField('openingSoon', e.target.checked)}
+                  />
+                  <span className="toggle-switch__track" />
+                  <span className="toggle-switch__label">{t('venueAdmin.openingSoonToggle')}</span>
+                </label>
+                {placeForm.openingSoon && (
+                  <div className="va-field" style={{ marginTop: 14, maxWidth: 240 }}>
+                    <label className="va-label">{t('venueAdmin.fieldOpeningDate')}</label>
+                    <input className="input" type="date" value={placeForm.openingDate || ''}
+                      onChange={e => setField('openingDate', e.target.value)} />
+                  </div>
+                )}
               </div>
 
               {/* ── Group 2: Контакти та деталі ── */}
@@ -1258,7 +1304,7 @@ export default function VenueAdminPage() {
                           </span>
                         </td>
                         <td>{ev.date}</td>
-                        <td>{ev.time}</td>
+                        <td>{formatEventTime(ev.time, t)}</td>
                         <td>{ev.price === 0 ? <span className="va-free">{t('common.free')}</span> : `${ev.price} ${t('common.currency')}`}</td>
                         <td>
                           <div className="va-actions">
@@ -1422,12 +1468,12 @@ export default function VenueAdminPage() {
               {Object.keys(SUBSCRIPTION_TIERS).map(tierKey => {
                 const tierInfo = SUBSCRIPTION_TIERS[tierKey]
                 const isCurrent = hasActiveSub && currentUser?.subscriptionTier === tierKey
-                const isPopular = tierKey === 'standard'
+                const isPopular = tierKey === 'pro'
                 return (
                   <div key={tierKey} className={`va-plan-card ${isCurrent ? 'current' : ''} ${isPopular ? 'popular' : ''}`}>
                     {isPopular && <span className="va-plan-card__badge">{t('venueAdmin.popularBadge')}</span>}
                     {isCurrent && !isPopular && <span className="va-plan-card__badge va-plan-card__badge--current">{t('venueAdmin.currentPlanBadge')}</span>}
-                    <div className="va-plan-card__name">{t(`subscriptionTiers.${tierKey}`)}</div>
+                    <div className="va-plan-card__name va-plan-card__name--vivid">{t(`subscriptionTiers.${tierKey}`)}</div>
                     <div className="va-plan-card__price">
                       <span className="va-plan-card__price-amount">${tierInfo.price}</span>
                       <span className="va-plan-card__price-period">{t('venueAdmin.perMonth')}</span>
@@ -1437,10 +1483,12 @@ export default function VenueAdminPage() {
                         <span className="va-plan-card__check">✓</span>
                         {tierInfo.eventsPerMonth ? t('venueAdmin.eventsLimitText', tierInfo.eventsPerMonth) : t('venueAdmin.eventsUnlimitedText')}
                       </li>
-                      <li>
-                        <span className="va-plan-card__check">✓</span>
-                        {t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}
-                      </li>
+                      {tierInfo.boostsPerMonth > 0 && (
+                        <li>
+                          <span className="va-plan-card__check">✓</span>
+                          {t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}
+                        </li>
+                      )}
                       {tierKey === 'pro' && (
                         <li>
                           <span className="va-plan-card__check">✓</span>

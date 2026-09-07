@@ -5,6 +5,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { COLLECTIONS } from '../../data/initialData'
 import PlaceCard from '../../components/PlaceCard/PlaceCard'
 import Pagination from '../../components/Pagination/Pagination'
+import { isAllDay } from '../../utils/eventTime'
 import './CollectionDetailPage.css'
 
 const PER_PAGE = 16
@@ -12,6 +13,7 @@ const TODAY = new Date().toISOString().slice(0, 10)
 
 function isHappeningNow(time) {
   if (!time) return false
+  if (isAllDay(time)) return true
   const now = new Date()
   const [h, m] = time.split(':').map(Number)
   const evMin = h * 60 + m

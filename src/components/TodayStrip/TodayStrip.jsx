@@ -7,21 +7,19 @@ import { useApp } from '../../context/AppContext'
 import { CITIES } from '../../data/initialData'
 import { useLanguage } from '../../context/LanguageContext'
 import { getEventTypeLabel } from '../../utils/eventType'
+import { isAllDay, formatEventTime } from '../../utils/eventTime'
 import './TodayStrip.css'
 
 const TODAY = new Date().toISOString().slice(0, 10)
 
 function isHappeningNow(time) {
   if (!time) return false
+  if (isAllDay(time)) return true
   const now = new Date()
   const [h, m] = time.split(':').map(Number)
   const evMin = h * 60 + m
   const nowMin = now.getHours() * 60 + now.getMinutes()
   return evMin <= nowMin && nowMin <= evMin + 180
-}
-
-function formatTime(t) {
-  return t ? t.slice(0, 5) : ''
 }
 
 export default function TodayStrip() {
@@ -147,7 +145,7 @@ export default function TodayStrip() {
                 return (
                   <SwiperSlide key={ev.id} className="ts-slide">
                     <Link
-                      to={`/place/${ev.placeId}`}
+                      to={`/event/${ev.id}`}
                       className={`ts-card ${happening ? 'ts-card--now' : ''}`}
                     >
                       <div className="ts-card__img-wrap">
@@ -198,7 +196,7 @@ export default function TodayStrip() {
                                 <circle cx="12" cy="12" r="10"/>
                                 <polyline points="12 6 12 12 16 14"/>
                               </svg>
-                              {formatTime(ev.time)}
+                              {formatEventTime(ev.time, t)}
                             </span>
                           )}
                         </div>
