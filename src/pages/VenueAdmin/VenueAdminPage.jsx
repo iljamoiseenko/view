@@ -1246,7 +1246,9 @@ export default function VenueAdminPage() {
               </div>
 
               <div className="va-form-footer">
-                <button type="submit" className="btn btn-dark">{t('venueAdmin.saveChanges')}</button>
+                <button type="submit" className="btn btn-dark">
+                  {place.published ? t('venueAdmin.saveChanges') : t('venueAdmin.saveAndPublish')}
+                </button>
               </div>
             </form>
             </div>
