@@ -16,6 +16,8 @@ import RegisterPage from './pages/RegisterPage/RegisterPage'
 import AboutPage from './pages/AboutPage/AboutPage'
 import CollectionsPage from './pages/CollectionsPage/CollectionsPage'
 import CollectionDetailPage from './pages/CollectionDetailPage/CollectionDetailPage'
+import CuratedListsPage from './pages/CuratedListsPage/CuratedListsPage'
+import CuratedListDetailPage from './pages/CuratedListDetailPage/CuratedListDetailPage'
 import TermsPage from './pages/LegalPages/TermsPage'
 import RefundPolicyPage from './pages/LegalPages/RefundPolicyPage'
 import ContactsPage from './pages/LegalPages/ContactsPage'
@@ -46,6 +48,8 @@ export default function App() {
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/collections" element={<CollectionsPage />} />
                 <Route path="/collections/:slug" element={<CollectionDetailPage />} />
+                <Route path="/curated" element={<CuratedListsPage />} />
+                <Route path="/curated/:id" element={<CuratedListDetailPage />} />
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/refund-policy" element={<RefundPolicyPage />} />
                 <Route path="/contacts" element={<ContactsPage />} />

@@ -93,6 +93,7 @@ export default function Header() {
           <NavLink to="/" end className={({ isActive }) => `header__link ${isActive ? 'active' : ''}`}>{t('header.venues')}</NavLink>
           <NavLink to="/events" className={({ isActive }) => `header__link ${isActive ? 'active' : ''}`}>{t('header.events')}</NavLink>
           <NavLink to="/collections" className={({ isActive }) => `header__link ${isActive ? 'active' : ''}`}>{t('header.collections')}</NavLink>
+          <NavLink to="/curated" className={({ isActive }) => `header__link ${isActive ? 'active' : ''}`}>{t('header.curated')}</NavLink>
           <NavLink to="/about" className={({ isActive }) => `header__link ${isActive ? 'active' : ''}`}>{t('header.about')}</NavLink>
           {currentUser?.role === 'superadmin' && (
             <NavLink to="/admin" className={({ isActive }) => `header__link ${isActive ? 'active' : ''}`}>{t('header.admin')}</NavLink>
@@ -170,6 +171,7 @@ export default function Header() {
             <NavLink to="/" end className={({ isActive }) => `header__mobile-link ${isActive ? 'active' : ''}`} onClick={close}>{t('header.venues')}</NavLink>
             <NavLink to="/events" className={({ isActive }) => `header__mobile-link ${isActive ? 'active' : ''}`} onClick={close}>{t('header.events')}</NavLink>
             <NavLink to="/collections" className={({ isActive }) => `header__mobile-link ${isActive ? 'active' : ''}`} onClick={close}>{t('header.collections')}</NavLink>
+            <NavLink to="/curated" className={({ isActive }) => `header__mobile-link ${isActive ? 'active' : ''}`} onClick={close}>{t('header.curated')}</NavLink>
             <NavLink to="/about" className={({ isActive }) => `header__mobile-link ${isActive ? 'active' : ''}`} onClick={close}>{t('header.about')}</NavLink>
             {currentUser?.role === 'superadmin' && (
               <NavLink to="/admin" className={({ isActive }) => `header__mobile-link ${isActive ? 'active' : ''}`} onClick={close}>{t('header.admin')}</NavLink>

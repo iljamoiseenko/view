@@ -82,6 +82,37 @@ async function sendPasswordReset({ toEmail, resetLink }) {
   console.log(`[mailer] Password reset sent → ${toEmail} id=${info.id}`)
 }
 
+async function sendPaymentFailedNotification({ toEmail, tier, isRenewal, reason }) {
+  if (!process.env.RESEND_API_KEY) {
+    console.log('[mailer] Skipped payment-failed notice — RESEND_API_KEY not configured in .env')
+    return
+  }
+
+  const subject = isRenewal
+    ? 'VIEW: не вдалося продовжити підписку'
+    : 'VIEW: оплату підписки не пройдено'
+  const intro = isRenewal
+    ? `Не вдалося списати оплату за продовження тарифу «${tier}». Найчастіша причина — нестача коштів на картці або її термін дії сплив.`
+    : `Оплату тарифу «${tier}» не було завершено. Найчастіша причина — нестача коштів на картці або вона відхилила платіж.`
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; color: #111;">
+      <h2 style="margin:0 0 16px; font-size:20px;">Проблема з оплатою підписки</h2>
+      <p style="font-size:14px; line-height:1.6; color:#444; margin:0 0 16px;">${intro}</p>
+      ${reason ? `<p style="font-size:13px; color:#999; margin:0 0 16px;">Причина від платіжної системи: ${escapeHtml(reason)}</p>` : ''}
+      <p style="font-size:14px; line-height:1.6; color:#444; margin:0 0 24px;">
+        ${isRenewal
+          ? 'Ваш доступ лишається активним до кінця вже оплаченого періоду. Оновіть спосіб оплати в кабінеті, щоб підписка не перервалась.'
+          : 'Спробуйте оформити підписку ще раз з іншою карткою або зверніться до банку.'}
+      </p>
+      <a href="${process.env.APP_URL || 'https://viewtoday.site'}/venue" style="display:inline-block; background:#0A0A0A; color:#fff; text-decoration:none; padding:12px 28px; border-radius:8px; font-size:14px; font-weight:700;">Перейти в кабінет</a>
+    </div>
+  `
+
+  const info = await sendEmail({ to: toEmail, subject, html })
+  console.log(`[mailer] Payment-failed notice sent → ${toEmail} id=${info.id}`)
+}
+
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -106,4 +137,4 @@ async function sendFeedbackNotification({ message }) {
   console.log(`[mailer] Feedback sent → ${process.env.NOTIFY_EMAIL} id=${info.id}`)
 }
 
-module.exports = { sendNewUserNotification, sendPasswordReset, sendFeedbackNotification }
+module.exports = { sendNewUserNotification, sendPasswordReset, sendFeedbackNotification, sendPaymentFailedNotification }

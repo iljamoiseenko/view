@@ -1,0 +1,152 @@
+.clcard {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  contain: paint;
+}
+
+.clcard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 0 2px var(--dark), 0 18px 40px rgba(0,0,0,0.14);
+}
+
+.clcard__img-wrap {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: var(--bg-3);
+  overflow: hidden;
+}
+
+.clcard__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.55s ease;
+}
+.clcard__img--empty { background: var(--bg-3); }
+
+.clcard:hover .clcard__img { transform: scale(1.06); }
+
+.clcard__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.08) 0%,
+    rgba(0,0,0,0.12) 35%,
+    rgba(0,0,0,0.88) 100%
+  );
+}
+
+.clcard__top {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.clcard__count {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.5);
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(4px);
+}
+
+.clcard__icon {
+  font-size: 30px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+}
+
+.clcard__body {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20px 18px 22px;
+}
+
+.clcard__title {
+  font-size: 24px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  margin-bottom: 18px;
+}
+
+.clcard__author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.clcard__avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid rgba(255,255,255,0.4);
+  flex-shrink: 0;
+}
+.clcard__avatar--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--vivid);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  text-transform: uppercase;
+}
+
+.clcard__author-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.clcard__author-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clcard__author-role {
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clcard__arrow {
+  position: absolute;
+  bottom: 20px;
+  right: 18px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}

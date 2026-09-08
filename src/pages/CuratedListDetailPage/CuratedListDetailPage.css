@@ -1,0 +1,114 @@
+.cld-page { padding-bottom: 72px; }
+
+/* ── Hero ── */
+.cld-hero {
+  background: var(--dark);
+  padding: 40px 0 44px;
+  margin-bottom: 40px;
+}
+
+.cld-back {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.45);
+  text-decoration: none;
+  transition: color 0.2s;
+  margin-bottom: 24px;
+  width: fit-content;
+}
+.cld-back:hover { color: #fff; }
+
+.cld-hero__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cld-hero__icon { font-size: 40px; line-height: 1; }
+
+.cld-hero__title {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #fff;
+  margin: 0;
+  max-width: 640px;
+}
+
+.cld-hero__author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cld-hero__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  flex-shrink: 0;
+}
+.cld-hero__avatar--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--vivid);
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+  text-transform: uppercase;
+}
+
+.cld-hero__author-info { display: flex; flex-direction: column; gap: 1px; }
+.cld-hero__author-name { font-size: 15px; font-weight: 700; color: #fff; }
+.cld-hero__author-role { font-size: 13px; color: rgba(255,255,255,0.5); }
+
+.cld-hero__count {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.45);
+  margin: 0;
+}
+
+/* ── Grid ── */
+.cld-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.cld-grid__item { position: relative; }
+
+.cld-grid__rank {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--vivid);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  border-radius: 50%;
+}
+
+@media (max-width: 1024px) {
+  .cld-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .cld-hero__title { font-size: 26px; }
+  .cld-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+}
+
+@media (max-width: 480px) {
+  .cld-grid { grid-template-columns: 1fr; }
+}

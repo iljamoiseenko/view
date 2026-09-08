@@ -7,19 +7,22 @@ export function AppProvider({ children }) {
   const [places, setPlaces] = useState([])
   const [events, setEvents] = useState([])
   const [banners, setBanners] = useState([])
+  const [curatedLists, setCuratedLists] = useState([])
   const [selectedCity, setSelectedCity] = useState('Усі міста')
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
     try {
-      const [placesData, eventsData, bannersData] = await Promise.all([
+      const [placesData, eventsData, bannersData, curatedListsData] = await Promise.all([
         api.get('/places'),
         api.get('/events'),
         api.get('/banners'),
+        api.get('/curated-lists'),
       ])
       setPlaces(placesData)
       setEvents(eventsData)
       setBanners(bannersData)
+      setCuratedLists(curatedListsData)
     } catch (err) {
       console.error('Failed to load data:', err)
     } finally {
@@ -81,6 +84,23 @@ export function AppProvider({ children }) {
     setBanners(prev => prev.filter(b => b.id !== id))
   }
 
+  const addCuratedList = async (data) => {
+    const created = await api.post('/curated-lists', data)
+    setCuratedLists(prev => [...prev, created])
+    return created
+  }
+
+  const updateCuratedList = async (id, data) => {
+    const updated = await api.put(`/curated-lists/${id}`, data)
+    setCuratedLists(prev => prev.map(c => c.id === id ? updated : c))
+    return updated
+  }
+
+  const deleteCuratedList = async (id) => {
+    await api.delete(`/curated-lists/${id}`)
+    setCuratedLists(prev => prev.filter(c => c.id !== id))
+  }
+
   const getPlaceEvents = (placeId) =>
     events.filter(e => e.placeId === placeId).sort((a, b) => a.date.localeCompare(b.date))
 
@@ -98,6 +118,7 @@ export function AppProvider({ children }) {
       places,
       events,
       banners,
+      curatedLists,
       filteredPlaces,
       selectedCity,
       setSelectedCity,
@@ -112,6 +133,9 @@ export function AppProvider({ children }) {
       addBanner,
       updateBanner,
       deleteBanner,
+      addCuratedList,
+      updateCuratedList,
+      deleteCuratedList,
       getPlaceEvents,
     }}>
       {children}

@@ -50,6 +50,19 @@ db.exec(`
     active INTEGER DEFAULT 1
   );
 
+  CREATE TABLE IF NOT EXISTS curated_lists (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    author_name TEXT NOT NULL,
+    author_role TEXT DEFAULT '',
+    author_avatar TEXT DEFAULT '',
+    cover_image TEXT DEFAULT '',
+    icon TEXT DEFAULT '',
+    place_ids TEXT NOT NULL DEFAULT '[]',
+    sort_order INTEGER DEFAULT 0,
+    active INTEGER DEFAULT 1
+  );
+
   CREATE TABLE IF NOT EXISTS events (
     id TEXT PRIMARY KEY,
     place_id TEXT NOT NULL,

@@ -27,6 +27,10 @@ const EMPTY_BANNER = {
   title: '', subtitle: '', image: '', linkSlug: COLLECTIONS[0]?.slug || '',
   bgColor: '#1a1a1a', sortOrder: 0,
 }
+const EMPTY_CURATED = {
+  title: '', authorName: '', authorRole: '', authorAvatar: '',
+  coverImage: '', icon: '', placeIds: [], sortOrder: 0,
+}
 
 // ── Reusable Modal ───────────────────────────────────────────────────────────
 function Modal({ title, onClose, children, size }) {
@@ -624,10 +628,98 @@ function BannerForm({ initial, onSave, onClose }) {
   )
 }
 
+// ── Curated List Form (авторські підбірки) ─────────────────────────────────────
+function CuratedListForm({ initial, places, onSave, onClose }) {
+  const { t } = useLanguage()
+  const [f, setF] = useState({ ...EMPTY_CURATED, ...initial })
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }))
+  const [placeToAdd, setPlaceToAdd] = useState('')
+
+  const addPlace = () => {
+    if (!placeToAdd || f.placeIds.includes(placeToAdd)) return
+    set('placeIds', [...f.placeIds, placeToAdd])
+    setPlaceToAdd('')
+  }
+  const removePlace = (id) => set('placeIds', f.placeIds.filter(pid => pid !== id))
+  const movePlace = (index, dir) => {
+    const next = [...f.placeIds]
+    const j = index + dir
+    if (j < 0 || j >= next.length) return
+    ;[next[index], next[j]] = [next[j], next[index]]
+    set('placeIds', next)
+  }
+
+  return (
+    <form onSubmit={e => { e.preventDefault(); onSave(f) }} className="sa-form">
+      <div className="sa-grid">
+        <div>
+          <label className="sa-label">{t('superAdmin.fieldCuratorAvatar')}</label>
+          <ImageInput value={f.authorAvatar} onChange={v => set('authorAvatar', v)} placeholder="https://..." />
+        </div>
+        <div>
+          <label className="sa-label">{t('superAdmin.fieldCuratorName')}</label>
+          <input className="input" required value={f.authorName} onChange={e => set('authorName', e.target.value)} placeholder={t('superAdmin.curatorNamePh')} />
+          <div style={{ marginTop: 10 }}>
+            <label className="sa-label">{t('superAdmin.fieldCuratorRole')}</label>
+            <input className="input" value={f.authorRole} onChange={e => set('authorRole', e.target.value)} placeholder={t('superAdmin.curatorRolePh')} />
+          </div>
+        </div>
+        <div className="sa-col2">
+          <label className="sa-label">{t('superAdmin.fieldListTitle')}</label>
+          <input className="input" required value={f.title} onChange={e => set('title', e.target.value)} placeholder={t('superAdmin.listTitlePh')} />
+        </div>
+        <div className="sa-col2">
+          <label className="sa-label">{t('superAdmin.fieldCoverImage')}</label>
+          <ImageInput value={f.coverImage} onChange={v => set('coverImage', v)} placeholder="https://..." />
+        </div>
+        <div>
+          <label className="sa-label">{t('superAdmin.fieldIcon')}</label>
+          <input className="input" value={f.icon} onChange={e => set('icon', e.target.value)} placeholder="👑" maxLength={4} />
+        </div>
+        <div>
+          <label className="sa-label">{t('superAdmin.fieldSortOrder')}</label>
+          <input className="input" type="number" min="0" value={f.sortOrder} onChange={e => set('sortOrder', Number(e.target.value))} />
+        </div>
+        <div className="sa-col2">
+          <label className="sa-label">{t('superAdmin.fieldListPlaces')}</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select className="input" value={placeToAdd} onChange={e => setPlaceToAdd(e.target.value)}>
+              <option value="">{t('superAdmin.selectVenue')}</option>
+              {places.filter(p => !f.placeIds.includes(p.id)).map(p => (
+                <option key={p.id} value={p.id}>{p.name} ({p.city})</option>
+              ))}
+            </select>
+            <button type="button" className="btn btn-outline btn-sm" onClick={addPlace}>+ {t('common.add')}</button>
+          </div>
+          <div className="sa-curated-places">
+            {f.placeIds.map((pid, i) => {
+              const p = places.find(pl => pl.id === pid)
+              return (
+                <div key={pid} className="sa-curated-place">
+                  <span className="sa-curated-place__num">{i + 1}</span>
+                  <span className="sa-curated-place__name">{p ? p.name : pid}</span>
+                  <button type="button" className="sa-icon-btn" disabled={i === 0} onClick={() => movePlace(i, -1)}>↑</button>
+                  <button type="button" className="sa-icon-btn" disabled={i === f.placeIds.length - 1} onClick={() => movePlace(i, 1)}>↓</button>
+                  <button type="button" className="sa-icon-btn sa-btn-icon--danger" onClick={() => removePlace(pid)}>✕</button>
+                </div>
+              )
+            })}
+            {f.placeIds.length === 0 && <p className="sa-muted" style={{ fontSize: 13, marginTop: 8 }}>{t('superAdmin.noPlacesSelected')}</p>}
+          </div>
+        </div>
+      </div>
+      <div className="sa-modal__foot">
+        <button type="button" className="btn btn-outline" onClick={onClose}>{t('common.cancel')}</button>
+        <button type="submit" className="btn btn-dark">{initial?.id ? t('common.save') : t('superAdmin.addCuratedList')}</button>
+      </div>
+    </form>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function SuperAdminPage() {
   const { currentUser, logout } = useAuth()
-  const { places, events, banners, addPlace, updatePlace, deletePlace, addEvent, updateEvent, deleteEvent, addBanner, updateBanner, deleteBanner, reload } = useApp()
+  const { places, events, banners, curatedLists, addPlace, updatePlace, deletePlace, addEvent, updateEvent, deleteEvent, addBanner, updateBanner, deleteBanner, addCuratedList, updateCuratedList, deleteCuratedList, reload } = useApp()
   const { t } = useLanguage()
   const navigate = useNavigate()
 
@@ -692,11 +784,22 @@ export default function SuperAdminPage() {
     await updateBanner(b.id, { active: !b.active })
   }
 
+  const handleSaveCuratedList = async (data) => {
+    if (data.id) await updateCuratedList(data.id, data)
+    else await addCuratedList(data)
+    setModal(null)
+  }
+
+  const handleToggleCuratedList = async (c) => {
+    await updateCuratedList(c.id, { active: !c.active })
+  }
+
   const handleConfirm = async () => {
     if (!confirm) return
     if (confirm.type === 'place') await deletePlace(confirm.id)
     else if (confirm.type === 'event') await deleteEvent(confirm.id)
     else if (confirm.type === 'banner') await deleteBanner(confirm.id)
+    else if (confirm.type === 'curated') await deleteCuratedList(confirm.id)
     else if (confirm.type === 'account') {
       await api.delete(`/users/${confirm.id}`)
       setVenueUsers(prev => prev.filter(u => u.id !== confirm.id))
@@ -735,6 +838,8 @@ export default function SuperAdminPage() {
             <span>·</span>
             <span>{t('superAdmin.statBanners', banners.length)}</span>
             <span>·</span>
+            <span>{t('superAdmin.statCurated', curatedLists.length)}</span>
+            <span>·</span>
             <span>{t('superAdmin.statAccounts', venueUsers.length)}</span>
           </div>
           <button className="sa-logout" onClick={() => { logout(); navigate('/') }}>{t('superAdmin.logout')}</button>
@@ -747,6 +852,7 @@ export default function SuperAdminPage() {
             { v: 'places',   l: t('superAdmin.tabVenues'),   c: places.length },
             { v: 'events',   l: t('superAdmin.tabEvents'),   c: events.length },
             { v: 'banners',  l: t('superAdmin.tabBanners'),  c: banners.length },
+            { v: 'curated',  l: t('superAdmin.tabCurated'),  c: curatedLists.length },
             { v: 'accounts', l: t('superAdmin.tabAccounts'), c: venueUsers.length },
           ].map(tb => (
             <button key={tb.v} className={`sa-tab ${tab === tb.v ? 'active' : ''}`} onClick={() => setTab(tb.v)}>
@@ -922,6 +1028,55 @@ export default function SuperAdminPage() {
           </div>
         )}
 
+        {/* ── CURATED LISTS (авторські підбірки) ── */}
+        {tab === 'curated' && (
+          <div className="sa-section">
+            <div className="sa-section__head">
+              <h2>{t('superAdmin.curatedTitle')}</h2>
+              <button className="btn btn-dark btn-sm" onClick={() => setModal({ type: 'curated', data: null })}>{t('superAdmin.addCuratedList')}</button>
+            </div>
+            {curatedLists.length === 0 ? (
+              <div className="sa-empty">
+                <p>{t('superAdmin.noCuratedTitle')}</p>
+              </div>
+            ) : (
+              <div className="sa-banners-list">
+                {[...curatedLists].sort((a, b) => a.sortOrder - b.sortOrder).map(c => (
+                  <div key={c.id} className={`sa-banner-row ${!c.active ? 'inactive' : ''}`}>
+                    <div
+                      className="sa-banner-row__thumb"
+                      style={c.coverImage ? { backgroundImage: `url(${c.coverImage})` } : { background: '#1a1a1a' }}
+                    >
+                      <div className="sa-banner-row__thumb-overlay" />
+                      <span className="sa-banner-row__title-preview">{c.icon} {c.title}</span>
+                    </div>
+                    <div className="sa-banner-row__info">
+                      <span className="sa-main">{c.title}</span>
+                      <span className="sa-sub">{c.authorName}{c.authorRole ? ` · ${c.authorRole}` : ''}</span>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                        <span className="sa-mark-badge" style={{ fontSize: 12 }}>
+                          {t('curated.placesCount', c.placeIds.length)}
+                        </span>
+                        <span className="sa-sub">{t('superAdmin.order', c.sortOrder)}</span>
+                      </div>
+                    </div>
+                    <div className="sa-banner-row__actions">
+                      <button
+                        className={`sa-toggle ${c.active ? 'sa-toggle--active' : 'sa-toggle--inactive'}`}
+                        onClick={() => handleToggleCuratedList(c)}
+                      >
+                        {c.active ? t('superAdmin.active') : t('superAdmin.inactive')}
+                      </button>
+                      <button className="sa-icon-btn" onClick={() => setModal({ type: 'curated', data: c })}>✏️</button>
+                      <button className="sa-icon-btn sa-btn-icon--danger" onClick={() => setConfirm({ type: 'curated', id: c.id, name: c.title })}>🗑️</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── ACCOUNTS ── */}
         {tab === 'accounts' && (
           <div className="sa-section">
@@ -992,6 +1147,11 @@ export default function SuperAdminPage() {
       {modal?.type === 'banner' && (
         <Modal title={modal.data ? t('superAdmin.modalEditBanner') : t('superAdmin.modalNewBanner')} onClose={() => setModal(null)}>
           <BannerForm initial={modal.data} onSave={handleSaveBanner} onClose={() => setModal(null)} />
+        </Modal>
+      )}
+      {modal?.type === 'curated' && (
+        <Modal title={modal.data ? t('superAdmin.modalEditCurated') : t('superAdmin.modalNewCurated')} onClose={() => setModal(null)}>
+          <CuratedListForm initial={modal.data} places={places} onSave={handleSaveCuratedList} onClose={() => setModal(null)} />
         </Modal>
       )}
       {modal?.type === 'account' && (

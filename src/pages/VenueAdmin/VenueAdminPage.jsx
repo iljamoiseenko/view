@@ -407,20 +407,59 @@ export default function VenueAdminPage() {
   const [thankYouVisible, setThankYouVisible] = useState(searchParams.get('payment') === 'return')
   const [paymentPending, setPaymentPending] = useState(searchParams.get('payment') === 'return')
   const [paymentActivated, setPaymentActivated] = useState(false)
+  const [paymentFailed, setPaymentFailed] = useState(false)
+  const [paymentFailReason, setPaymentFailReason] = useState('')
 
-  // Returned from WayForPay — poll a few times for the webhook to land and activate the plan
+  // Returned from WayForPay — poll the actual payment record (not just user.subscriptionStatus,
+  // which could already be 'active' from a prior period and mask a failed renewal/upgrade) so a
+  // declined card is reported as a real failure instead of sitting in "processing" forever.
   useEffect(() => {
     if (searchParams.get('payment') !== 'return') return
+    const orderRef = searchParams.get('order')
+    if (!orderRef) {
+      // No order reference (e.g. a stale bookmarked return link) — fall back to the
+      // best-effort check we can still do.
+      let attempts = 0
+      const poll = setInterval(async () => {
+        attempts++
+        const user = await refreshCurrentUser().catch(() => null)
+        if (user?.subscriptionStatus === 'active') {
+          clearInterval(poll)
+          setPaymentPending(false)
+          setPaymentActivated(true)
+          setSearchParams({}, { replace: true })
+        } else if (attempts >= 6) {
+          clearInterval(poll)
+          setPaymentPending(false)
+          setSearchParams({}, { replace: true })
+        }
+      }, 3000)
+      return () => clearInterval(poll)
+    }
+
     let attempts = 0
     const poll = setInterval(async () => {
       attempts++
-      const user = await refreshCurrentUser().catch(() => null)
-      if (user?.subscriptionStatus === 'active') {
-        clearInterval(poll)
-        setPaymentPending(false)
-        setPaymentActivated(true)
-        setSearchParams({}, { replace: true })
-      } else if (attempts >= 6) {
+      try {
+        const result = await api.get(`/subscriptions/status/${orderRef}`)
+        if (result.status === 'approved') {
+          clearInterval(poll)
+          await refreshCurrentUser().catch(() => null)
+          setPaymentPending(false)
+          setPaymentActivated(true)
+          setSearchParams({}, { replace: true })
+          return
+        }
+        if (result.status === 'failed') {
+          clearInterval(poll)
+          setPaymentPending(false)
+          setPaymentFailed(true)
+          setPaymentFailReason(result.reason || '')
+          setSearchParams({}, { replace: true })
+          return
+        }
+      } catch { /* transient — keep polling until attempts run out */ }
+      if (attempts >= 6) {
         clearInterval(poll)
         setPaymentPending(false)
         setSearchParams({}, { replace: true })
@@ -740,17 +779,22 @@ export default function VenueAdminPage() {
   }
 
   if (thankYouVisible) {
-    const state = paymentActivated ? 'active' : (paymentPending ? 'pending' : 'delayed')
+    const state = paymentActivated ? 'active' : (paymentFailed ? 'failed' : (paymentPending ? 'pending' : 'delayed'))
+    const suffix = { active: '', pending: 'Pending', failed: 'Failed', delayed: 'Delayed' }[state]
+    const icon = { active: '✓', pending: <span className="va-thankyou__spinner" />, failed: '✕', delayed: '!' }[state]
     return (
       <div className="va-thankyou">
         <div className="va-thankyou__card">
           <div className={`va-thankyou__icon va-thankyou__icon--${state}`}>
-            {state === 'pending' ? <span className="va-thankyou__spinner" /> : (state === 'active' ? '✓' : '!')}
+            {icon}
           </div>
-          <h1 className="va-thankyou__title">{t(`venueAdmin.thankYou${state === 'active' ? '' : state === 'pending' ? 'Pending' : 'Delayed'}Title`)}</h1>
-          <p className="va-thankyou__text">{t(`venueAdmin.thankYou${state === 'active' ? '' : state === 'pending' ? 'Pending' : 'Delayed'}Text`)}</p>
+          <h1 className="va-thankyou__title">{t(`venueAdmin.thankYou${suffix}Title`)}</h1>
+          <p className="va-thankyou__text">{t(`venueAdmin.thankYou${suffix}Text`)}</p>
+          {paymentFailed && paymentFailReason && (
+            <p className="va-thankyou__reason">{t('venueAdmin.thankYouFailedReason', paymentFailReason)}</p>
+          )}
           <button className="btn btn-dark va-thankyou__btn" onClick={handleContinueToAccount}>
-            {t('venueAdmin.thankYouBtn')}
+            {t(paymentFailed ? 'venueAdmin.thankYouFailedBtn' : 'venueAdmin.thankYouBtn')}
           </button>
         </div>
       </div>

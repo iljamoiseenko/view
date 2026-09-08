@@ -3,6 +3,7 @@ const db = require('../db')
 const { requireAuth, requireRole } = require('../middleware/auth')
 const wfp = require('../wayforpay')
 const { SUBSCRIPTION_TIERS } = require('../subscriptionTiers')
+const { sendPaymentFailedNotification } = require('../mailer')
 
 const router = express.Router()
 
@@ -43,7 +44,7 @@ router.post('/checkout', requireAuth, requireRole('venue'), (req, res) => {
   })
 
   const baseUrl = process.env.APP_URL || 'https://viewtoday.site'
-  fields.returnUrl = `${baseUrl}/venue?payment=return`
+  fields.returnUrl = `${baseUrl}/venue?payment=return&order=${orderReference}`
   fields.serviceUrl = `${baseUrl}/api/subscriptions/callback`
 
   db.prepare(`
@@ -52,6 +53,23 @@ router.post('/checkout', requireAuth, requireRole('venue'), (req, res) => {
   `).run('pay' + Date.now(), req.user.id, orderReference, tier, amount, currency, Date.now())
 
   res.json({ action: 'https://secure.wayforpay.com/pay', fields, isTestMerchant })
+})
+
+// GET /api/subscriptions/status/:orderReference — the venue's own return-page poll,
+// so the frontend can tell "still waiting for the webhook" apart from "card declined"
+// instead of guessing from a timeout.
+router.get('/status/:orderReference', requireAuth, requireRole('venue'), (req, res) => {
+  const payment = db.prepare('SELECT * FROM payments WHERE order_reference = ?').get(req.params.orderReference)
+  if (!payment || payment.user_id !== req.user.id) {
+    return res.status(404).json({ error: 'Payment not found' })
+  }
+
+  let reason = null
+  if (payment.status === 'failed' && payment.raw_response) {
+    try { reason = JSON.parse(payment.raw_response).reason || null } catch { /* ignore */ }
+  }
+
+  res.json({ status: payment.status, tier: payment.tier, reason })
 })
 
 // POST /api/subscriptions/callback — WayForPay's server-to-server webhook.
@@ -80,14 +98,26 @@ router.post('/callback', (req, res) => {
   }
   const isRenewal = body.orderReference !== baseOrderReference
 
+  // WayForPay can (and does) redeliver the same webhook — upsert by order_reference
+  // instead of a bare INSERT so a retry updates the existing row rather than crashing
+  // on the UNIQUE constraint (order_reference is unique) and leaving WayForPay without
+  // its ack, which would just make it retry forever.
+  function upsertRenewalPayment(status) {
+    const result = db.prepare('UPDATE payments SET status = ?, raw_response = ? WHERE order_reference = ?')
+      .run(status, JSON.stringify(body), body.orderReference)
+    if (result.changes === 0) {
+      db.prepare(`
+        INSERT INTO payments (id, user_id, order_reference, tier, amount, currency, status, raw_response, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run('pay' + Date.now(), payment.user_id, body.orderReference, payment.tier, body.amount ?? payment.amount, body.currency ?? payment.currency, status, JSON.stringify(body), Date.now())
+    }
+  }
+
   if (body.transactionStatus === 'Approved') {
     const renewsAt = Date.now() + wfp.renewalPeriodMs()
 
     if (isRenewal) {
-      db.prepare(`
-        INSERT INTO payments (id, user_id, order_reference, tier, amount, currency, status, raw_response, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, 'approved', ?, ?)
-      `).run('pay' + Date.now(), payment.user_id, body.orderReference, payment.tier, body.amount, body.currency, JSON.stringify(body), Date.now())
+      upsertRenewalPayment('approved')
     } else {
       db.prepare('UPDATE payments SET status = ?, raw_response = ? WHERE order_reference = ?')
         .run('approved', JSON.stringify(body), baseOrderReference)
@@ -102,10 +132,26 @@ router.post('/callback', (req, res) => {
 
     console.log(`[wayforpay] Approved ${body.orderReference} — user ${payment.user_id} → ${payment.tier}${isRenewal ? ' (renewal)' : ''}`)
   } else {
-    if (!isRenewal) {
+    if (isRenewal) {
+      // A failed renewal charge previously left no trace at all (only successes were
+      // recorded) — record it too, so it shows up in payment history / superadmin
+      // rather than silently vanishing until the plan later lapses on its own.
+      upsertRenewalPayment('failed')
+    } else {
       db.prepare('UPDATE payments SET status = ?, raw_response = ? WHERE order_reference = ?')
         .run('failed', JSON.stringify(body), baseOrderReference)
     }
+
+    const owner = db.prepare('SELECT email FROM users WHERE id = ?').get(payment.user_id)
+    if (owner?.email) {
+      sendPaymentFailedNotification({
+        toEmail: owner.email,
+        tier: payment.tier,
+        isRenewal,
+        reason: body.reason,
+      }).catch(err => console.error('[mailer] Failed to send payment-failed notice:', err.message))
+    }
+
     console.log(`[wayforpay] Not approved ${body.orderReference} — status=${body.transactionStatus}`)
   }
 
