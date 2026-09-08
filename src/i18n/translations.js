@@ -395,6 +395,8 @@ export const translations = {
       addEvent: '+ Додати',
       thEventTitle: 'Назва', thEventType: 'Тип', thEventVenue: 'Заклад',
       thDate: 'Дата', thTime: 'Час', thPrice: 'Ціна',
+      thFeatured: 'Слайдер',
+      featuredHint: 'Показувати в слайдері "Найближчі івенти" на головній',
       noEvents: 'Івентів немає',
       bannersTitle: 'Банери на головній',
       addBanner: '+ Додати банер',
@@ -694,7 +696,9 @@ export const translations = {
     eventTypes: {
       live_music: 'Жива музика', dj: 'DJ Set', jazz: 'Джаз', wine: 'Винний вечір',
       beer: 'Пивний фест', master_class: 'Майстер-клас', theme_night: 'Тематична вечірка',
-      cocktail: 'Коктейльний вечір', other: 'Інше',
+      cocktail: 'Коктейльний вечір', cultural_event: 'Культурний захід',
+      anniversary: 'День народження закладу', quiz: 'Квіз', standup: 'Стендап',
+      market: 'Ярмарок', other: 'Інше',
     },
   },
   en: {
@@ -1093,6 +1097,8 @@ export const translations = {
       addEvent: '+ Add',
       thEventTitle: 'Name', thEventType: 'Type', thEventVenue: 'Venue',
       thDate: 'Date', thTime: 'Time', thPrice: 'Price',
+      thFeatured: 'Slider',
+      featuredHint: 'Show in the "Upcoming events" slider on the homepage',
       noEvents: 'No events',
       bannersTitle: 'Homepage banners',
       addBanner: '+ Add banner',
@@ -1392,7 +1398,9 @@ export const translations = {
     eventTypes: {
       live_music: 'Live music', dj: 'DJ set', jazz: 'Jazz', wine: 'Wine night',
       beer: 'Beer fest', master_class: 'Workshop', theme_night: 'Theme party',
-      cocktail: 'Cocktail night', other: 'Other',
+      cocktail: 'Cocktail night', cultural_event: 'Cultural event',
+      anniversary: "Venue anniversary", quiz: 'Quiz night', standup: 'Stand-up',
+      market: 'Market', other: 'Other',
     },
   },
 }

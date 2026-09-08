@@ -63,6 +63,11 @@ export const EVENT_TYPES = {
   master_class: 'Майстер-клас',
   theme_night: 'Тематична вечірка',
   cocktail: 'Коктейльний вечір',
+  cultural_event: 'Культурний захід',
+  anniversary: "День народження закладу",
+  quiz: 'Квіз',
+  standup: 'Стендап',
+  market: 'Ярмарок',
   other: 'Інше',
 }
 

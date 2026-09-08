@@ -40,11 +40,23 @@ export default function TodayStrip() {
     [events, publishedPlaceIds]
   )
 
+  const upcomingEvents = useMemo(() =>
+    events.filter(e => e.date >= TODAY && publishedPlaceIds.has(e.placeId)),
+    [events, publishedPlaceIds]
+  )
+
+  // Superadmin can hand-pick which events show here (venueAdmin.featuredOnHome) — when
+  // any are pinned, the strip shows only those; otherwise it falls back to the automatic
+  // "nearest events" behavior below.
+  const featuredEvents = useMemo(() =>
+    upcomingEvents.filter(e => e.featuredOnHome),
+    [upcomingEvents]
+  )
+
   // The strip itself always shows the nearest events — today's (soonest/live
   // first) followed by the closest upcoming ones — instead of only today's.
   const nearestEvents = useMemo(() =>
-    events
-      .filter(e => e.date >= TODAY && publishedPlaceIds.has(e.placeId))
+    [...(featuredEvents.length > 0 ? featuredEvents : upcomingEvents)]
       .sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date)
         if (a.date === TODAY) {
@@ -55,7 +67,7 @@ export default function TodayStrip() {
         return (a.time || '').localeCompare(b.time || '')
       })
       .slice(0, 12),
-    [events, publishedPlaceIds]
+    [featuredEvents, upcomingEvents]
   )
 
   const placeById = useMemo(() => {

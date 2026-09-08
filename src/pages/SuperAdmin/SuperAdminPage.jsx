@@ -784,6 +784,10 @@ export default function SuperAdminPage() {
     await updateBanner(b.id, { active: !b.active })
   }
 
+  const handleToggleFeatured = async (ev) => {
+    await updateEvent(ev.id, { featuredOnHome: !ev.featuredOnHome })
+  }
+
   const handleSaveCuratedList = async (data) => {
     if (data.id) await updateCuratedList(data.id, data)
     else await addCuratedList(data)
@@ -950,7 +954,8 @@ export default function SuperAdminPage() {
               <table className="sa-table">
                 <thead><tr>
                   <th>{t('superAdmin.thEventTitle')}</th><th>{t('superAdmin.thEventType')}</th><th>{t('superAdmin.thEventVenue')}</th>
-                  <th>{t('superAdmin.thDate')}</th><th>{t('superAdmin.thTime')}</th><th>{t('superAdmin.thPrice')}</th><th>{t('superAdmin.thActions')}</th>
+                  <th>{t('superAdmin.thDate')}</th><th>{t('superAdmin.thTime')}</th><th>{t('superAdmin.thPrice')}</th>
+                  <th>{t('superAdmin.thFeatured')}</th><th>{t('superAdmin.thActions')}</th>
                 </tr></thead>
                 <tbody>
                   {[...events].sort((a, b) => a.date.localeCompare(b.date)).map(ev => (
@@ -961,6 +966,15 @@ export default function SuperAdminPage() {
                       <td>{ev.date}</td>
                       <td>{formatEventTime(ev.time, t)}</td>
                       <td>{ev.price === 0 ? <span className="sa-free">{t('common.free')}</span> : `${ev.price} ${t('common.currency')}`}</td>
+                      <td>
+                        <button
+                          className={`sa-toggle ${ev.featuredOnHome ? 'sa-toggle--active' : 'sa-toggle--inactive'}`}
+                          onClick={() => handleToggleFeatured(ev)}
+                          title={t('superAdmin.featuredHint')}
+                        >
+                          {ev.featuredOnHome ? t('superAdmin.active') : t('superAdmin.inactive')}
+                        </button>
+                      </td>
                       <td>
                         <div className="sa-actions">
                           <button className="sa-icon-btn" onClick={() => setModal({ type: 'event', data: ev })}>✏️</button>

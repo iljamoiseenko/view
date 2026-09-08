@@ -177,6 +177,10 @@ if (!eventsCols.includes('registration_url')) {
   db.prepare('ALTER TABLE events ADD COLUMN registration_url TEXT').run()
   console.log('[db] Migration: added `registration_url` column to events')
 }
+if (!eventsCols.includes('featured_on_home')) {
+  db.prepare('ALTER TABLE events ADD COLUMN featured_on_home INTEGER NOT NULL DEFAULT 0').run()
+  console.log('[db] Migration: added `featured_on_home` column to events')
+}
 
 const usersCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
 if (!usersCols.includes('username')) {

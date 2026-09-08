@@ -14,7 +14,7 @@ const EVENTS_PER_PAGE = 8
 
 const TYPE_FILTER_VALUES = ['all', 'restaurant', 'bar', 'coffee', 'pub', 'lounge', 'theater', 'exhibition']
 const EVENT_DATE_FILTER_VALUES = ['all', 'today', 'tomorrow', 'week']
-const EVENT_TYPE_VALUES = ['live_music', 'dj', 'jazz', 'wine', 'beer', 'master_class', 'theme_night', 'cocktail', 'other']
+const EVENT_TYPE_VALUES = ['live_music', 'dj', 'jazz', 'wine', 'beer', 'master_class', 'theme_night', 'cocktail', 'cultural_event', 'anniversary', 'quiz', 'standup', 'market', 'other']
 
 const TODAY    = new Date().toISOString().slice(0, 10)
 const TOMORROW = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)

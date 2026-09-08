@@ -191,6 +191,11 @@ img { display: block; max-width: 100%; }
 .badge-event-master_class,
 .badge-event-theme_night,
 .badge-event-cocktail,
+.badge-event-cultural_event,
+.badge-event-anniversary,
+.badge-event-quiz,
+.badge-event-standup,
+.badge-event-market,
 .badge-event-other {
   background: rgba(0,0,0,0.72);
   color: #fff;

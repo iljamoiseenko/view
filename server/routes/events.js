@@ -11,6 +11,7 @@ function parseEvent(row) {
     placeId: row.place_id, place_id: undefined,
     customType: row.custom_type, custom_type: undefined,
     registrationUrl: row.registration_url, registration_url: undefined,
+    featuredOnHome: row.featured_on_home === 1, featured_on_home: undefined,
   }
 }
 
@@ -32,7 +33,7 @@ router.get('/:id', (req, res) => {
 
 // POST /api/events  — venue can only create for their own place
 router.post('/', requireAuth, (req, res) => {
-  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl } = req.body
+  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome } = req.body
   if (!placeId || !title || !date || !time || !type) {
     return res.status(400).json({ error: 'placeId, title, date, time, type required' })
   }
@@ -52,9 +53,13 @@ router.post('/', requireAuth, (req, res) => {
 
   const id = 'e' + Date.now()
   db.prepare(`
-    INSERT INTO events (id, place_id, title, description, date, time, type, price, image, custom_type, registration_url)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, placeId, title, description ?? '', date, time, type, Number(price) || 0, image ?? '', customType ?? null, registrationUrl || null)
+    INSERT INTO events (id, place_id, title, description, date, time, type, price, image, custom_type, registration_url, featured_on_home)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id, placeId, title, description ?? '', date, time, type, Number(price) || 0, image ?? '', customType ?? null, registrationUrl || null,
+    // Only superadmin can pin an event to the homepage slider.
+    user.role === 'superadmin' && featuredOnHome ? 1 : 0
+  )
 
   const created = db.prepare('SELECT * FROM events WHERE id = ?').get(id)
   res.status(201).json(parseEvent(created))
@@ -70,7 +75,7 @@ router.put('/:id', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
-  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl } = req.body
+  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome } = req.body
 
   // Only superadmin may reassign an event to a different venue — a venue
   // owner's own placeId is fixed client-side anyway, but reject a mismatched
@@ -90,13 +95,17 @@ router.put('/:id', requireAuth, (req, res) => {
       price = COALESCE(?, price),
       image = COALESCE(?, image),
       custom_type = COALESCE(?, custom_type),
-      registration_url = ?
+      registration_url = ?,
+      featured_on_home = COALESCE(?, featured_on_home)
     WHERE id = ?
   `).run(
     placeId ?? null, title ?? null, description ?? null, date ?? null,
     time ?? null, type ?? null,
     price !== undefined ? Number(price) : null,
-    image ?? null, customType ?? null, registrationUrl || null, req.params.id
+    image ?? null, customType ?? null, registrationUrl || null,
+    // Only superadmin can change the homepage-slider pin.
+    user.role === 'superadmin' && featuredOnHome !== undefined ? (featuredOnHome ? 1 : 0) : null,
+    req.params.id
   )
 
   const updated = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id)
