@@ -48,7 +48,7 @@ export default function CuratedListDetailPage() {
     return (
       <div className="sp-not-found container">
         <h2>{t('curated.notFoundTitle')}</h2>
-        <Link to="/curated" className="btn btn-dark">{t('placeDetail.toHome')}</Link>
+        <Link to="/collections" className="btn btn-dark">{t('placeDetail.toHome')}</Link>
       </div>
     )
   }
@@ -57,7 +57,7 @@ export default function CuratedListDetailPage() {
     <div className="cld-page">
       <div className="cld-hero">
         <div className="container">
-          <Link to="/curated" className="cld-back">
+          <Link to="/collections" className="cld-back">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>
