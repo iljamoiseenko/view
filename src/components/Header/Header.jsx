@@ -112,15 +112,26 @@ export default function Header() {
             {lang === 'uk' ? 'EN' : 'UK'}
           </button>
           <div className="header__profile" ref={profileRef}>
-            <button
-              className="header__avatar-btn"
-              onClick={() => setProfileOpen(v => !v)}
-              aria-haspopup="menu"
-              aria-expanded={profileOpen}
-              aria-label={t('header.profile')}
-            >
-              {currentUser?.avatarUrl ? <img src={currentUser.avatarUrl} alt="" /> : DEFAULT_AVATAR}
-            </button>
+            {currentUser ? (
+              <button
+                className="header__avatar-btn"
+                onClick={() => setProfileOpen(v => !v)}
+                aria-haspopup="menu"
+                aria-expanded={profileOpen}
+                aria-label={t('header.profile')}
+              >
+                {currentUser.avatarUrl ? <img src={currentUser.avatarUrl} alt="" /> : DEFAULT_AVATAR}
+              </button>
+            ) : (
+              <button
+                className="header__login-text"
+                onClick={() => setProfileOpen(v => !v)}
+                aria-haspopup="menu"
+                aria-expanded={profileOpen}
+              >
+                {t('header.login')}
+              </button>
+            )}
 
             {profileOpen && (
               <div className="header__profile-menu" role="menu">
@@ -139,13 +150,27 @@ export default function Header() {
                   </>
                 ) : (
                   <div className="header__profile-guest">
-                    <span className="header__profile-guest-title">{t('header.yourAccount')}</span>
+                    <span className="header__profile-guest-label">{t('header.yourAccount')}</span>
+                    <span className="header__profile-guest-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 9.5V20a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5" />
+                        <path d="M2 7l2-4h16l2 4a3 3 0 0 1-5.5 1.7A3 3 0 0 1 12 10a3 3 0 0 1-4.5-1.3A3 3 0 0 1 2 7z" />
+                        <path d="M9.5 21v-6h5v6" />
+                      </svg>
+                    </span>
+                    <span className="header__profile-guest-title">{t('header.manageVenuePage')}</span>
+                    <p className="header__profile-guest-desc">{t('header.manageVenueDesc')}</p>
                     <Link to="/login" className="header__profile-guest-cta" onClick={closeProfile}>
                       {t('header.login')}
                     </Link>
+                    <span className="header__profile-guest-signup-q">{t('header.firstTime')}</span>
                     <Link to="/register" className="header__profile-guest-register" onClick={closeProfile}>
-                      {t('header.noAccount')}
+                      {t('header.createAccount')}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14M13 6l6 6-6 6" />
+                      </svg>
                     </Link>
+                    <p className="header__profile-guest-hint">{t('header.addVenueHint')}</p>
                   </div>
                 )}
               </div>
