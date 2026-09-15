@@ -28,7 +28,7 @@ const EMPTY_BANNER = {
   bgColor: '#1a1a1a', sortOrder: 0,
 }
 const EMPTY_CURATED = {
-  title: '', authorName: '', authorRole: '', authorAvatar: '',
+  title: '', authorName: '', authorRole: '', authorAvatar: '', authorAvatarPosition: '50% 50%',
   coverImage: '', icon: '', placeIds: [], sortOrder: 0,
 }
 
@@ -98,6 +98,63 @@ function ImageInput({ value, onChange, placeholder }) {
           {uploading ? '...' : t('superAdmin.uploadFile')}
         </button>
         <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
+      </div>
+    </div>
+  )
+}
+
+// ── Avatar focal-point picker — drag the marker to pick what shows in the
+// round avatar crop (stored as a CSS object-position string, e.g. "62% 30%") ──
+function AvatarPositionPicker({ src, value, onChange }) {
+  const { t } = useLanguage()
+  const boxRef = useRef()
+  const [dragging, setDragging] = useState(false)
+  const position = value || '50% 50%'
+  const [px, py] = position.split(' ').map(v => parseFloat(v) || 50)
+
+  const setFromEvent = (e) => {
+    const rect = boxRef.current.getBoundingClientRect()
+    const point = e.touches ? e.touches[0] : e
+    const x = Math.min(100, Math.max(0, ((point.clientX - rect.left) / rect.width) * 100))
+    const y = Math.min(100, Math.max(0, ((point.clientY - rect.top) / rect.height) * 100))
+    onChange(`${x.toFixed(0)}% ${y.toFixed(0)}%`)
+  }
+
+  useEffect(() => {
+    if (!dragging) return
+    const onMove = (e) => setFromEvent(e)
+    const onUp = () => setDragging(false)
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    window.addEventListener('touchmove', onMove)
+    window.addEventListener('touchend', onUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', onUp)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragging])
+
+  if (!src) return null
+
+  return (
+    <div className="sa-avatar-pos">
+      <div
+        className="sa-avatar-pos__box"
+        ref={boxRef}
+        onMouseDown={e => { setDragging(true); setFromEvent(e) }}
+        onTouchStart={e => { setDragging(true); setFromEvent(e) }}
+      >
+        <img src={src} alt="" style={{ objectPosition: position }} draggable={false} />
+        <span className="sa-avatar-pos__marker" style={{ left: `${px}%`, top: `${py}%` }} />
+      </div>
+      <div className="sa-avatar-pos__side">
+        <div className="sa-avatar-pos__preview">
+          <img src={src} alt="" style={{ objectPosition: position }} draggable={false} />
+        </div>
+        <p className="sa-avatar-pos__hint">{t('superAdmin.avatarPositionHint')}</p>
       </div>
     </div>
   )
@@ -655,6 +712,11 @@ function CuratedListForm({ initial, places, onSave, onClose }) {
         <div>
           <label className="sa-label">{t('superAdmin.fieldCuratorAvatar')}</label>
           <ImageInput value={f.authorAvatar} onChange={v => set('authorAvatar', v)} placeholder="https://..." />
+          <AvatarPositionPicker
+            src={f.authorAvatar}
+            value={f.authorAvatarPosition}
+            onChange={v => set('authorAvatarPosition', v)}
+          />
         </div>
         <div>
           <label className="sa-label">{t('superAdmin.fieldCuratorName')}</label>
@@ -671,10 +733,6 @@ function CuratedListForm({ initial, places, onSave, onClose }) {
         <div className="sa-col2">
           <label className="sa-label">{t('superAdmin.fieldCoverImage')}</label>
           <ImageInput value={f.coverImage} onChange={v => set('coverImage', v)} placeholder="https://..." />
-        </div>
-        <div>
-          <label className="sa-label">{t('superAdmin.fieldIcon')}</label>
-          <input className="input" value={f.icon} onChange={e => set('icon', e.target.value)} placeholder="👑" maxLength={4} />
         </div>
         <div>
           <label className="sa-label">{t('superAdmin.fieldSortOrder')}</label>
@@ -812,6 +870,7 @@ export default function SuperAdminPage() {
   }
 
   const getPlaceName = (pid) => places.find(p => p.id === pid)?.name || '—'
+  const today = new Date().toISOString().slice(0, 10)
 
   const handleGeocodeMissing = async () => {
     setGeocoding(true)
@@ -958,31 +1017,34 @@ export default function SuperAdminPage() {
                   <th>{t('superAdmin.thFeatured')}</th><th>{t('superAdmin.thActions')}</th>
                 </tr></thead>
                 <tbody>
-                  {[...events].sort((a, b) => a.date.localeCompare(b.date)).map(ev => (
-                    <tr key={ev.id}>
-                      <td className="sa-main">{ev.title}</td>
-                      <td><span className={`badge badge-event-${ev.type}`}>{getEventTypeLabel(ev, t)}</span></td>
-                      <td className="sa-muted">{getPlaceName(ev.placeId)}</td>
-                      <td>{ev.date}</td>
-                      <td>{formatEventTime(ev.time, t)}</td>
-                      <td>{ev.price === 0 ? <span className="sa-free">{t('common.free')}</span> : `${ev.price} ${t('common.currency')}`}</td>
-                      <td>
-                        <button
-                          className={`sa-toggle ${ev.featuredOnHome ? 'sa-toggle--active' : 'sa-toggle--inactive'}`}
-                          onClick={() => handleToggleFeatured(ev)}
-                          title={t('superAdmin.featuredHint')}
-                        >
-                          {ev.featuredOnHome ? t('superAdmin.active') : t('superAdmin.inactive')}
-                        </button>
-                      </td>
-                      <td>
-                        <div className="sa-actions">
-                          <button className="sa-icon-btn" onClick={() => setModal({ type: 'event', data: ev })}>✏️</button>
-                          <button className="sa-icon-btn" onClick={() => setConfirm({ type: 'event', id: ev.id, name: ev.title })}>🗑️</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {[...events].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)).map(ev => {
+                    const isPast = ev.date < today
+                    return (
+                      <tr key={ev.id} className={isPast ? 'sa-row--past' : ''}>
+                        <td className="sa-main">{ev.title}</td>
+                        <td className="sa-nowrap"><span className={`badge badge-event-${ev.type}`}>{getEventTypeLabel(ev, t)}</span></td>
+                        <td className="sa-muted">{getPlaceName(ev.placeId)}</td>
+                        <td className="sa-nowrap">{ev.date}</td>
+                        <td className="sa-nowrap">{formatEventTime(ev.time, t)}</td>
+                        <td className="sa-nowrap">{ev.price === 0 ? <span className="sa-free">{t('common.free')}</span> : `${ev.price} ${t('common.currency')}`}</td>
+                        <td className="sa-nowrap">
+                          <button
+                            className={`sa-toggle ${ev.featuredOnHome ? 'sa-toggle--active' : 'sa-toggle--inactive'}`}
+                            onClick={() => handleToggleFeatured(ev)}
+                            title={t('superAdmin.featuredHint')}
+                          >
+                            {ev.featuredOnHome ? t('superAdmin.active') : t('superAdmin.inactive')}
+                          </button>
+                        </td>
+                        <td className="sa-nowrap">
+                          <div className="sa-actions">
+                            <button className="sa-icon-btn" onClick={() => setModal({ type: 'event', data: ev })}>✏️</button>
+                            <button className="sa-icon-btn" onClick={() => setConfirm({ type: 'event', id: ev.id, name: ev.title })}>🗑️</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
               {events.length === 0 && <div className="sa-empty">{t('superAdmin.noEvents')}</div>}

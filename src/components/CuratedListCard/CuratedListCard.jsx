@@ -23,7 +23,7 @@ export default function CuratedListCard({ list }) {
           <h3 className="clcard__title">{list.title}</h3>
           <div className="clcard__author">
             {list.authorAvatar
-              ? <img className="clcard__avatar" src={list.authorAvatar} alt={list.authorName} />
+              ? <img className="clcard__avatar" src={list.authorAvatar} alt={list.authorName} style={{ objectPosition: list.authorAvatarPosition || '50% 50%' }} />
               : <div className="clcard__avatar clcard__avatar--empty">{list.authorName?.[0]}</div>
             }
             <div className="clcard__author-info">

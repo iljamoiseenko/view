@@ -58,7 +58,7 @@ router.get('/', (req, res) => {
   const cutoff = Date.now() - BOOST_DURATION_MS
   const rows = db.prepare(`
     SELECT * FROM places
-    ORDER BY (boosted_at IS NOT NULL AND boosted_at > ?) DESC, boosted_at DESC
+    ORDER BY (boosted_at IS NOT NULL AND boosted_at > ?) DESC, boosted_at DESC, id DESC
   `).all(cutoff)
   res.json(rows.map(parsePlace))
 })

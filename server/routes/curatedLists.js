@@ -11,6 +11,7 @@ function parseCuratedList(row) {
     authorName: row.author_name,
     authorRole: row.author_role || '',
     authorAvatar: row.author_avatar || '',
+    authorAvatarPosition: row.author_avatar_position || '50% 50%',
     coverImage: row.cover_image || '',
     icon: row.icon || '',
     placeIds: JSON.parse(row.place_ids || '[]'),
@@ -27,15 +28,15 @@ router.get('/', (req, res) => {
 
 // POST /api/curated-lists — superadmin only
 router.post('/', requireAuth, requireRole('superadmin'), (req, res) => {
-  const { title, authorName, authorRole, authorAvatar, coverImage, icon, placeIds, sortOrder } = req.body
+  const { title, authorName, authorRole, authorAvatar, authorAvatarPosition, coverImage, icon, placeIds, sortOrder } = req.body
   if (!title || !authorName) return res.status(400).json({ error: 'title and authorName required' })
 
   const id = 'cl' + Date.now()
   db.prepare(`
-    INSERT INTO curated_lists (id, title, author_name, author_role, author_avatar, cover_image, icon, place_ids, sort_order, active)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+    INSERT INTO curated_lists (id, title, author_name, author_role, author_avatar, author_avatar_position, cover_image, icon, place_ids, sort_order, active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
   `).run(
-    id, title.trim(), authorName.trim(), authorRole || '', authorAvatar || '',
+    id, title.trim(), authorName.trim(), authorRole || '', authorAvatar || '', authorAvatarPosition || '50% 50%',
     coverImage || '', icon || '', JSON.stringify(placeIds ?? []), sortOrder ?? 0
   )
 
@@ -49,24 +50,26 @@ router.put('/:id', requireAuth, requireRole('superadmin'), (req, res) => {
   const existing = db.prepare('SELECT id FROM curated_lists WHERE id = ?').get(id)
   if (!existing) return res.status(404).json({ error: 'Curated list not found' })
 
-  const { title, authorName, authorRole, authorAvatar, coverImage, icon, placeIds, sortOrder, active } = req.body
+  const { title, authorName, authorRole, authorAvatar, authorAvatarPosition, coverImage, icon, placeIds, sortOrder, active } = req.body
   db.prepare(`
     UPDATE curated_lists SET
-      title          = COALESCE(?, title),
-      author_name    = COALESCE(?, author_name),
-      author_role    = COALESCE(?, author_role),
-      author_avatar  = COALESCE(?, author_avatar),
-      cover_image    = COALESCE(?, cover_image),
-      icon           = COALESCE(?, icon),
-      place_ids      = COALESCE(?, place_ids),
-      sort_order     = COALESCE(?, sort_order),
-      active         = COALESCE(?, active)
+      title                   = COALESCE(?, title),
+      author_name             = COALESCE(?, author_name),
+      author_role             = COALESCE(?, author_role),
+      author_avatar           = COALESCE(?, author_avatar),
+      author_avatar_position  = COALESCE(?, author_avatar_position),
+      cover_image             = COALESCE(?, cover_image),
+      icon                    = COALESCE(?, icon),
+      place_ids               = COALESCE(?, place_ids),
+      sort_order              = COALESCE(?, sort_order),
+      active                  = COALESCE(?, active)
     WHERE id = ?
   `).run(
     title ?? null,
     authorName ?? null,
     authorRole ?? null,
     authorAvatar ?? null,
+    authorAvatarPosition ?? null,
     coverImage ?? null,
     icon ?? null,
     placeIds !== undefined ? JSON.stringify(placeIds) : null,

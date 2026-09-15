@@ -83,23 +83,6 @@
 
 .cld-grid__item { position: relative; }
 
-.cld-grid__rank {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 2;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--vivid);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 900;
-  border-radius: 50%;
-}
-
 @media (max-width: 1024px) {
   .cld-grid { grid-template-columns: repeat(3, 1fr); }
 }

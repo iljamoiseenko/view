@@ -69,7 +69,7 @@ export default function CuratedListDetailPage() {
             <h1 className="cld-hero__title">{list.title}</h1>
             <div className="cld-hero__author">
               {list.authorAvatar
-                ? <img className="cld-hero__avatar" src={list.authorAvatar} alt={list.authorName} />
+                ? <img className="cld-hero__avatar" src={list.authorAvatar} alt={list.authorName} style={{ objectPosition: list.authorAvatarPosition || '50% 50%' }} />
                 : <div className="cld-hero__avatar cld-hero__avatar--empty">{list.authorName?.[0]}</div>
               }
               <div className="cld-hero__author-info">
@@ -87,9 +87,8 @@ export default function CuratedListDetailPage() {
       <div className="container cld-body">
         {listPlaces.length > 0 ? (
           <div className="cld-grid">
-            {listPlaces.map((p, i) => (
+            {listPlaces.map((p) => (
               <div key={p.id} className="cld-grid__item">
-                <span className="cld-grid__rank">{i + 1}</span>
                 <PlaceCard
                   place={p}
                   todayEventCount={todayCountByPlace[p.id] || 0}

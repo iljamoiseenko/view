@@ -56,6 +56,7 @@ db.exec(`
     author_name TEXT NOT NULL,
     author_role TEXT DEFAULT '',
     author_avatar TEXT DEFAULT '',
+    author_avatar_position TEXT DEFAULT '50% 50%',
     cover_image TEXT DEFAULT '',
     icon TEXT DEFAULT '',
     place_ids TEXT NOT NULL DEFAULT '[]',
@@ -206,6 +207,12 @@ if (!usersCols.includes('subscription_status')) {
   db.prepare('ALTER TABLE users ADD COLUMN subscription_renews_at INTEGER').run()
   db.prepare('ALTER TABLE users ADD COLUMN wayforpay_rec_token TEXT').run()
   console.log('[db] Migration: added `subscription_status`/`subscription_renews_at`/`wayforpay_rec_token` columns')
+}
+
+const curatedListsCols = db.prepare('PRAGMA table_info(curated_lists)').all().map(c => c.name)
+if (!curatedListsCols.includes('author_avatar_position')) {
+  db.prepare("ALTER TABLE curated_lists ADD COLUMN author_avatar_position TEXT DEFAULT '50% 50%'").run()
+  console.log('[db] Migration: added `author_avatar_position` column to curated_lists')
 }
 
 // Seed only superadmin if no users exist

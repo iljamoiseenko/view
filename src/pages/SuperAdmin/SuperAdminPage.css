@@ -123,6 +123,13 @@
 .sa-table tbody tr:hover td { background: var(--bg-2); }
 .sa-table__main { font-weight: 600; color: var(--text); }
 .sa-table__sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+.sa-nowrap { white-space: nowrap; }
+
+/* Past events — greyed out so upcoming ones stand out at a glance */
+.sa-row--past td { color: var(--text-3); }
+.sa-row--past .sa-main { color: var(--text-3); }
+.sa-row--past img { opacity: 0.6; }
+.sa-row--past .badge { opacity: 0.55; }
 
 .sa-empty { padding: 40px 24px; text-align: center; font-size: 14px; color: var(--text-3); }
 
@@ -539,6 +546,77 @@
 
 .sa-upload-btn:hover { border-color: var(--dark); color: var(--text); }
 .sa-upload-btn:disabled { opacity: 0.5; cursor: wait; }
+
+/* ── Avatar focal-point picker ── */
+.sa-avatar-pos {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.sa-avatar-pos__box {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-3);
+  cursor: crosshair;
+  user-select: none;
+  touch-action: none;
+}
+
+.sa-avatar-pos__box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.sa-avatar-pos__marker {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--vivid);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.35);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.sa-avatar-pos__side {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sa-avatar-pos__preview {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bg-3);
+  border: 1.5px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sa-avatar-pos__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.sa-avatar-pos__hint {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-3);
+  margin: 0;
+  max-width: 180px;
+}
 
 /* ── Banner preview in form ── */
 .sa-banner-preview {
