@@ -7,6 +7,11 @@ const app = express()
 const PORT = process.env.PORT || 3001
 const isProd = process.env.NODE_ENV === 'production'
 
+// Railway/production sits behind a reverse proxy — without this, req.ip is
+// always the proxy's own address, which would make any per-IP rate limiting
+// (e.g. on the booking endpoint) bucket every visitor together.
+if (isProd) app.set('trust proxy', 1)
+
 // CORS — тільки для локальної розробки; в prod фронт і бек на одному домені
 if (!isProd) {
   app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'] }))
@@ -31,6 +36,8 @@ app.use('/api/banners', require('./routes/banners'))
 app.use('/api/curated-lists', require('./routes/curatedLists'))
 app.use('/api/subscriptions', require('./routes/subscriptions'))
 app.use('/api/feedback', require('./routes/feedback'))
+app.use('/api/table-booking', require('./routes/tableBooking'))
+app.use('/api/telegram', require('./routes/telegramLink'))
 
 app.get('/api/health', (_, res) => res.json({ ok: true }))
 
@@ -45,3 +52,5 @@ if (isProd) {
 }
 
 app.listen(PORT, () => console.log(`View API running on http://localhost:${PORT}`))
+
+require('./telegram').startPolling()

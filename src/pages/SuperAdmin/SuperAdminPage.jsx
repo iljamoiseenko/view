@@ -8,6 +8,7 @@ import { PLACE_TYPES, EVENT_TYPES, CITIES, CUISINE_LIST, TICKET_TYPES, COLLECTIO
 import { getPlaceTypeLabel } from '../../utils/placeType'
 import { getEventTypeLabel } from '../../utils/eventType'
 import { ALL_DAY_TIME, isAllDay, formatEventTime } from '../../utils/eventTime'
+import { kyivDateString } from '../../utils/kyivDate'
 import './SuperAdminPage.css'
 
 const EMPTY_PLACE = {
@@ -870,7 +871,7 @@ export default function SuperAdminPage() {
   }
 
   const getPlaceName = (pid) => places.find(p => p.id === pid)?.name || '—'
-  const today = new Date().toISOString().slice(0, 10)
+  const today = kyivDateString()
 
   const handleGeocodeMissing = async () => {
     setGeocoding(true)

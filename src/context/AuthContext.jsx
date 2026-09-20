@@ -35,6 +35,14 @@ export function AuthProvider({ children }) {
     return { success: true, user, place: createdPlace }
   }
 
+  // Lightweight account for guests booking tables — no venue/place attached.
+  const registerGuest = async ({ email, password, name }) => {
+    const { token, user } = await api.post('/auth/register-guest', { email, password, name })
+    setToken(token)
+    setCurrentUser(user)
+    return user
+  }
+
   const updateCurrentUser = (patch) => setCurrentUser(u => u ? { ...u, ...patch } : u)
 
   const refreshCurrentUser = async () => {
@@ -44,7 +52,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ currentUser, loading, login, logout, registerUser, updateCurrentUser, refreshCurrentUser }}>
+    <AuthContext.Provider value={{ currentUser, loading, login, logout, registerUser, registerGuest, updateCurrentUser, refreshCurrentUser }}>
       {children}
     </AuthContext.Provider>
   )

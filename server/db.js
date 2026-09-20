@@ -106,6 +106,69 @@ db.exec(`
     FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE
   );
   CREATE INDEX IF NOT EXISTS idx_place_views_place_date ON place_views (place_id, viewed_at);
+
+  -- Table booking: a place can have several "floors" (or a summer terrace,
+  -- a second hall, etc.) — each its own layout (floor plan canvas) made of
+  -- objects (bookable tables + decorative labels like "БАР"/"СЦЕНА"), and
+  -- bookings pinned to a specific table object for a specific date.
+  CREATE TABLE IF NOT EXISTS table_layouts (
+    id TEXT PRIMARY KEY,
+    place_id TEXT NOT NULL,
+    name TEXT NOT NULL DEFAULT 'Основний зал',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    width INTEGER NOT NULL DEFAULT 900,
+    height INTEGER NOT NULL DEFAULT 650,
+    background TEXT NOT NULL DEFAULT '#F7F7F7',
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_table_layouts_place ON table_layouts (place_id);
+
+  CREATE TABLE IF NOT EXISTS table_objects (
+    id TEXT PRIMARY KEY,
+    layout_id TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'table',
+    shape TEXT NOT NULL DEFAULT 'round',
+    x INTEGER NOT NULL,
+    y INTEGER NOT NULL,
+    width INTEGER NOT NULL,
+    height INTEGER NOT NULL,
+    label TEXT,
+    seats INTEGER,
+    is_bookable INTEGER NOT NULL DEFAULT 1,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    available_from TEXT NOT NULL DEFAULT '10:00',
+    available_to TEXT NOT NULL DEFAULT '23:00',
+    slot_minutes INTEGER NOT NULL DEFAULT 90,
+    color TEXT,
+    FOREIGN KEY (layout_id) REFERENCES table_layouts(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_table_objects_layout ON table_objects (layout_id);
+
+  -- A table can be booked more than once a day, as long as the time slots
+  -- don't overlap — conflict checking happens at the app level (better-sqlite3
+  -- is synchronous, so a check-then-insert within one request has no race).
+  CREATE TABLE IF NOT EXISTS table_bookings (
+    id TEXT PRIMARY KEY,
+    place_id TEXT NOT NULL,
+    table_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    time TEXT,
+    duration_minutes INTEGER NOT NULL DEFAULT 90,
+    guest_name TEXT NOT NULL,
+    guest_phone TEXT NOT NULL,
+    party_size INTEGER NOT NULL DEFAULT 2,
+    note TEXT,
+    status TEXT NOT NULL DEFAULT 'confirmed',
+    source TEXT NOT NULL DEFAULT 'online',
+    user_id TEXT,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE,
+    FOREIGN KEY (table_id) REFERENCES table_objects(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_table_bookings_table_date ON table_bookings (table_id, date);
+  CREATE INDEX IF NOT EXISTS idx_table_bookings_place_date ON table_bookings (place_id, date);
 `)
 
 // Migrations
@@ -168,6 +231,10 @@ if (!placesCols.includes('opening_soon')) {
   db.prepare('ALTER TABLE places ADD COLUMN opening_date TEXT').run()
   console.log('[db] Migration: added `opening_soon`/`opening_date` columns to places')
 }
+if (!placesCols.includes('table_booking_paused')) {
+  db.prepare('ALTER TABLE places ADD COLUMN table_booking_paused INTEGER NOT NULL DEFAULT 0').run()
+  console.log('[db] Migration: added `table_booking_paused` column to places')
+}
 
 const eventsCols = db.prepare('PRAGMA table_info(events)').all().map(c => c.name)
 if (!eventsCols.includes('custom_type')) {
@@ -208,11 +275,105 @@ if (!usersCols.includes('subscription_status')) {
   db.prepare('ALTER TABLE users ADD COLUMN wayforpay_rec_token TEXT').run()
   console.log('[db] Migration: added `subscription_status`/`subscription_renews_at`/`wayforpay_rec_token` columns')
 }
+if (!usersCols.includes('telegram_chat_id')) {
+  db.prepare('ALTER TABLE users ADD COLUMN telegram_chat_id TEXT').run()
+  console.log('[db] Migration: added `telegram_chat_id` column to users')
+}
+
+// Telegram deep-link tokens: a guest tapping "confirm via Telegram" on a
+// booking, or an owner connecting notifications from their account tab, both
+// go through a short-lived one-time token embedded in a t.me/<bot>?start=
+// link — the bot's /start handler resolves it back to who/what to attach the
+// resulting chat_id to.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS telegram_tokens (
+    token TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    used_at INTEGER
+  );
+`)
 
 const curatedListsCols = db.prepare('PRAGMA table_info(curated_lists)').all().map(c => c.name)
 if (!curatedListsCols.includes('author_avatar_position')) {
   db.prepare("ALTER TABLE curated_lists ADD COLUMN author_avatar_position TEXT DEFAULT '50% 50%'").run()
   console.log('[db] Migration: added `author_avatar_position` column to curated_lists')
+}
+
+const tableObjectsCols = db.prepare('PRAGMA table_info(table_objects)').all().map(c => c.name)
+if (!tableObjectsCols.includes('available_from')) {
+  db.prepare("ALTER TABLE table_objects ADD COLUMN available_from TEXT NOT NULL DEFAULT '10:00'").run()
+  db.prepare("ALTER TABLE table_objects ADD COLUMN available_to TEXT NOT NULL DEFAULT '23:00'").run()
+  db.prepare('ALTER TABLE table_objects ADD COLUMN slot_minutes INTEGER NOT NULL DEFAULT 90').run()
+  console.log('[db] Migration: added availability window columns to table_objects')
+}
+if (!tableObjectsCols.includes('color')) {
+  db.prepare('ALTER TABLE table_objects ADD COLUMN color TEXT').run()
+  console.log('[db] Migration: added `color` column to table_objects')
+}
+
+const tableBookingsCols = db.prepare('PRAGMA table_info(table_bookings)').all().map(c => c.name)
+if (!tableBookingsCols.includes('duration_minutes')) {
+  db.prepare('ALTER TABLE table_bookings ADD COLUMN duration_minutes INTEGER NOT NULL DEFAULT 90').run()
+  console.log('[db] Migration: added `duration_minutes` column to table_bookings')
+}
+if (!tableBookingsCols.includes('source')) {
+  db.prepare("ALTER TABLE table_bookings ADD COLUMN source TEXT NOT NULL DEFAULT 'online'").run()
+  console.log('[db] Migration: added `source` column to table_bookings')
+}
+if (!tableBookingsCols.includes('user_id')) {
+  db.prepare('ALTER TABLE table_bookings ADD COLUMN user_id TEXT').run()
+  console.log('[db] Migration: added `user_id` column to table_bookings')
+}
+if (!tableBookingsCols.includes('telegram_chat_id')) {
+  db.prepare('ALTER TABLE table_bookings ADD COLUMN telegram_chat_id TEXT').run()
+  console.log('[db] Migration: added `telegram_chat_id` column to table_bookings')
+}
+if (!tableBookingsCols.includes('reminder_sent_at')) {
+  db.prepare('ALTER TABLE table_bookings ADD COLUMN reminder_sent_at INTEGER').run()
+  console.log('[db] Migration: added `reminder_sent_at` column to table_bookings')
+}
+if (!tableBookingsCols.includes('owner_confirmed_at')) {
+  db.prepare('ALTER TABLE table_bookings ADD COLUMN owner_confirmed_at INTEGER').run()
+  console.log('[db] Migration: added `owner_confirmed_at` column to table_bookings')
+}
+if (!tableBookingsCols.includes('occasion')) {
+  db.prepare('ALTER TABLE table_bookings ADD COLUMN occasion TEXT').run()
+  console.log('[db] Migration: added `occasion` column to table_bookings')
+}
+db.exec('CREATE INDEX IF NOT EXISTS idx_table_bookings_user ON table_bookings (user_id)')
+// A table can now take more than one booking a day (different time slots), so
+// the old "one booking per table per date" constraint no longer applies —
+// conflicts are checked by overlapping time range at the app level instead.
+db.exec('DROP INDEX IF EXISTS idx_table_bookings_unique_active')
+
+// A place can now have several floors/terraces, so table_layouts can no
+// longer keep its old "one row per place" UNIQUE(place_id) — SQLite can't
+// drop that inline constraint with ALTER, so rebuild the table without it.
+const tableLayoutsCols = db.prepare('PRAGMA table_info(table_layouts)').all().map(c => c.name)
+if (!tableLayoutsCols.includes('name')) {
+  db.pragma('foreign_keys = OFF')
+  db.exec(`
+    CREATE TABLE table_layouts_new (
+      id TEXT PRIMARY KEY,
+      place_id TEXT NOT NULL,
+      name TEXT NOT NULL DEFAULT 'Основний зал',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      width INTEGER NOT NULL DEFAULT 900,
+      height INTEGER NOT NULL DEFAULT 650,
+      background TEXT NOT NULL DEFAULT '#F7F7F7',
+      updated_at INTEGER NOT NULL,
+      FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE
+    );
+    INSERT INTO table_layouts_new (id, place_id, name, sort_order, width, height, background, updated_at)
+      SELECT id, place_id, 'Основний зал', 0, width, height, background, updated_at FROM table_layouts;
+    DROP TABLE table_layouts;
+    ALTER TABLE table_layouts_new RENAME TO table_layouts;
+    CREATE INDEX IF NOT EXISTS idx_table_layouts_place ON table_layouts (place_id);
+  `)
+  db.pragma('foreign_keys = ON')
+  console.log('[db] Migration: table_layouts now supports multiple floors per place')
 }
 
 // Seed only superadmin if no users exist

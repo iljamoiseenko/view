@@ -4,9 +4,10 @@ import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
 import PlaceCard from '../../components/PlaceCard/PlaceCard'
 import { isAllDay } from '../../utils/eventTime'
+import { kyivDateString } from '../../utils/kyivDate'
 import './CuratedListDetailPage.css'
 
-const TODAY = new Date().toISOString().slice(0, 10)
+const TODAY = kyivDateString()
 
 function isHappeningNow(time) {
   if (!time) return false

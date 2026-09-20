@@ -50,6 +50,8 @@ function parsePlace(row) {
     opening_soon: undefined,
     openingDate: row.opening_date,
     opening_date: undefined,
+    tableBookingPaused: row.table_booking_paused === 1,
+    table_booking_paused: undefined,
   }
 }
 
@@ -113,7 +115,7 @@ router.put('/:id', requireAuth, async (req, res) => {
   const existing = db.prepare('SELECT * FROM places WHERE id = ?').get(id)
   if (!existing) return res.status(404).json({ error: 'Place not found' })
 
-  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, collections, rating, bookingEnabled, bookingPhone, menuUrl, petsFriendly, kidsRoom, ticketsUrl, customType, openingSoon, openingDate, skipPublish } = req.body
+  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, collections, rating, bookingEnabled, bookingPhone, menuUrl, petsFriendly, kidsRoom, ticketsUrl, customType, openingSoon, openingDate, tableBookingPaused, skipPublish } = req.body
 
   // Re-geocode only if the address or city actually changed
   let coords = null
@@ -155,6 +157,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       custom_type = COALESCE(?, custom_type),
       opening_soon = COALESCE(?, opening_soon),
       opening_date = COALESCE(?, opening_date),
+      table_booking_paused = COALESCE(?, table_booking_paused),
       ${socialSet},
       published = ${skipPublish ? 'published' : '1'}
     WHERE id = ?
@@ -177,6 +180,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     customType !== undefined ? customType : null,
     openingSoon !== undefined ? (openingSoon ? 1 : 0) : null,
     openingDate !== undefined ? openingDate : null,
+    tableBookingPaused !== undefined ? (tableBookingPaused ? 1 : 0) : null,
     ...socialParams,
     id
   )

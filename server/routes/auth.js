@@ -41,6 +41,7 @@ function publicUser(user) {
     subscriptionStatus: user.subscription_status || 'inactive',
     subscriptionRenewsAt: user.subscription_renews_at || null,
     subscriptionAutoRenew: !!user.wayforpay_rec_token,
+    telegramLinked: !!user.telegram_chat_id,
   }
 }
 
@@ -112,6 +113,34 @@ router.post('/register', (req, res) => {
     user: publicUser(user),
     place: createdPlace ? { ...createdPlace, photos: JSON.parse(createdPlace.photos), tags: JSON.parse(createdPlace.tags), workingHours: createdPlace.working_hours } : null,
   })
+})
+
+// POST /api/auth/register-guest — a lightweight account for people booking
+// tables (not venue owners): just email + password, no place gets created.
+// Lets them see/cancel their bookings later without losing a one-off link.
+router.post('/register-guest', (req, res) => {
+  const { email, password, name } = req.body
+  if (!email || !password) return res.status(400).json({ error: 'Email і пароль обовʼязкові' })
+  if (password.length < 6) return res.status(400).json({ error: 'Пароль має бути мінімум 6 символів' })
+
+  const clean = email.toLowerCase().trim()
+  if (!/^\S+@\S+\.\S+$/.test(clean)) return res.status(400).json({ error: 'Некоректний email' })
+
+  const exists = db.prepare('SELECT id FROM users WHERE username = ? OR email = ?').get(clean, clean)
+  if (exists) return res.status(409).json({ error: 'Цей email вже зареєстровано' })
+
+  const now = new Date().toISOString()
+  const userId = 'u' + Date.now()
+  const hash = bcrypt.hashSync(password, 10)
+  const displayName = name?.trim() || clean.split('@')[0]
+
+  db.prepare(`
+    INSERT INTO users (id, email, username, password_hash, plain_pass, role, name, place_id, is_active, created_at)
+    VALUES (?, ?, ?, ?, ?, 'user', ?, NULL, 1, ?)
+  `).run(userId, clean, clean, hash, password, displayName, now)
+
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId)
+  res.status(201).json({ token: makeToken(user), user: publicUser(user) })
 })
 
 // POST /api/auth/forgot-password

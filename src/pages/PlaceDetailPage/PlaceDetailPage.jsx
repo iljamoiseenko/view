@@ -34,6 +34,16 @@ export default function PlaceDetailPage() {
     api.post(`/places/${id}/view`, {}).catch(() => {})
   }, [id])
 
+  // Only show the "pick your table" CTA once the venue actually has a floor
+  // (or several) with at least one table on it — otherwise /book/:id has nothing to show.
+  const [hasTableLayout, setHasTableLayout] = useState(false)
+  useEffect(() => {
+    if (!id) return
+    api.get(`/table-booking/${id}/floors`)
+      .then(floors => setHasTableLayout((floors || []).some(f => (f.tableCount || 0) > 0)))
+      .catch(() => setHasTableLayout(false))
+  }, [id])
+
   if (!place) {
     return (
       <div className="container" style={{ padding: '80px 24px', textAlign: 'center' }}>
@@ -158,6 +168,17 @@ export default function PlaceDetailPage() {
 
           {place.description && (
             <p className="detail__desc">{place.description}</p>
+          )}
+
+          {hasTableLayout && (
+            <Link to={`/book/${place.id}`} className="detail__table-cta">
+              <span className="detail__table-cta__icon">🪑</span>
+              <span className="detail__table-cta__body">
+                <span className="detail__table-cta__title">{t('placeDetail.bookTable')}</span>
+                <span className="detail__table-cta__hint">{t('placeDetail.bookTableHint')}</span>
+              </span>
+              <span className="detail__table-cta__arrow">→</span>
+            </Link>
           )}
 
           {place.bookingEnabled && place.bookingPhone && (

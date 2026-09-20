@@ -165,6 +165,29 @@
   text-decoration: none;
 }
 
+/* Table-selection booking CTA — deliberately louder/different from the plain
+   dark tel: button so it reads as "pick a table online", not "call us". */
+.detail__table-cta {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 440px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(252, 24, 248, 0.07);
+  border: 1.5px solid rgba(252, 24, 248, 0.35);
+  text-decoration: none;
+  transition: var(--transition);
+}
+.detail__table-cta:hover { background: rgba(252, 24, 248, 0.13); border-color: var(--vivid); }
+.detail__table-cta__icon { font-size: 24px; line-height: 1; flex-shrink: 0; }
+.detail__table-cta__body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.detail__table-cta__title { font-size: 15px; font-weight: 800; color: var(--dark); }
+.detail__table-cta__hint { font-size: 12px; color: var(--text-3); line-height: 1.4; }
+.detail__table-cta__arrow { font-size: 18px; font-weight: 700; color: var(--vivid); flex-shrink: 0; }
+
 /* Info list */
 .detail__info-list {
   display: flex;

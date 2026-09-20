@@ -1,0 +1,345 @@
+.tle-page { padding-bottom: 60px; }
+
+.tle-loading { padding: 80px 0; text-align: center; color: var(--text-3); font-size: 14px; }
+
+.tle-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 20px;
+  padding-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.tle-back {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  font-family: var(--font);
+  padding: 0;
+  transition: color var(--transition);
+}
+.tle-back:hover { color: var(--dark); }
+
+.tle-title { font-size: 20px; font-weight: 900; margin: 0; flex: 1; color: var(--dark); }
+
+.tle-head__actions { display: flex; align-items: center; gap: 12px; }
+
+.tle-unsaved { font-size: 12px; font-weight: 600; color: #B45309; }
+.tle-saved { font-size: 12px; font-weight: 600; color: #166534; }
+
+.tle-error {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.tle-mobile-notice { display: none; }
+
+/* Floor tabs */
+.tle-floors {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.tle-floor-tab {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--border);
+  background: var(--bg-2);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.tle-floor-tab:hover { border-color: var(--dark); color: var(--dark); }
+.tle-floor-tab.active { background: var(--dark); border-color: var(--dark); color: #fff; }
+
+.tle-floor-add {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1.5px dashed var(--border);
+  background: none;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.tle-floor-add:hover { border-color: var(--vivid); color: var(--vivid); }
+
+.tle-floors__actions { display: flex; gap: 4px; margin-left: auto; }
+
+.tle-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition);
+}
+.tle-icon-btn:hover { background: var(--border); }
+.tle-icon-btn.tle-danger { color: #DC2626; }
+.tle-icon-btn.tle-danger:hover { background: #FEE2E2; }
+
+.tle-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  padding-bottom: 16px;
+}
+
+.tle-toolbar__snap-hint {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.tle-toolbar__size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.tle-toolbar__size input {
+  width: 80px;
+  padding: 6px 8px;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-family: var(--font);
+}
+.tle-toolbar__size input.tle-toolbar__name { width: 160px; }
+
+.tle-floor-add-form { display: flex; align-items: center; gap: 8px; }
+.tle-floor-add-form .input { width: 180px; padding: 8px 12px; font-size: 13px; }
+.tle-floor-add-form--centered { justify-content: center; margin-top: 8px; }
+/* Centered variant pairs with a full-size .btn (not .btn-sm) — match its
+   padding/font so the input and button line up at the same height. */
+.tle-floor-add-form--centered .input { width: 220px; padding: 10px 14px; font-size: 14px; }
+/* .empty-state .btn adds margin-top:8px for the standalone "create first
+   floor" button — cancel it here so the submit button stays level with the
+   input. Needs the extra "button" tag for specificity: both selectors are
+   two classes deep, and index.css's stylesheet happens to be injected after
+   this one in dev, so it would otherwise win the tie. */
+.tle-floor-add-form--centered button.btn { margin-top: 0; }
+
+.tle-body {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  padding: 0 24px;
+}
+@media (max-width: 640px) { .tle-body, .tle-toolbar { padding-left: 16px; padding-right: 16px; } }
+
+.tle-canvas-wrap {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  padding: 20px;
+  /* Canvas is narrower than the wrap on most screens — center it so the
+     left/right padding stays equal instead of the canvas hugging the left
+     edge and leaving a lopsided gap on the right. justify-content:center
+     falls back to "safe" start-alignment on its own once the canvas is wide
+     enough to overflow, so scrolling still works. */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.tle-canvas {
+  position: relative;
+  flex-shrink: 0;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  /* Subtle alignment grid, à la Canva/Figma — a bolder line every 100px, a
+     faint one every 20px (matches the drag/resize snap step below). */
+  background-image:
+    linear-gradient(to right, rgba(0,0,0,0.09) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,0,0,0.09) 1px, transparent 1px),
+    linear-gradient(to right, rgba(0,0,0,0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,0,0,0.035) 1px, transparent 1px);
+  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+  background-position: -1px -1px;
+}
+
+.tle-canvas__empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  font-size: 14px;
+  text-align: center;
+  padding: 20px;
+  pointer-events: none;
+}
+
+.tle-obj {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: grab;
+  user-select: none;
+  border: 1.5px solid var(--border);
+  background: var(--bg-2);
+  color: var(--dark);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  padding: 3px;
+  box-sizing: border-box;
+  transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
+}
+.tle-obj:active { cursor: grabbing; }
+
+.tle-obj--table { border-color: var(--text-3); }
+.tle-obj--table.tle-obj--round { border-radius: 50%; }
+.tle-obj--table.tle-obj--rect { border-radius: var(--radius-sm); }
+
+.tle-obj--label {
+  border-radius: var(--radius-sm);
+  background: #DCE4F5;
+  border-color: #B7C4E8;
+  color: #33456E;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tle-obj.is-selected {
+  border-color: var(--vivid);
+  box-shadow: 0 0 0 3px rgba(252, 24, 248, 0.2);
+  z-index: 2;
+}
+
+.tle-obj__label { pointer-events: none; line-height: 1.2; overflow: hidden; word-break: break-word; }
+.tle-obj__seats { pointer-events: none; font-size: 10px; font-weight: 600; color: var(--text-3); }
+
+.tle-obj__resize {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--vivid);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  cursor: nwse-resize;
+}
+.tle-obj__resize--br { right: -6px; bottom: -6px; }
+.tle-obj__resize--tl { left: -6px; top: -6px; }
+
+.tle-props {
+  width: 260px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  padding: 18px;
+  position: sticky;
+  top: 76px;
+}
+
+.tle-props__title { font-size: 15px; font-weight: 800; margin: 0 0 14px; color: var(--dark); }
+
+.tle-props__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 12px;
+}
+
+.tle-props__field-row { display: flex; gap: 10px; }
+.tle-props__field-row .tle-props__field { flex: 1; min-width: 0; }
+
+.tle-props__color-row { display: flex; align-items: center; gap: 10px; }
+.tle-props__color-input {
+  width: 40px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+/* Native color swatches render with browser chrome by default — trim it down
+   so it doesn't look bigger/boxier than the rest of the panel's inputs. */
+.tle-props__color-input::-webkit-color-swatch-wrapper { padding: 0; }
+.tle-props__color-input::-webkit-color-swatch { border: none; border-radius: 2px; }
+.tle-props__color-reset {
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--font);
+  transition: color var(--transition);
+}
+.tle-props__color-reset:hover { color: var(--vivid); }
+
+.tle-props__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 16px;
+}
+
+.tle-props__actions { display: flex; gap: 8px; margin-top: 8px; }
+
+.tle-danger { color: #DC2626; border-color: #FECACA; }
+.tle-danger:hover { background: #FEE2E2; }
+
+.tle-props__hint { font-size: 13px; color: var(--text-3); line-height: 1.5; margin: 0; }
+
+@media (max-width: 860px) {
+  .tle-mobile-notice {
+    display: block;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.5;
+    margin: 8px 0;
+  }
+  .tle-desktop-only { display: none; }
+}

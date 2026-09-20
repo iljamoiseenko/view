@@ -13,8 +13,10 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const redirectFor = (role) => (role === 'superadmin' ? '/admin' : role === 'user' ? '/my-bookings' : '/venue')
+
   if (currentUser) {
-    return <Navigate to={currentUser.role === 'superadmin' ? '/admin' : '/venue'} replace />
+    return <Navigate to={redirectFor(currentUser.role)} replace />
   }
 
   const handleSubmit = async (e) => {
@@ -23,7 +25,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const user = await login(username, password)
-      navigate(user.role === 'superadmin' ? '/admin' : '/venue', { replace: true })
+      navigate(redirectFor(user.role), { replace: true })
     } catch (err) {
       setError(err.message || t('login.errorDefault'))
     } finally {
@@ -75,7 +77,9 @@ export default function LoginPage() {
         <div className="login-footer-links">
           <a href="/forgot-password" className="login-forgot">{t('login.forgot')}</a>
           <span className="login-footer-sep">·</span>
-          <a href="/register" className="login-forgot">{t('login.register')}</a>
+          <a href="/register-guest" className="login-forgot">{t('login.registerGuest')}</a>
+          <span className="login-footer-sep">·</span>
+          <a href="/register" className="login-forgot">{t('login.registerVenue')}</a>
         </div>
       </div>
     </div>

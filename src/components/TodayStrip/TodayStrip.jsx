@@ -8,9 +8,10 @@ import { CITIES } from '../../data/initialData'
 import { useLanguage } from '../../context/LanguageContext'
 import { getEventTypeLabel } from '../../utils/eventType'
 import { isAllDay, formatEventTime } from '../../utils/eventTime'
+import { kyivDateString } from '../../utils/kyivDate'
 import './TodayStrip.css'
 
-const TODAY = new Date().toISOString().slice(0, 10)
+const TODAY = kyivDateString()
 
 function isHappeningNow(time) {
   if (!time) return false

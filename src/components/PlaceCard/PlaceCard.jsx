@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import { getPlaceTypeLabel } from '../../utils/placeType'
+import { kyivDateString } from '../../utils/kyivDate'
 import './PlaceCard.css'
 
 const PlaceCard = memo(function PlaceCard({ place, todayEventCount = 0, hasNow = false }) {
@@ -14,7 +15,7 @@ const PlaceCard = memo(function PlaceCard({ place, todayEventCount = 0, hasNow =
   // still in the future; once the date arrives the blur lifts and it reads NEW.
   // While still "soon", the venue's detail page has nothing to show yet, so the
   // card isn't a link at all — just a static preview.
-  const today = new Date().toISOString().slice(0, 10)
+  const today = kyivDateString()
   const isOpeningSoon = place.openingSoon && (!place.openingDate || place.openingDate > today)
   const isNewlyOpened = place.openingSoon && !!place.openingDate && place.openingDate <= today
 

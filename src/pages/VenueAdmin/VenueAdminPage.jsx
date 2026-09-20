@@ -7,7 +7,13 @@ import { api } from '../../api/client'
 import { PLACE_TYPES, EVENT_TYPES, CITIES, CUISINE_LIST, TICKET_TYPES, COLLECTIONS, SUBSCRIPTION_TIERS } from '../../data/initialData'
 import { getEventTypeLabel } from '../../utils/eventType'
 import { ALL_DAY_TIME, isAllDay, formatEventTime } from '../../utils/eventTime'
+import BookingCalendarView from './BookingCalendarView'
 import './VenueAdminPage.css'
+
+// TEMP: table booking is free-to-test for now — flip back to true to require
+// an active subscription again (also revert the matching check server-side
+// in server/routes/tableBooking.js's PUT /:placeId/layout).
+const BOOKING_REQUIRES_SUBSCRIPTION = false
 
 const EMPTY_LOGIN_FORM = { currentPassword: '', username: '' }
 const EMPTY_PASSWORD_FORM = { currentPassword: '', newPassword: '', confirmPassword: '' }
@@ -391,6 +397,8 @@ function EventModal({ initial, placeId, onSave, onClose }) {
   )
 }
 
+const TABS = ['place', 'boost', 'events', 'stats', 'booking', 'account', 'subscription']
+
 // ── Main VenueAdminPage ──────────────────────────────────────────────────────
 export default function VenueAdminPage() {
   const { currentUser, logout, refreshCurrentUser } = useAuth()
@@ -403,7 +411,21 @@ export default function VenueAdminPage() {
   const myEvents = events.filter(e => e.placeId === currentUser?.placeId)
     .sort((a, b) => a.date.localeCompare(b.date))
 
-  const [tab, setTab] = useState('place')
+  // The active tab lives in the URL (?tab=...) so a reload (or a bookmarked/
+  // shared link) lands back on the same tab instead of always resetting to
+  // "Мій заклад".
+  const [tab, setTabState] = useState(() => {
+    const fromUrl = searchParams.get('tab')
+    return TABS.includes(fromUrl) ? fromUrl : 'place'
+  })
+  const setTab = (next) => {
+    setTabState(next)
+    setSearchParams(prev => {
+      const params = new URLSearchParams(prev)
+      params.set('tab', next)
+      return params
+    }, { replace: true })
+  }
   const [thankYouVisible, setThankYouVisible] = useState(searchParams.get('payment') === 'return')
   const [paymentPending, setPaymentPending] = useState(searchParams.get('payment') === 'return')
   const [paymentActivated, setPaymentActivated] = useState(false)
@@ -549,6 +571,9 @@ export default function VenueAdminPage() {
   const [passwordError, setPasswordError] = useState('')
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [accountSaved, setAccountSaved] = useState(false)
+  const [telegramLinking, setTelegramLinking] = useState(false)
+  const [telegramError, setTelegramError] = useState('')
+  const [telegramDisconnecting, setTelegramDisconnecting] = useState(false)
 
   const [placeForm, setPlaceForm] = useState(() => {
     if (!place) return {}
@@ -596,6 +621,7 @@ export default function VenueAdminPage() {
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState('')
   const hasActiveSub = currentUser?.subscriptionStatus === 'active'
+  const hasBookingAccess = BOOKING_REQUIRES_SUBSCRIPTION ? hasActiveSub : true
 
   useEffect(() => {
     if (!place?.id) return
@@ -613,6 +639,32 @@ export default function VenueAdminPage() {
       })
       .finally(() => setStatsLoading(false))
   }, [tab, place?.id])
+
+  const [bookingFloors, setBookingFloors] = useState([])
+  const [bookingLoading, setBookingLoading] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
+
+  useEffect(() => {
+    if (tab !== 'booking' || !place?.id) return
+    setBookingLoading(true)
+    api.get(`/table-booking/${place.id}/floors`)
+      .then(setBookingFloors)
+      .catch(() => {})
+      .finally(() => setBookingLoading(false))
+  }, [tab, place?.id])
+
+  const bookingTablesCount = bookingFloors.reduce((sum, f) => sum + (f.tableCount || 0), 0)
+
+  const bookingLink = place?.id ? `${window.location.origin}/book/${place.id}` : ''
+  const copyBookingLink = () => {
+    // Show the "copied" feedback right away rather than waiting on the
+    // clipboard promise — if the browser silently denies clipboard
+    // permission (happens in some embedded/automation contexts), the button
+    // still gives feedback instead of doing nothing.
+    setLinkCopied(true)
+    setTimeout(() => setLinkCopied(false), 2000)
+    navigator.clipboard?.writeText(bookingLink)?.catch(() => {})
+  }
 
   const handleBoost = async () => {
     if (!place) return
@@ -766,6 +818,44 @@ export default function VenueAdminPage() {
       setPasswordError(err.message)
     } finally {
       setPasswordSaving(false)
+    }
+  }
+
+  // Opens the bot in a new tab and starts polling refreshCurrentUser — the
+  // link only actually connects once the owner taps "Start" over there, and
+  // that happens asynchronously outside this tab, so there's no single event
+  // to react to.
+  const handleConnectTelegram = async () => {
+    setTelegramError('')
+    setTelegramLinking(true)
+    try {
+      const { url } = await api.get('/telegram/link-owner')
+      window.open(url, '_blank', 'noopener')
+      let attempts = 0
+      const poll = setInterval(async () => {
+        attempts++
+        const user = await refreshCurrentUser().catch(() => null)
+        if (user?.telegramLinked || attempts >= 20) {
+          clearInterval(poll)
+          setTelegramLinking(false)
+        }
+      }, 3000)
+    } catch (err) {
+      setTelegramError(err.message === 'TELEGRAM_NOT_CONFIGURED' ? t('venueAdmin.telegramNotConfigured') : t('venueAdmin.telegramError'))
+      setTelegramLinking(false)
+    }
+  }
+
+  const handleDisconnectTelegram = async () => {
+    setTelegramError('')
+    setTelegramDisconnecting(true)
+    try {
+      await api.delete('/telegram/link-owner')
+      await refreshCurrentUser().catch(() => null)
+    } catch {
+      setTelegramError(t('venueAdmin.telegramDisconnectError'))
+    } finally {
+      setTelegramDisconnecting(false)
     }
   }
 
@@ -1007,6 +1097,9 @@ export default function VenueAdminPage() {
           </button>
           <button className={`va-nav-item ${tab === 'stats' ? 'active' : ''}`} onClick={() => setTab('stats')}>
             {t('venueAdmin.tabStats')}
+          </button>
+          <button className={`va-nav-item ${tab === 'booking' ? 'active' : ''}`} onClick={() => setTab('booking')}>
+            {t('venueAdmin.tabBooking')}
           </button>
           <button className={`va-nav-item ${tab === 'account' ? 'active' : ''}`} onClick={() => setTab('account')}>
             {t('venueAdmin.tabAccount')}
@@ -1416,6 +1509,85 @@ export default function VenueAdminPage() {
           </div>
         )}
 
+        {/* Tab: Booking */}
+        {tab === 'booking' && (
+          <div className="va-section">
+            <div className="va-section__head">
+              <h2>{t('venueAdmin.bookingTabTitle')}</h2>
+            </div>
+
+            {!hasBookingAccess && (
+              <div className="va-sub-required">
+                <p className="va-sub-required__title">{t('venueAdmin.subRequiredTitle')}</p>
+                <p className="va-sub-required__text">{t('venueAdmin.bookingSubRequiredText')}</p>
+                <button className="btn btn-dark" onClick={() => setTab('subscription')}>
+                  {t('venueAdmin.subRequiredBtn')}
+                </button>
+              </div>
+            )}
+
+            {hasBookingAccess && bookingLoading && (
+              <div className="va-empty"><p>{t('venueAdmin.statsLoading')}</p></div>
+            )}
+
+            {hasBookingAccess && !bookingLoading && bookingFloors.length === 0 && (
+              <div className="va-empty va-booking-empty">
+                <p className="va-booking-empty__title">{t('venueAdmin.bookingNoLayoutTitle')}</p>
+                <p>{t('venueAdmin.bookingNoLayoutText')}</p>
+                <button className="btn btn-dark" onClick={() => navigate('/venue/tables')}>
+                  {t('venueAdmin.bookingSetupBtn')}
+                </button>
+              </div>
+            )}
+
+            {hasBookingAccess && !bookingLoading && bookingFloors.length > 0 && (
+              <div className="va-booking-card">
+                <div className="va-booking-card__info">
+                  <p className="va-booking-card__count">
+                    {t('venueAdmin.bookingFloorsCount', bookingFloors.length)} · {t('venueAdmin.bookingTablesCount', bookingTablesCount)}
+                  </p>
+                  <label className="va-booking-card__link-label">{t('venueAdmin.bookingPublicLinkLabel')}</label>
+                  <div className="va-booking-card__link-row">
+                    <input className="input" readOnly value={bookingLink} onClick={e => e.target.select()} />
+                    <div className="va-booking-card__copy-wrap">
+                      <button
+                        type="button"
+                        className={`btn btn-outline va-booking-card__copy-btn ${linkCopied ? 'is-copied' : ''}`}
+                        onClick={copyBookingLink}
+                        title={t('venueAdmin.bookingCopyLink')}
+                        aria-label={t('venueAdmin.bookingCopyLink')}
+                      >
+                        {linkCopied ? (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                        )}
+                      </button>
+                      {linkCopied && <span className="va-booking-card__copy-toast">{t('venueAdmin.bookingLinkCopied')}</span>}
+                    </div>
+                  </div>
+                </div>
+                <div className="va-booking-card__actions">
+                  <button className="btn btn-outline" onClick={() => navigate('/venue/tables')}>
+                    {t('venueAdmin.bookingEditLayoutBtn')}
+                  </button>
+                  <a className="btn btn-outline" href={bookingLink} target="_blank" rel="noopener noreferrer">
+                    {t('venueAdmin.bookingViewPublicBtn')}
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {hasBookingAccess && !bookingLoading && bookingFloors.length > 0 && (
+              <BookingCalendarView
+                placeId={place.id}
+                tableBookingPaused={place.tableBookingPaused}
+                onTogglePaused={paused => updatePlace(place.id, { tableBookingPaused: paused, skipPublish: true })}
+              />
+            )}
+          </div>
+        )}
+
         {/* Tab: Account */}
         {tab === 'account' && (
           <div className="va-section">
@@ -1429,6 +1601,9 @@ export default function VenueAdminPage() {
               </button>
               <button className={`va-subtab ${accountTab === 'password' ? 'active' : ''}`} onClick={() => setAccountTab('password')}>
                 {t('venueAdmin.subTabPassword')}
+              </button>
+              <button className={`va-subtab ${accountTab === 'telegram' ? 'active' : ''}`} onClick={() => setAccountTab('telegram')}>
+                {t('venueAdmin.subTabTelegram')}
               </button>
             </div>
 
@@ -1491,6 +1666,28 @@ export default function VenueAdminPage() {
                   </button>
                 </div>
               </form>
+            )}
+
+            {accountTab === 'telegram' && (
+              <div className="va-form-section">
+                <p className="va-marks-hint">{t('venueAdmin.telegramHint')}</p>
+                {telegramError && <p className="va-account-error">{telegramError}</p>}
+                {currentUser?.telegramLinked ? (
+                  <>
+                    <p className="va-telegram-status va-telegram-status--on">✅ {t('venueAdmin.telegramConnected')}</p>
+                    <button type="button" className="btn btn-outline va-telegram-disconnect" disabled={telegramDisconnecting} onClick={handleDisconnectTelegram}>
+                      {telegramDisconnecting ? t('venueAdmin.telegramDisconnecting') : t('venueAdmin.telegramDisconnectBtn')}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" className="btn btn-dark" disabled={telegramLinking} onClick={handleConnectTelegram}>
+                      {telegramLinking ? t('venueAdmin.telegramWaiting') : t('venueAdmin.telegramConnectBtn')}
+                    </button>
+                    {telegramLinking && <p className="va-telegram-status">{t('venueAdmin.telegramWaitingHint')}</p>}
+                  </>
+                )}
+              </div>
             )}
           </div>
         )}

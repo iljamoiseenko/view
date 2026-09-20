@@ -22,7 +22,8 @@ export default function Header() {
   const close = () => setMenuOpen(false)
   const closeProfile = () => setProfileOpen(false)
 
-  const profilePath = currentUser?.role === 'superadmin' ? '/admin' : '/venue'
+  const profilePath = currentUser?.role === 'superadmin' ? '/admin' : currentUser?.role === 'user' ? '/my-bookings' : '/venue'
+  const profileLabel = currentUser?.role === 'user' ? t('header.myBookings') : t('header.profile')
 
   useEffect(() => {
     if (!profileOpen) return
@@ -142,7 +143,7 @@ export default function Header() {
                       <span className="header__profile-menu-name">{currentUser.name}</span>
                     </div>
                     <Link to={profilePath} className="header__profile-menu-item" onClick={closeProfile}>
-                      {t('header.profile')}
+                      {profileLabel}
                     </Link>
                     <button className="header__profile-menu-item header__profile-menu-item--danger" onClick={handleLogout}>
                       {t('header.logoutAccount')}

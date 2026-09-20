@@ -6,10 +6,11 @@ import { COLLECTIONS } from '../../data/initialData'
 import PlaceCard from '../../components/PlaceCard/PlaceCard'
 import Pagination from '../../components/Pagination/Pagination'
 import { isAllDay } from '../../utils/eventTime'
+import { kyivDateString } from '../../utils/kyivDate'
 import './CollectionDetailPage.css'
 
 const PER_PAGE = 16
-const TODAY = new Date().toISOString().slice(0, 10)
+const TODAY = kyivDateString()
 
 function isHappeningNow(time) {
   if (!time) return false

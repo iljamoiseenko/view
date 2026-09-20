@@ -54,6 +54,10 @@ export const SUBSCRIPTION_TIERS = {
 
 export const BOOST_DURATION_HOURS = 24
 
+// Table booking "occasion" — labels live in i18n (tableBooking.occasions.*)
+// since this list is shown to guests, not just admins.
+export const BOOKING_OCCASIONS = ['birthday', 'friends', 'date', 'family', 'business', 'celebration', 'other']
+
 export const EVENT_TYPES = {
   live_music: 'Жива музика',
   dj: 'DJ Set',

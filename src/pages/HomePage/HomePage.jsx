@@ -7,6 +7,7 @@ import TodayStrip from '../../components/TodayStrip/TodayStrip'
 import BannerSlider from '../../components/BannerSlider/BannerSlider'
 import Pagination from '../../components/Pagination/Pagination'
 import { isAllDay } from '../../utils/eventTime'
+import { kyivDateString } from '../../utils/kyivDate'
 import './HomePage.css'
 
 const PLACES_PER_PAGE = 16
@@ -16,9 +17,9 @@ const TYPE_FILTER_VALUES = ['all', 'restaurant', 'bar', 'coffee', 'pub', 'lounge
 const EVENT_DATE_FILTER_VALUES = ['all', 'today', 'tomorrow', 'week']
 const EVENT_TYPE_VALUES = ['live_music', 'dj', 'jazz', 'wine', 'beer', 'master_class', 'theme_night', 'cocktail', 'cultural_event', 'anniversary', 'quiz', 'standup', 'market', 'other']
 
-const TODAY    = new Date().toISOString().slice(0, 10)
-const TOMORROW = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
-const WEEK_END = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10)
+const TODAY    = kyivDateString()
+const TOMORROW = kyivDateString(new Date(Date.now() + 86_400_000))
+const WEEK_END = kyivDateString(new Date(Date.now() + 7 * 86_400_000))
 
 function isHappeningNow(time) {
   if (!time) return false

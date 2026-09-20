@@ -22,6 +22,10 @@ import RefundPolicyPage from './pages/LegalPages/RefundPolicyPage'
 import ContactsPage from './pages/LegalPages/ContactsPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage'
+import TableLayoutEditorPage from './pages/TableLayoutEditor/TableLayoutEditorPage'
+import TableBookingPage from './pages/TableBookingPage/TableBookingPage'
+import RegisterGuestPage from './pages/RegisterGuestPage/RegisterGuestPage'
+import MyBookingsPage from './pages/MyBookingsPage/MyBookingsPage'
 import ScrollToTop from './components/ScrollToTop'
 
 export default function App() {
@@ -42,6 +46,7 @@ export default function App() {
                 <Route path="/events" element={<EventsPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/register-guest" element={<RegisterGuestPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/about" element={<AboutPage />} />
@@ -51,6 +56,14 @@ export default function App() {
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/refund-policy" element={<RefundPolicyPage />} />
                 <Route path="/contacts" element={<ContactsPage />} />
+                <Route path="/book/:placeId" element={<TableBookingPage />} />
+
+                {/* Guest account */}
+                <Route path="/my-bookings" element={
+                  <ProtectedRoute role="user">
+                    <MyBookingsPage />
+                  </ProtectedRoute>
+                } />
 
                 {/* Super admin */}
                 <Route path="/admin" element={
@@ -63,6 +76,11 @@ export default function App() {
                 <Route path="/venue" element={
                   <ProtectedRoute role="venue">
                     <VenueAdminPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/venue/tables" element={
+                  <ProtectedRoute role="venue">
+                    <TableLayoutEditorPage />
                   </ProtectedRoute>
                 } />
 
