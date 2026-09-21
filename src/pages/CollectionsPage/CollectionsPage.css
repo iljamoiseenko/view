@@ -5,6 +5,7 @@
 }
 
 .coll-page .coll-page__inner {
+  width: 100%;
   padding: 80px 0 140px;
   display: flex;
   flex-direction: column;

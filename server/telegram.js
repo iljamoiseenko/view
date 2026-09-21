@@ -287,7 +287,13 @@ async function handleCancelCallback(chatId, bookingId) {
 // Only the venue's connected owner chat can do this, since the button only
 // ever appears in that notification.
 async function handleOwnerConfirm(chatId, bookingId) {
-  const booking = db.prepare('SELECT place_id, status FROM table_bookings WHERE id = ?').get(bookingId)
+  const booking = db.prepare(`
+    SELECT b.*, o.label AS table_label, p.name AS place_name
+    FROM table_bookings b
+    JOIN table_objects o ON o.id = b.table_id
+    JOIN places p ON p.id = b.place_id
+    WHERE b.id = ?
+  `).get(bookingId)
   if (!booking) return { text: 'Бронювання не знайдено.', alert: true }
   if (booking.status === 'cancelled') return { text: 'Це бронювання вже скасовано.', alert: true }
 
@@ -297,6 +303,14 @@ async function handleOwnerConfirm(chatId, bookingId) {
   }
 
   db.prepare('UPDATE table_bookings SET owner_confirmed_at = ? WHERE id = ?').run(Date.now(), bookingId)
+
+  if (booking.telegram_chat_id) {
+    const summary = formatBookingSummary({
+      date: booking.date, time: booking.time, partySize: booking.party_size, tableLabel: booking.table_label,
+    }, booking.place_name)
+    sendMessage(booking.telegram_chat_id, `✅ <b>Заклад підтвердив ваше бронювання</b>\n${summary}`)
+  }
+
   return { text: '✅ Підтверджено' }
 }
 
