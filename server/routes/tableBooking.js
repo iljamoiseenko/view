@@ -453,12 +453,19 @@ router.post('/:placeId/bookings', (req, res) => {
   const id = 'bk' + Date.now() + Math.random().toString(36).slice(2, 7)
   const userId = getOptionalGuestUserId(req)
   const cleanedOccasion = cleanOccasion(occasion)
+  // If this guest already linked Telegram on a previous booking, carry that
+  // chat_id straight over — otherwise every single booking would need its
+  // own "Connect Telegram" click, and owner-confirm alerts silently never
+  // reach anyone who skips that step on booking #2 onward.
+  const existingChatId = userId
+    ? db.prepare('SELECT telegram_chat_id FROM users WHERE id = ?').get(userId)?.telegram_chat_id
+    : null
   db.prepare(`
-    INSERT INTO table_bookings (id, place_id, table_id, date, time, duration_minutes, guest_name, guest_phone, party_size, occasion, note, status, source, user_id, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'online', ?, ?)
+    INSERT INTO table_bookings (id, place_id, table_id, date, time, duration_minutes, guest_name, guest_phone, party_size, occasion, note, status, source, user_id, telegram_chat_id, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'online', ?, ?, ?)
   `).run(
     id, placeId, tableId, date, time, duration, guestName.trim(), guestPhone.trim(),
-    Number(partySize) || 2, cleanedOccasion, note || null, userId, Date.now()
+    Number(partySize) || 2, cleanedOccasion, note || null, userId, existingChatId || null, Date.now()
   )
 
   const created = db.prepare('SELECT * FROM table_bookings WHERE id = ?').get(id)
@@ -466,7 +473,11 @@ router.post('/:placeId/bookings', (req, res) => {
     id, date, time, partySize: Number(partySize) || 2, tableLabel: table.label,
     guestName: guestName.trim(), guestPhone: guestPhone.trim(), occasion: cleanedOccasion, note,
   })
-  res.status(201).json({ ...parseBooking(created), telegramLink: createLinkToken('booking', id) })
+  res.status(201).json({
+    ...parseBooking(created),
+    telegramLink: existingChatId ? null : createLinkToken('booking', id),
+    telegramAlreadyLinked: !!existingChatId,
+  })
 })
 
 // GET /api/table-booking/my/bookings — the logged-in guest's own bookings,

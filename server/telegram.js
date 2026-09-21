@@ -304,11 +304,16 @@ async function handleOwnerConfirm(chatId, bookingId) {
 
   db.prepare('UPDATE table_bookings SET owner_confirmed_at = ? WHERE id = ?').run(Date.now(), bookingId)
 
-  if (booking.telegram_chat_id) {
+  // Older bookings made before per-booking auto-linking may not carry their
+  // own chat_id even though the guest's account already has Telegram
+  // connected (from a later booking, say) — fall back to that.
+  const guestChatId = booking.telegram_chat_id ||
+    (booking.user_id && db.prepare('SELECT telegram_chat_id FROM users WHERE id = ?').get(booking.user_id)?.telegram_chat_id)
+  if (guestChatId) {
     const summary = formatBookingSummary({
       date: booking.date, time: booking.time, partySize: booking.party_size, tableLabel: booking.table_label,
     }, booking.place_name)
-    sendMessage(booking.telegram_chat_id, `✅ <b>Заклад підтвердив ваше бронювання</b>\n${summary}`)
+    sendMessage(guestChatId, `✅ <b>Заклад підтвердив ваше бронювання</b>\n${summary}`)
   }
 
   return { text: '✅ Підтверджено' }

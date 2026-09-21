@@ -314,6 +314,13 @@
   text-align: center;
   line-height: 1.3;
 }
+.tbk-success__telegram-linked {
+  font-size: 13px;
+  font-weight: 600;
+  color: #166534;
+  text-align: center;
+  margin-bottom: 8px;
+}
 
 @media (max-width: 640px) {
   .tbk-controls { flex-direction: column; align-items: stretch; }

@@ -263,7 +263,9 @@ export default function TableBookingPage() {
                 <div className="tbk-success__icon">✓</div>
                 <h3>{t('tableBooking.successTitle')}</h3>
                 <p>{t('tableBooking.successText', selectedTable.label, `${date} ${selectedTime}`)}</p>
-                {successBooking.telegramLink && (
+                {successBooking.telegramAlreadyLinked ? (
+                  <p className="tbk-success__telegram-linked">✅ {t('tableBooking.telegramAlreadyLinked')}</p>
+                ) : successBooking.telegramLink && (
                   <a href={successBooking.telegramLink} target="_blank" rel="noopener noreferrer" className="btn btn-outline tbk-success__telegram">
                     {t('tableBooking.telegramManageBtn')}
                   </a>

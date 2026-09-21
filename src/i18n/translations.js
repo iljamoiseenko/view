@@ -885,6 +885,7 @@ export const translations = {
       loginPromptLink: 'Увійти або зареєструватися',
       viewMyBookings: 'Мої бронювання',
       telegramManageBtn: '🤖 Керувати бронюваннями в Telegram',
+      telegramAlreadyLinked: 'Telegram вже підключено — сповіщення про цю бронь надійдуть туди.',
     },
     placeTypes: {
       restaurant: 'Ресторан', cafe: 'Кафе', bar: 'Бар', coffee: "Кав'ярня",
@@ -1787,6 +1788,7 @@ export const translations = {
       loginPromptLink: 'Log in or sign up',
       viewMyBookings: 'My bookings',
       telegramManageBtn: '🤖 Manage bookings in Telegram',
+      telegramAlreadyLinked: 'Telegram is already connected — you\'ll get alerts about this booking there.',
     },
     placeTypes: {
       restaurant: 'Restaurant', cafe: 'Cafe', bar: 'Bar', coffee: 'Coffee shop',
