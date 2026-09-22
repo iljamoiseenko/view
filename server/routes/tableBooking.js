@@ -510,10 +510,13 @@ router.post('/:placeId/bookings/manual', requireAuth, (req, res) => {
   if (!assertOwnerOrSuperadmin(req, res, placeId)) return
 
   const { tableId, date, time, guestName, guestPhone, partySize, occasion, note } = req.body
-  if (!tableId || !date || !time || !guestName?.trim() || !guestPhone?.trim()) {
-    return res.status(400).json({ error: 'tableId, date, time, guestName and guestPhone are required' })
+  // Staff entering a booking they took over the phone don't always get (or
+  // bother asking for) a name or number — unlike the public form, neither is
+  // required here, but if a phone IS given it still has to look like one.
+  if (!tableId || !date || !time) {
+    return res.status(400).json({ error: 'tableId, date and time are required' })
   }
-  if (!looksLikePhone(guestPhone)) {
+  if (guestPhone?.trim() && !looksLikePhone(guestPhone)) {
     return res.status(400).json({ error: 'INVALID_PHONE' })
   }
   const today = kyivDateString()
@@ -529,18 +532,20 @@ router.post('/:placeId/bookings/manual', requireAuth, (req, res) => {
 
   const id = 'bk' + Date.now() + Math.random().toString(36).slice(2, 7)
   const cleanedOccasion = cleanOccasion(occasion)
+  const cleanedName = guestName?.trim() || ''
+  const cleanedPhone = guestPhone?.trim() || ''
   db.prepare(`
     INSERT INTO table_bookings (id, place_id, table_id, date, time, duration_minutes, guest_name, guest_phone, party_size, occasion, note, status, source, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'phone', ?)
   `).run(
-    id, placeId, tableId, date, time, duration, guestName.trim(), guestPhone.trim(),
+    id, placeId, tableId, date, time, duration, cleanedName, cleanedPhone,
     Number(partySize) || 2, cleanedOccasion, note || null, Date.now()
   )
 
   const created = db.prepare('SELECT * FROM table_bookings WHERE id = ?').get(id)
   notifyOwnerOfBooking(placeId, {
     id, date, time, partySize: Number(partySize) || 2, tableLabel: table.label,
-    guestName: guestName.trim(), guestPhone: guestPhone.trim(), occasion: cleanedOccasion, note,
+    guestName: cleanedName, guestPhone: cleanedPhone, occasion: cleanedOccasion, note,
   })
   res.status(201).json(parseBooking(created))
 })

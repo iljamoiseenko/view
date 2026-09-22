@@ -96,22 +96,6 @@
   flex-shrink: 0;
 }
 
-.footer__donate {
-  font-size: 12px;
-  font-weight: 700;
-  color: #fff;
-  text-decoration: none;
-  border: 1px solid rgba(255,255,255,0.25);
-  padding: 6px 14px;
-  border-radius: var(--radius-pill);
-  transition: var(--transition);
-  white-space: nowrap;
-}
-.footer__donate:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.5);
-}
-
 .footer__socials {
   display: flex;
   gap: 8px;

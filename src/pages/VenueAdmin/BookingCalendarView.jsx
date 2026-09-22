@@ -209,7 +209,7 @@ export default function BookingCalendarView({ placeId, tableBookingPaused, onTog
   }
 
   const cancelBooking = async (booking) => {
-    if (!window.confirm(t('venueAdmin.bookingCancelConfirm', booking.guestName))) return
+    if (!window.confirm(t('venueAdmin.bookingCancelConfirm', booking.guestName || t('venueAdmin.bookingGuestFallback')))) return
     setCancellingId(booking.id)
     try {
       await api.delete(`/table-booking/bookings/${booking.id}`)
@@ -391,10 +391,10 @@ export default function BookingCalendarView({ placeId, tableBookingPaused, onTog
                     <td className="va-table__main">{tableLabelById[b.tableId] || '—'}</td>
                     <td>{b.time || '—'}</td>
                     <td>
-                      {b.guestName}
+                      {b.guestName || '—'}
                       {b.source === 'phone' && <span className="vbk__source-badge" title={t('venueAdmin.bookingSourcePhone')}>📞</span>}
                     </td>
-                    <td><a href={`tel:${b.guestPhone}`} className="vbk__phone">{b.guestPhone}</a></td>
+                    <td>{b.guestPhone ? <a href={`tel:${b.guestPhone}`} className="vbk__phone">{b.guestPhone}</a> : '—'}</td>
                     <td>{b.partySize}</td>
                     <td>
                       <button
@@ -431,10 +431,10 @@ export default function BookingCalendarView({ placeId, tableBookingPaused, onTog
                         <div className="vbk-popup__time">{b.time || '—'}</div>
                         <div className="vbk-popup__info">
                           <div className="vbk-popup__guest">
-                            {b.guestName}
+                            {b.guestName || '—'}
                             {b.source === 'phone' && <span className="vbk__source-badge" title={t('venueAdmin.bookingSourcePhone')}>📞</span>}
                           </div>
-                          <a href={`tel:${b.guestPhone}`} className="vbk__phone">{b.guestPhone}</a>
+                          {b.guestPhone && <a href={`tel:${b.guestPhone}`} className="vbk__phone">{b.guestPhone}</a>}
                           <div className="vbk-popup__meta">
                             {t('venueAdmin.bookingPopupGuests', b.partySize)}
                             {b.occasion && <span> · {t(`tableBooking.occasions.${b.occasion}`)}</span>}
@@ -527,12 +527,12 @@ export default function BookingCalendarView({ placeId, tableBookingPaused, onTog
                 {manualForm.time && (
                   <>
                     <label className="tle-props__field">
-                      <span>{t('tableBooking.fieldName')}</span>
-                      <input className="input" required value={manualForm.guestName} onChange={e => setManualForm(f => ({ ...f, guestName: e.target.value }))} />
+                      <span>{t('venueAdmin.bookingManualGuestName')}</span>
+                      <input className="input" value={manualForm.guestName} onChange={e => setManualForm(f => ({ ...f, guestName: e.target.value }))} />
                     </label>
                     <label className="tle-props__field">
-                      <span>{t('tableBooking.fieldPhone')}</span>
-                      <input className="input" required type="tel" placeholder="+380 XX XXX-XX-XX" value={manualForm.guestPhone} onChange={e => setManualForm(f => ({ ...f, guestPhone: e.target.value }))} />
+                      <span>{t('venueAdmin.bookingManualGuestPhone')}</span>
+                      <input className="input" type="tel" placeholder="+380 XX XXX-XX-XX" value={manualForm.guestPhone} onChange={e => setManualForm(f => ({ ...f, guestPhone: e.target.value }))} />
                     </label>
                     <label className="tle-props__field">
                       <span>{t('tableBooking.fieldPartySize')}</span>

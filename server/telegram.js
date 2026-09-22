@@ -177,10 +177,11 @@ const OCCASION_LABELS = {
 }
 
 function formatOwnerNotification(booking, placeName) {
+  const guestLine = [booking.guestName, booking.guestPhone].filter(Boolean).join(', ')
   return (
     `🔔 <b>Нове бронювання — ${placeName}</b>\n` +
     `${booking.date} о ${booking.time}, столик ${booking.tableLabel || '—'}\n` +
-    `${booking.guestName}, ${booking.guestPhone}\n` +
+    (guestLine ? `${guestLine}\n` : '') +
     `Гостей: ${booking.partySize}` +
     (booking.occasion && OCCASION_LABELS[booking.occasion] ? `\nПривід: ${OCCASION_LABELS[booking.occasion]}` : '') +
     (booking.note ? `\nКоментар: ${booking.note}` : '')

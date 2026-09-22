@@ -324,4 +324,9 @@
 
 @media (max-width: 640px) {
   .tbk-controls { flex-direction: column; align-items: stretch; }
+
+  /* Mobile browser chrome (address bar / nav buttons) eats into 90vh, so the
+     modal ends up taller than what's actually visible and the submit button
+     hides behind it — trim a fixed 50px so there's room to scroll to it. */
+  .tbk-modal { max-height: calc(90vh - 50px); }
 }
