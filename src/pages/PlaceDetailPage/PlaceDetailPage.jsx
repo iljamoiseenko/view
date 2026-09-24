@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { api } from '../../api/client'
+import ShareButton from '../../components/ShareButton/ShareButton'
 import EventCard from '../../components/EventCard/EventCard'
 import PlaceMap from '../../components/PlaceMap/PlaceMap'
 import SocialLinks from '../../components/SocialLinks/SocialLinks'
@@ -192,6 +193,8 @@ export default function PlaceDetailPage() {
               {t('placeDetail.buyTickets')}
             </a>
           )}
+
+          <ShareButton title={place.name} text={place.name} path={`/place/${place.id}`} className="btn btn-outline detail__book-btn" />
 
           <div className="detail__info-list">
             {addresses.length === 1 && (

@@ -1,0 +1,22 @@
+{
+  "appId": "site.viewtoday.app",
+  "appName": "View",
+  "webDir": "dist",
+  "ios": {
+    "scheme": "View",
+    "contentInset": "never",
+    "backgroundColor": "#ffffff"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false,
+      "backgroundColor": "#ffffff",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "overlaysWebView": false,
+      "style": "LIGHT",
+      "backgroundColor": "#ffffff"
+    }
+  }
+}

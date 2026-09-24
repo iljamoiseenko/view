@@ -12,10 +12,11 @@ const isProd = process.env.NODE_ENV === 'production'
 // (e.g. on the booking endpoint) bucket every visitor together.
 if (isProd) app.set('trust proxy', 1)
 
-// CORS — тільки для локальної розробки; в prod фронт і бек на одному домені
-if (!isProd) {
-  app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'] }))
-}
+// CORS — в prod фронт і бек на одному домені, тож потрібен лише для локальної
+// розробки та для iOS-застосунку (Capacitor віддає бандл з capacitor://localhost).
+const corsOrigins = ['capacitor://localhost']
+if (!isProd) corsOrigins.push('http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175')
+app.use(cors({ origin: corsOrigins }))
 
 // WayForPay's webhook sends Content-Type: application/x-www-form-urlencoded but the
 // body is actually raw JSON text — read it as text here, before the generic parsers

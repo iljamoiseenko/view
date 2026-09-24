@@ -1,0 +1,14 @@
+.delete-account {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.delete-account__title { font-weight: 700; margin: 0 0 4px; }
+.delete-account__text { font-size: 14px; color: var(--text-muted, #777); margin: 0 0 12px; }
+.delete-account__btn {
+  background: transparent;
+  color: #d93025;
+  border: 1px solid #d93025;
+}
+.delete-account__btn:disabled { opacity: 0.6; }
+.delete-account__error { color: #d93025; font-size: 14px; margin-top: 8px; }

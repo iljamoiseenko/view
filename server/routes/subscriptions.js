@@ -55,6 +55,47 @@ router.post('/checkout', requireAuth, requireRole('venue'), (req, res) => {
   res.json({ action: 'https://secure.wayforpay.com/pay', fields, isTestMerchant })
 })
 
+// One-time price for publishing a single event without an active subscription.
+const EVENT_CREDIT_PRICE_USD = 5
+
+// POST /api/subscriptions/checkout-event — venue owner buys one event-publish
+// credit as a one-off (non-recurring) charge, for venues without a
+// subscription who just want to run a single event.
+router.post('/checkout-event', requireAuth, requireRole('venue'), (req, res) => {
+  if (!wfp.isConfigured()) {
+    return res.status(503).json({ error: 'Payments are not configured yet' })
+  }
+
+  const { merchantAccount } = wfp.config()
+  const isTestMerchant = TEST_MERCHANT_ACCOUNTS.includes(merchantAccount) || process.env.WAYFORPAY_FORCE_1USD === '1'
+  const amount = isTestMerchant ? 1 : EVENT_CREDIT_PRICE_USD
+  const currency = 'USD'
+
+  const orderReference = `evt_${req.user.id}_${Date.now()}`
+  const orderDate = Math.floor(Date.now() / 1000)
+
+  const fields = wfp.buildPurchaseFields({
+    orderReference,
+    orderDate,
+    amount,
+    currency,
+    productName: 'VIEW — one-time event publish',
+    productCount: 1,
+    productPrice: amount,
+  })
+
+  const baseUrl = process.env.APP_URL || 'https://viewtoday.site'
+  fields.returnUrl = `${baseUrl}/venue?payment=return&order=${orderReference}&kind=event`
+  fields.serviceUrl = `${baseUrl}/api/subscriptions/callback`
+
+  db.prepare(`
+    INSERT INTO payments (id, user_id, order_reference, tier, amount, currency, status, created_at)
+    VALUES (?, ?, ?, 'event', ?, ?, 'pending', ?)
+  `).run('pay' + Date.now(), req.user.id, orderReference, amount, currency, Date.now())
+
+  res.json({ action: 'https://secure.wayforpay.com/pay', fields, isTestMerchant })
+})
+
 // GET /api/subscriptions/status/:orderReference — the venue's own return-page poll,
 // so the frontend can tell "still waiting for the webhook" apart from "card declined"
 // instead of guessing from a timeout.
@@ -123,12 +164,19 @@ router.post('/callback', (req, res) => {
         .run('approved', JSON.stringify(body), baseOrderReference)
     }
 
-    // wayforpay_rec_token stays the BASE orderReference — regularApi (status/suspend/remove)
-    // is keyed to the original order, not to each individual renewal's suffixed reference.
-    db.prepare(`
-      UPDATE users SET subscription_tier = ?, subscription_status = 'active', subscription_renews_at = ?, wayforpay_rec_token = ?
-      WHERE id = ?
-    `).run(payment.tier, renewsAt, baseOrderReference, payment.user_id)
+    if (payment.tier === 'event') {
+      // A one-time event-publish credit — not a subscription at all, so it
+      // never touches subscription_tier/status, just adds a credit to spend
+      // on the next event the venue creates.
+      db.prepare('UPDATE users SET event_credits = event_credits + 1 WHERE id = ?').run(payment.user_id)
+    } else {
+      // wayforpay_rec_token stays the BASE orderReference — regularApi (status/suspend/remove)
+      // is keyed to the original order, not to each individual renewal's suffixed reference.
+      db.prepare(`
+        UPDATE users SET subscription_tier = ?, subscription_status = 'active', subscription_renews_at = ?, wayforpay_rec_token = ?
+        WHERE id = ?
+      `).run(payment.tier, renewsAt, baseOrderReference, payment.user_id)
+    }
 
     console.log(`[wayforpay] Approved ${body.orderReference} — user ${payment.user_id} → ${payment.tier}${isRenewal ? ' (renewal)' : ''}`)
   } else {

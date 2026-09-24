@@ -17,6 +17,7 @@ export const PLACE_TYPES = {
   dessert: 'Десертна',
   theater: 'Театр',
   exhibition: 'Виставка',
+  creative_space: 'Творчий простір',
   other: 'Інше',
 }
 

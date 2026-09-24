@@ -6,7 +6,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { api } from '../../api/client'
 import { computeFreeSlots } from '../../utils/tableSlots'
 import { BOOKING_OCCASIONS } from '../../data/initialData'
-import { kyivDateString } from '../../utils/kyivDate'
+import { kyivDateString, kyivMinutesNow } from '../../utils/kyivDate'
 import './TableBookingPage.css'
 
 const EMPTY_FORM = { guestName: '', guestPhone: '', partySize: 2, occasion: '', note: '', website: '' }
@@ -77,12 +77,13 @@ export default function TableBookingPage() {
   }, [bookings])
 
   const freeSlotsByTable = useMemo(() => {
+    const minMinutes = date === today() ? kyivMinutesNow() : 0
     const m = {}
     objects.forEach(o => {
-      if (o.kind === 'table') m[o.id] = computeFreeSlots(o, bookingsByTable[o.id] || [])
+      if (o.kind === 'table') m[o.id] = computeFreeSlots(o, bookingsByTable[o.id] || [], minMinutes)
     })
     return m
-  }, [objects, bookingsByTable])
+  }, [objects, bookingsByTable, date])
 
   const openTable = (obj) => {
     if (obj.kind !== 'table' || !obj.isBookable) return
@@ -169,17 +170,12 @@ export default function TableBookingPage() {
 
       <div className="container tbk-body">
         <div className="tbk-account-bar">
-          {isGuestAccount ? (
+          {isGuestAccount && (
             <>
               <span>{t('tableBooking.loggedInAs', currentUser.name)}</span>
               <Link to="/my-bookings" className="tbk-account-bar__link">{t('tableBooking.viewMyBookings')}</Link>
             </>
-          ) : !currentUser ? (
-            <>
-              <span>{t('tableBooking.loginPrompt')}</span>
-              <Link to="/login" className="tbk-account-bar__link">{t('tableBooking.loginPromptLink')}</Link>
-            </>
-          ) : null}
+          )}
         </div>
         {place.tableBookingPaused ? (
           <div className="empty-state">

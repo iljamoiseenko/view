@@ -7,4 +7,16 @@ function kyivDateString(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Kyiv' }).format(date)
 }
 
-module.exports = { kyivDateString }
+// Minutes since midnight, Kyiv time — lets a same-day booking request be
+// rejected once its slot has already started, mirroring the frontend's slot
+// filtering so a stale page can't submit a slot that's no longer valid.
+function kyivMinutesNow(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Kyiv', hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(date)
+  const h = Number(parts.find(p => p.type === 'hour')?.value || 0)
+  const m = Number(parts.find(p => p.type === 'minute')?.value || 0)
+  return h * 60 + m
+}
+
+module.exports = { kyivDateString, kyivMinutesNow }

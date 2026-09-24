@@ -77,8 +77,6 @@ export default function LoginPage() {
         <div className="login-footer-links">
           <a href="/forgot-password" className="login-forgot">{t('login.forgot')}</a>
           <span className="login-footer-sep">·</span>
-          <a href="/register-guest" className="login-forgot">{t('login.registerGuest')}</a>
-          <span className="login-footer-sep">·</span>
           <a href="/register" className="login-forgot">{t('login.registerVenue')}</a>
         </div>
       </div>

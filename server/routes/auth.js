@@ -42,6 +42,7 @@ function publicUser(user) {
     subscriptionRenewsAt: user.subscription_renews_at || null,
     subscriptionAutoRenew: !!user.wayforpay_rec_token,
     telegramLinked: !!user.telegram_chat_id,
+    eventCredits: user.event_credits || 0,
   }
 }
 
@@ -206,6 +207,19 @@ router.get('/me', requireAuth, (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id)
   if (!user) return res.status(404).json({ error: 'User not found' })
   res.json({ user: publicUser(user) })
+})
+
+// DELETE /api/auth/me — self-service account deletion (required by the App Store
+// for any app that lets people register). Payments cascade with the user,
+// bookings keep their guest name/phone but lose the user link (ON DELETE SET NULL),
+// and the saved WayForPay recurring token goes with the row, so no further charges.
+// A venue's place and events stay — they're managed by the superadmin.
+router.delete('/me', requireAuth, (req, res) => {
+  const user = db.prepare('SELECT id, role FROM users WHERE id = ?').get(req.user.id)
+  if (!user) return res.status(404).json({ error: 'User not found' })
+  if (user.role === 'superadmin') return res.status(403).json({ error: 'Superadmin account cannot be deleted' })
+  db.prepare('DELETE FROM users WHERE id = ?').run(user.id)
+  res.json({ ok: true })
 })
 
 module.exports = router

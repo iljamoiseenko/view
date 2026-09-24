@@ -3,7 +3,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { api } from '../../api/client'
 import { computeFreeSlots } from '../../utils/tableSlots'
 import { BOOKING_OCCASIONS } from '../../data/initialData'
-import { kyivDateString } from '../../utils/kyivDate'
+import { kyivDateString, kyivMinutesNow } from '../../utils/kyivDate'
 import './BookingCalendarView.css'
 
 function today() {
@@ -156,7 +156,8 @@ export default function BookingCalendarView({ placeId, tableBookingPaused, onTog
   const manualFreeSlots = useMemo(() => {
     if (!manualTable || !manualForm.date) return []
     const bookingsForTable = bookings.filter(b => b.tableId === manualTable.id && b.date === manualForm.date)
-    return computeFreeSlots(manualTable, bookingsForTable)
+    const minMinutes = manualForm.date === today() ? kyivMinutesNow() : 0
+    return computeFreeSlots(manualTable, bookingsForTable, minMinutes)
   }, [manualTable, manualForm.date, bookings])
 
   // Pass a tableId when opening from a click on the canvas — locks the

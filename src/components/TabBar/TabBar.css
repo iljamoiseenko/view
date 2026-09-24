@@ -1,0 +1,46 @@
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 150;
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(255, 255, 255, 0.9);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-top: 0.5px solid rgba(0, 0, 0, 0.14);
+}
+
+.tabbar__item {
+  flex: 1;
+  height: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-3);
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+.tabbar__item svg {
+  width: 25px;
+  height: 25px;
+}
+
+.tabbar__item.active {
+  color: var(--text);
+}
+
+.tabbar__item:active svg {
+  transform: scale(0.9);
+  transition: transform 0.1s ease;
+}

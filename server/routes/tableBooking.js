@@ -4,7 +4,13 @@ const db = require('../db')
 const { requireAuth, JWT_SECRET } = require('../middleware/auth')
 const { expireIfPastDue } = require('../subscriptionTiers')
 const { notifyOwnerOfBooking, createLinkToken } = require('../telegram')
-const { kyivDateString } = require('../kyivDate')
+const { kyivDateString, kyivMinutesNow } = require('../kyivDate')
+
+function isPastSlot(date, time) {
+  if (date !== kyivDateString()) return date < kyivDateString()
+  const [h, m] = String(time || '0:0').split(':').map(Number)
+  return (h || 0) * 60 + (m || 0) < kyivMinutesNow()
+}
 
 // The public booking endpoint accepts a booking with or without being logged
 // in — if a valid guest-account token is attached, we link the booking to
@@ -427,7 +433,7 @@ router.post('/:placeId/bookings', (req, res) => {
     return res.status(400).json({ error: 'INVALID_PHONE' })
   }
   const today = kyivDateString()
-  if (date < today) return res.status(400).json({ error: 'Date is in the past' })
+  if (isPastSlot(date, time)) return res.status(400).json({ error: 'Date is in the past' })
 
   const ip = req.ip || req.socket.remoteAddress || 'unknown'
   if (isRateLimited(ip)) {
@@ -519,8 +525,7 @@ router.post('/:placeId/bookings/manual', requireAuth, (req, res) => {
   if (guestPhone?.trim() && !looksLikePhone(guestPhone)) {
     return res.status(400).json({ error: 'INVALID_PHONE' })
   }
-  const today = kyivDateString()
-  if (date < today) return res.status(400).json({ error: 'Date is in the past' })
+  if (isPastSlot(date, time)) return res.status(400).json({ error: 'Date is in the past' })
 
   let duration, table
   try {

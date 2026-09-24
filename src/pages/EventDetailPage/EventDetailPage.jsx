@@ -1,10 +1,13 @@
+import { useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
+import { api } from '../../api/client'
 import PlaceMap from '../../components/PlaceMap/PlaceMap'
 import { mapsUrl } from '../../utils/maps'
 import { parseAddresses } from '../../utils/address'
 import { buildEventTimes, addToDeviceCalendar } from '../../utils/calendar'
+import ShareButton from '../../components/ShareButton/ShareButton'
 import { getPlaceTypeLabel } from '../../utils/placeType'
 import { getEventTypeLabel } from '../../utils/eventType'
 import { formatEventTime } from '../../utils/eventTime'
@@ -19,6 +22,16 @@ export default function EventDetailPage() {
   const event = events.find(e => e.id === id)
   const place = event ? places.find(p => p.id === event.placeId) : null
   const venueAddresses = place ? parseAddresses(place.address) : []
+
+  // Log one view per event per browser session — enough for owner-facing
+  // stats without letting a single visitor inflate the count by refreshing.
+  useEffect(() => {
+    if (!id) return
+    const key = `event_view_logged_${id}`
+    if (sessionStorage.getItem(key)) return
+    sessionStorage.setItem(key, '1')
+    api.post(`/events/${id}/view`, {}).catch(() => {})
+  }, [id])
 
   if (!event) {
     return (
@@ -107,6 +120,7 @@ export default function EventDetailPage() {
                 {t('eventDetail.register')}
               </a>
             )}
+            <ShareButton title={event.title} text={event.title} path={`/event/${event.id}`} />
           </div>
 
           {event.description && (

@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext'
 import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { api } from '../../api/client'
+import { isNative, publicOrigin } from '../../native/platform'
+import DeleteAccount from '../../components/DeleteAccount/DeleteAccount'
 import { PLACE_TYPES, EVENT_TYPES, CITIES, CUISINE_LIST, TICKET_TYPES, COLLECTIONS, SUBSCRIPTION_TIERS } from '../../data/initialData'
 import { getEventTypeLabel } from '../../utils/eventType'
 import { ALL_DAY_TIME, isAllDay, formatEventTime } from '../../utils/eventTime'
@@ -416,6 +418,8 @@ export default function VenueAdminPage() {
   // "Мій заклад".
   const [tab, setTabState] = useState(() => {
     const fromUrl = searchParams.get('tab')
+    // No subscription tab in the iOS app (see .web-only in native.css).
+    if (isNative && fromUrl === 'subscription') return 'place'
     return TABS.includes(fromUrl) ? fromUrl : 'place'
   })
   const setTab = (next) => {
@@ -431,6 +435,7 @@ export default function VenueAdminPage() {
   const [paymentActivated, setPaymentActivated] = useState(false)
   const [paymentFailed, setPaymentFailed] = useState(false)
   const [paymentFailReason, setPaymentFailReason] = useState('')
+  const [paymentTier, setPaymentTier] = useState('')
 
   // Returned from WayForPay — poll the actual payment record (not just user.subscriptionStatus,
   // which could already be 'active' from a prior period and mask a failed renewal/upgrade) so a
@@ -469,6 +474,7 @@ export default function VenueAdminPage() {
           await refreshCurrentUser().catch(() => null)
           setPaymentPending(false)
           setPaymentActivated(true)
+          setPaymentTier(result.tier || '')
           setSearchParams({}, { replace: true })
           return
         }
@@ -493,7 +499,7 @@ export default function VenueAdminPage() {
 
   const handleContinueToAccount = () => {
     setThankYouVisible(false)
-    setTab('subscription')
+    setTab(paymentTier === 'event' ? 'events' : 'subscription')
   }
 
   const ONBOARDING_STEPS = 4
@@ -609,6 +615,8 @@ export default function VenueAdminPage() {
   const [statsLocked, setStatsLocked] = useState(false)
   const [checkoutError, setCheckoutError] = useState('')
   const [checkingOutTier, setCheckingOutTier] = useState(null)
+  const [buyingEventCredit, setBuyingEventCredit] = useState(false)
+  const [eventCreditError, setEventCreditError] = useState('')
 
   // If the user navigates to WayForPay and then hits the browser's back button, some
   // browsers restore this page from bfcache exactly as it was mid-checkout — button
@@ -622,6 +630,8 @@ export default function VenueAdminPage() {
   const [cancelError, setCancelError] = useState('')
   const hasActiveSub = currentUser?.subscriptionStatus === 'active'
   const hasBookingAccess = BOOKING_REQUIRES_SUBSCRIPTION ? hasActiveSub : true
+  const eventCredits = currentUser?.eventCredits || 0
+  const canCreateEvent = hasActiveSub || eventCredits > 0
 
   useEffect(() => {
     if (!place?.id) return
@@ -655,7 +665,7 @@ export default function VenueAdminPage() {
 
   const bookingTablesCount = bookingFloors.reduce((sum, f) => sum + (f.tableCount || 0), 0)
 
-  const bookingLink = place?.id ? `${window.location.origin}/book/${place.id}` : ''
+  const bookingLink = place?.id ? `${publicOrigin()}/book/${place.id}` : ''
   const copyBookingLink = () => {
     // Show the "copied" feedback right away rather than waiting on the
     // clipboard promise — if the browser silently denies clipboard
@@ -719,6 +729,29 @@ export default function VenueAdminPage() {
     }
   }
 
+  const handleBuyEventCredit = async () => {
+    setBuyingEventCredit(true)
+    setEventCreditError('')
+    try {
+      const { action, fields } = await api.post('/subscriptions/checkout-event', {})
+      const form = document.createElement('form')
+      form.method = 'POST'
+      form.action = action
+      Object.entries(fields).forEach(([key, value]) => {
+        const input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = key
+        input.value = value
+        form.appendChild(input)
+      })
+      document.body.appendChild(form)
+      form.submit()
+    } catch (err) {
+      setEventCreditError(err.message)
+      setBuyingEventCredit(false)
+    }
+  }
+
   const setField = (k, v) => setPlaceForm(f => ({ ...f, [k]: v }))
 
   const handleSavePlace = async (e) => {
@@ -740,7 +773,12 @@ export default function VenueAdminPage() {
   const handleSaveEvent = async (data) => {
     try {
       if (data.id) await updateEvent(data.id, data)
-      else await addEvent(data)
+      else {
+        await addEvent(data)
+        // A credit-funded event just spent that credit server-side — resync
+        // so the gate/counter reflect it without a manual page reload.
+        if (!hasActiveSub) await refreshCurrentUser().catch(() => null)
+      }
       setEventModal(null)
     } catch (err) {
       if (err.message === 'SUBSCRIPTION_REQUIRED') {
@@ -879,7 +917,9 @@ export default function VenueAdminPage() {
             {icon}
           </div>
           <h1 className="va-thankyou__title">{t(`venueAdmin.thankYou${suffix}Title`)}</h1>
-          <p className="va-thankyou__text">{t(`venueAdmin.thankYou${suffix}Text`)}</p>
+          <p className="va-thankyou__text">
+            {t(state === 'active' && paymentTier === 'event' ? 'venueAdmin.thankYouEventText' : `venueAdmin.thankYou${suffix}Text`)}
+          </p>
           {paymentFailed && paymentFailReason && (
             <p className="va-thankyou__reason">{t('venueAdmin.thankYouFailedReason', paymentFailReason)}</p>
           )}
@@ -1009,6 +1049,19 @@ export default function VenueAdminPage() {
                 <h1 className="va-onboarding__title">{t('venueAdmin.onboardingStep4Title')}</h1>
                 <p className="va-onboarding__sub">{t('venueAdmin.onboardingStep4Sub')}</p>
                 <div className="va-plans va-onboarding__plans">
+                  <div className="va-plan-card">
+                    <div className="va-plan-card__name va-plan-card__name--vivid">{t('subscriptionTiers.event')}</div>
+                    <div className="va-plan-card__price">
+                      <span className="va-plan-card__price-amount">$5</span>
+                      <span className="va-plan-card__price-period">{t('venueAdmin.oneTimeLabel')}</span>
+                    </div>
+                    <ul className="va-plan-card__features">
+                      <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.eventCreditFeatureText')}</li>
+                    </ul>
+                    <button type="button" className="btn btn-dark va-plan-card__btn" disabled={buyingEventCredit} onClick={handleBuyEventCredit}>
+                      {buyingEventCredit ? t('venueAdmin.eventCreditBuying') : t('venueAdmin.choosePlanBtn')}
+                    </button>
+                  </div>
                   {Object.keys(SUBSCRIPTION_TIERS).map(tierKey => {
                     const tierInfo = SUBSCRIPTION_TIERS[tierKey]
                     const isPopular = tierKey === 'pro'
@@ -1034,6 +1087,7 @@ export default function VenueAdminPage() {
                   })}
                 </div>
                 {checkoutError && <p className="va-plans-notice va-plans-notice--error">{checkoutError}</p>}
+                {eventCreditError && <p className="va-plans-notice va-plans-notice--error">{eventCreditError}</p>}
               </>
             )}
           </div>
@@ -1104,7 +1158,7 @@ export default function VenueAdminPage() {
           <button className={`va-nav-item ${tab === 'account' ? 'active' : ''}`} onClick={() => setTab('account')}>
             {t('venueAdmin.tabAccount')}
           </button>
-          <button className={`va-nav-item ${tab === 'subscription' ? 'active' : ''}`} onClick={() => setTab('subscription')}>
+          <button className={`va-nav-item web-only ${tab === 'subscription' ? 'active' : ''}`} onClick={() => setTab('subscription')}>
             {t('venueAdmin.tabSubscription')}
           </button>
         </div>
@@ -1397,24 +1451,34 @@ export default function VenueAdminPage() {
           <div className="va-section">
             <div className="va-section__head">
               <h2>{t('venueAdmin.myEventsTitle')}</h2>
-              {hasActiveSub && (
+              {canCreateEvent && (
                 <button className="btn btn-dark btn-sm" onClick={() => setEventModal({})}>
                   {t('venueAdmin.newEvent')}
                 </button>
               )}
             </div>
 
-            {!hasActiveSub && (
+            {!hasActiveSub && eventCredits > 0 && (
+              <p className="va-event-credits-note">{t('venueAdmin.eventCreditsAvailable', eventCredits)}</p>
+            )}
+
+            {!canCreateEvent && (
               <div className="va-sub-required">
                 <p className="va-sub-required__title">{t('venueAdmin.subRequiredTitle')}</p>
                 <p className="va-sub-required__text">{t('venueAdmin.subRequiredText')}</p>
-                <button className="btn btn-dark" onClick={() => setTab('subscription')}>
-                  {t('venueAdmin.subRequiredBtn')}
-                </button>
+                <div className="va-sub-required__actions">
+                  <button className="btn btn-dark web-only" onClick={() => setTab('subscription')}>
+                    {t('venueAdmin.subRequiredBtn')}
+                  </button>
+                  <button type="button" className="btn btn-outline web-only" disabled={buyingEventCredit} onClick={handleBuyEventCredit}>
+                    {buyingEventCredit ? t('venueAdmin.eventCreditBuying') : t('venueAdmin.eventCreditBuyBtn')}
+                  </button>
+                </div>
+                {eventCreditError && <p className="va-plans-notice va-plans-notice--error">{eventCreditError}</p>}
               </div>
             )}
 
-            {myEvents.length === 0 && hasActiveSub && (
+            {myEvents.length === 0 && canCreateEvent && (
               <div className="va-empty">
                 <p>{t('venueAdmin.noEventsText')}</p>
               </div>
@@ -1430,6 +1494,7 @@ export default function VenueAdminPage() {
                       <th>{t('venueAdmin.thDate')}</th>
                       <th>{t('venueAdmin.thTime')}</th>
                       <th>{t('venueAdmin.thPrice')}</th>
+                      <th>{t('venueAdmin.thViews')}</th>
                       <th>{t('venueAdmin.thActions')}</th>
                     </tr>
                   </thead>
@@ -1445,6 +1510,7 @@ export default function VenueAdminPage() {
                         <td>{ev.date}</td>
                         <td>{formatEventTime(ev.time, t)}</td>
                         <td>{ev.price === 0 ? <span className="va-free">{t('common.free')}</span> : `${ev.price} ${t('common.currency')}`}</td>
+                        <td>👁 {ev.views || 0}</td>
                         <td>
                           <div className="va-actions">
                             <button className="va-btn-icon" onClick={() => setEventModal(ev)}>✏️</button>
@@ -1470,7 +1536,7 @@ export default function VenueAdminPage() {
               <div className="va-sub-required">
                 <p className="va-sub-required__title">{t('venueAdmin.statsLockedTitle')}</p>
                 <p className="va-sub-required__text">{t('venueAdmin.statsLockedText')}</p>
-                <button className="btn btn-dark" onClick={() => setTab('subscription')}>{t('venueAdmin.subRequiredBtn')}</button>
+                <button className="btn btn-dark web-only" onClick={() => setTab('subscription')}>{t('venueAdmin.subRequiredBtn')}</button>
               </div>
             )}
             {!statsLocked && statsLoading && (
@@ -1520,7 +1586,7 @@ export default function VenueAdminPage() {
               <div className="va-sub-required">
                 <p className="va-sub-required__title">{t('venueAdmin.subRequiredTitle')}</p>
                 <p className="va-sub-required__text">{t('venueAdmin.bookingSubRequiredText')}</p>
-                <button className="btn btn-dark" onClick={() => setTab('subscription')}>
+                <button className="btn btn-dark web-only" onClick={() => setTab('subscription')}>
                   {t('venueAdmin.subRequiredBtn')}
                 </button>
               </div>
@@ -1689,6 +1755,10 @@ export default function VenueAdminPage() {
                 )}
               </div>
             )}
+
+            <div style={{ padding: '0 28px 28px' }}>
+              <DeleteAccount />
+            </div>
           </div>
         )}
 
@@ -1708,6 +1778,20 @@ export default function VenueAdminPage() {
               )}
             </div>
             <div className="va-plans">
+              <div className="va-plan-card">
+                <div className="va-plan-card__name va-plan-card__name--vivid">{t('subscriptionTiers.event')}</div>
+                <div className="va-plan-card__price">
+                  <span className="va-plan-card__price-amount">$5</span>
+                  <span className="va-plan-card__price-period">{t('venueAdmin.oneTimeLabel')}</span>
+                </div>
+                <ul className="va-plan-card__features">
+                  <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.eventCreditFeatureText')}</li>
+                </ul>
+                <button type="button" className="btn btn-dark va-plan-card__btn" disabled={buyingEventCredit} onClick={handleBuyEventCredit}>
+                  {buyingEventCredit ? t('venueAdmin.eventCreditBuying') : t('venueAdmin.choosePlanBtn')}
+                </button>
+                {eventCredits > 0 && <p className="va-plan-card__note">{t('venueAdmin.eventCreditsAvailable', eventCredits)}</p>}
+              </div>
               {Object.keys(SUBSCRIPTION_TIERS).map(tierKey => {
                 const tierInfo = SUBSCRIPTION_TIERS[tierKey]
                 const isCurrent = hasActiveSub && currentUser?.subscriptionTier === tierKey
@@ -1756,6 +1840,7 @@ export default function VenueAdminPage() {
               })}
             </div>
             {checkoutError && <p className="va-plans-notice va-plans-notice--error">{checkoutError}</p>}
+            {eventCreditError && <p className="va-plans-notice va-plans-notice--error">{eventCreditError}</p>}
             {hasActiveSub && currentUser?.subscriptionAutoRenew && (
               <div style={{ padding: '0 28px 28px' }}>
                 <button type="button" className="btn btn-outline" disabled={cancelling} onClick={handleCancelPlan}>

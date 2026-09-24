@@ -12,23 +12,38 @@ function parseEvent(row) {
     customType: row.custom_type, custom_type: undefined,
     registrationUrl: row.registration_url, registration_url: undefined,
     featuredOnHome: row.featured_on_home === 1, featured_on_home: undefined,
+    views: row.views_count ?? 0, views_count: undefined,
   }
 }
+
+const WITH_VIEWS = `
+  SELECT e.*, (SELECT COUNT(*) FROM event_views v WHERE v.event_id = e.id) AS views_count
+  FROM events e
+`
 
 // GET /api/events  — optional ?placeId=
 router.get('/', (req, res) => {
   const { placeId } = req.query
   const rows = placeId
-    ? db.prepare('SELECT * FROM events WHERE place_id = ? ORDER BY date, time').all(placeId)
-    : db.prepare('SELECT * FROM events ORDER BY date, time').all()
+    ? db.prepare(`${WITH_VIEWS} WHERE e.place_id = ? ORDER BY e.date, e.time`).all(placeId)
+    : db.prepare(`${WITH_VIEWS} ORDER BY e.date, e.time`).all()
   res.json(rows.map(parseEvent))
 })
 
 // GET /api/events/:id
 router.get('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id)
+  const row = db.prepare(`${WITH_VIEWS} WHERE e.id = ?`).get(req.params.id)
   if (!row) return res.status(404).json({ error: 'Event not found' })
   res.json(parseEvent(row))
+})
+
+// POST /api/events/:id/view  — public, logs one view of the event's detail page
+router.post('/:id/view', (req, res) => {
+  const { id } = req.params
+  const existing = db.prepare('SELECT id FROM events WHERE id = ?').get(id)
+  if (!existing) return res.status(404).json({ error: 'Event not found' })
+  db.prepare('INSERT INTO event_views (event_id, viewed_at) VALUES (?, ?)').run(id, Date.now())
+  res.json({ ok: true })
 })
 
 // POST /api/events  — venue can only create for their own place
@@ -43,11 +58,15 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
+  let spendEventCredit = false
   if (user.role === 'venue') {
     expireIfPastDue(db, user.id)
-    const owner = db.prepare('SELECT subscription_status FROM users WHERE id = ?').get(user.id)
+    const owner = db.prepare('SELECT subscription_status, event_credits FROM users WHERE id = ?').get(user.id)
     if (owner?.subscription_status !== 'active') {
-      return res.status(403).json({ error: 'SUBSCRIPTION_REQUIRED' })
+      // No subscription — fall back to a one-time event-publish credit
+      // bought via /subscriptions/checkout-event, if they have one.
+      if (!owner?.event_credits) return res.status(403).json({ error: 'SUBSCRIPTION_REQUIRED' })
+      spendEventCredit = true
     }
   }
 
@@ -60,6 +79,10 @@ router.post('/', requireAuth, (req, res) => {
     // Only superadmin can pin an event to the homepage slider.
     user.role === 'superadmin' && featuredOnHome ? 1 : 0
   )
+
+  if (spendEventCredit) {
+    db.prepare('UPDATE users SET event_credits = event_credits - 1 WHERE id = ?').run(user.id)
+  }
 
   const created = db.prepare('SELECT * FROM events WHERE id = ?').get(id)
   res.status(201).json(parseEvent(created))

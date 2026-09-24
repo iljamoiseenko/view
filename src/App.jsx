@@ -27,6 +27,9 @@ import TableBookingPage from './pages/TableBookingPage/TableBookingPage'
 import RegisterGuestPage from './pages/RegisterGuestPage/RegisterGuestPage'
 import MyBookingsPage from './pages/MyBookingsPage/MyBookingsPage'
 import ScrollToTop from './components/ScrollToTop'
+import TabBar from './components/TabBar/TabBar'
+import AccountPage from './pages/AccountPage/AccountPage'
+import { isNative } from './native/platform'
 
 export default function App() {
   return (
@@ -50,6 +53,7 @@ export default function App() {
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/about" element={<AboutPage />} />
+                <Route path="/account" element={<AccountPage />} />
                 <Route path="/collections" element={<CollectionsPage />} />
                 <Route path="/collections/:slug" element={<CollectionDetailPage />} />
                 <Route path="/curated/:id" element={<CuratedListDetailPage />} />
@@ -90,7 +94,8 @@ export default function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
-            <Footer />
+            {/* In the iOS app the footer's links live in the Account tab instead. */}
+            {isNative ? <TabBar /> : <Footer />}
           </div>
         </AppProvider>
       </AuthProvider>

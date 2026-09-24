@@ -1,4 +1,9 @@
+import { registerPlugin } from '@capacitor/core'
 import { isAllDay } from './eventTime'
+import { isNative } from '../native/platform'
+
+// Native plugin from ios/App/App/ViewNative.swift — opens the system "New Event" sheet.
+const ViewCalendar = registerPlugin('ViewCalendar')
 
 const pad = (n) => String(n).padStart(2, '0')
 
@@ -33,6 +38,13 @@ export function buildEventTimes(dateStr, timeStr, durationHours = 2) {
 // Opens the generated .ics directly (no forced download) so mobile browsers
 // hand it off to the device's native calendar app.
 export function addToDeviceCalendar({ title, description, location, start, end, allDay }) {
+  if (isNative) {
+    return ViewCalendar.addEvent({
+      title, notes: description || '', location: location || '',
+      start: start.getTime(), end: end.getTime(), allDay: !!allDay,
+    }).catch(() => {})
+  }
+
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',

@@ -14,13 +14,16 @@ export function toHHMM(mins) {
 }
 
 // All non-overlapping slot start times for a table on a given day, given the
-// bookings that already exist for it that day.
-export function computeFreeSlots(table, bookingsForTable) {
+// bookings that already exist for it that day. `minMinutes` drops any slot
+// that starts before it — pass today's Kyiv time-of-day when the day being
+// shown is today, so already-passed slots stop appearing as bookable.
+export function computeFreeSlots(table, bookingsForTable, minMinutes = 0) {
   const step = table.slotMinutes || 90
   const open = toMinutes(table.availableFrom || '10:00')
   const close = toMinutes(table.availableTo || '23:00')
   const slots = []
   for (let t = open; t + step <= close; t += step) {
+    if (t < minMinutes) continue
     const busy = bookingsForTable.some(b => {
       const bStart = toMinutes(b.time)
       const bEnd = bStart + (b.durationMinutes || step)

@@ -107,6 +107,14 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_place_views_place_date ON place_views (place_id, viewed_at);
 
+  CREATE TABLE IF NOT EXISTS event_views (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id TEXT NOT NULL,
+    viewed_at INTEGER NOT NULL,
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_event_views_event_date ON event_views (event_id, viewed_at);
+
   -- Table booking: a place can have several "floors" (or a summer terrace,
   -- a second hall, etc.) — each its own layout (floor plan canvas) made of
   -- objects (bookable tables + decorative labels like "БАР"/"СЦЕНА"), and
@@ -278,6 +286,10 @@ if (!usersCols.includes('subscription_status')) {
 if (!usersCols.includes('telegram_chat_id')) {
   db.prepare('ALTER TABLE users ADD COLUMN telegram_chat_id TEXT').run()
   console.log('[db] Migration: added `telegram_chat_id` column to users')
+}
+if (!usersCols.includes('event_credits')) {
+  db.prepare('ALTER TABLE users ADD COLUMN event_credits INTEGER NOT NULL DEFAULT 0').run()
+  console.log('[db] Migration: added `event_credits` column to users')
 }
 
 // Telegram deep-link tokens: a guest tapping "confirm via Telegram" on a

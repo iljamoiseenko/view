@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import { api } from '../../api/client'
 import { kyivDateString } from '../../utils/kyivDate'
+import DeleteAccount from '../../components/DeleteAccount/DeleteAccount'
 import './MyBookingsPage.css'
 
 function today() {
@@ -103,6 +104,8 @@ export default function MyBookingsPage() {
             )}
           </>
         )}
+
+        <DeleteAccount />
       </div>
     </div>
   )

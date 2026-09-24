@@ -1,0 +1,26 @@
+/* Styles that only apply inside the iOS app (html.is-native, set in bootstrap.js).
+   The status bar is not overlaid (StatusBar overlaysWebView: false), so only the
+   bottom home-indicator area needs handling. */
+
+/* Room for the bottom tab bar (TabBar.css: 54px + home indicator). */
+.is-native body {
+  padding-bottom: calc(54px + env(safe-area-inset-bottom));
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The burger menu overlay runs to the bottom of the screen, under the tab bar —
+   keep its last items (language, login/logout) clear of it. */
+.is-native .header__mobile-menu {
+  padding-bottom: calc(32px + 54px + env(safe-area-inset-bottom));
+}
+
+.is-native .home__filter-modal {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Payments (WayForPay subscriptions / boosts) are not offered inside the iOS
+   app — App Store rules require In-App Purchase for that. Anything tagged
+   .web-only is hidden here. */
+.is-native .web-only {
+  display: none !important;
+}

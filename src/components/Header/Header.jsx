@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { api } from '../../api/client'
@@ -21,6 +21,11 @@ export default function Header() {
   const profileRef = useRef(null)
   const close = () => setMenuOpen(false)
   const closeProfile = () => setProfileOpen(false)
+  const { pathname } = useLocation()
+
+  // Close the menu on any navigation, including ones that don't go through its
+  // own links (e.g. the iOS app's bottom tab bar).
+  useEffect(() => { setMenuOpen(false) }, [pathname])
 
   const profilePath = currentUser?.role === 'superadmin' ? '/admin' : currentUser?.role === 'user' ? '/my-bookings' : '/venue'
   const profileLabel = currentUser?.role === 'user' ? t('header.myBookings') : t('header.profile')
