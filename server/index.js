@@ -54,4 +54,15 @@ if (isProd) {
 
 app.listen(PORT, () => console.log(`View API running on http://localhost:${PORT}`))
 
-require('./telegram').startPolling()
+// Telegram's getUpdates polling has exactly one legitimate consumer at a
+// time — running it from a local dev server AND production simultaneously
+// makes each bot update land on whichever one happens to call getUpdates
+// first, so confirmations/cancellations randomly go missing. Local dev
+// never needs to actually receive bot updates, so it stays off by default;
+// set DISABLE_TELEGRAM_POLLING=0 locally only if you're deliberately
+// testing the bot outside of production.
+if (process.env.DISABLE_TELEGRAM_POLLING !== '1') {
+  require('./telegram').startPolling()
+} else {
+  console.log('[telegram] Polling disabled (DISABLE_TELEGRAM_POLLING=1) — avoids racing production for bot updates')
+}

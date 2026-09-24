@@ -205,6 +205,20 @@ async function notifyOwnerOfBooking(placeId, booking) {
   }
 }
 
+// Notify a guest who already had Telegram linked (from an earlier booking)
+// that this new booking went through — an unlinked guest instead gets a
+// "Connect Telegram" link on the success screen, since a bot can never
+// message someone who hasn't pressed Start with it first.
+async function notifyGuestOfBooking(chatId, booking, placeName) {
+  if (!enabled || !chatId) return
+  try {
+    await sendMessage(chatId, `Ваше бронювання:\n\n${formatBookingSummary(booking, placeName)}`)
+  } catch {
+    // Fire-and-forget from the booking routes — never let a notification
+    // failure surface as a booking failure.
+  }
+}
+
 // Resolve a /start <token> into a chat_id link — called from the polling loop.
 function resolveStartToken(token, chatId) {
   const row = db.prepare('SELECT * FROM telegram_tokens WHERE token = ?').get(token)
@@ -633,4 +647,4 @@ function startPolling() {
   console.log('[telegram] Bot polling started')
 }
 
-module.exports = { enabled, createLinkToken, notifyOwnerOfBooking, startPolling }
+module.exports = { enabled, createLinkToken, notifyOwnerOfBooking, notifyGuestOfBooking, startPolling }

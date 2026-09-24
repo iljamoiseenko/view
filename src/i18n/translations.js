@@ -853,7 +853,7 @@ export const translations = {
       defaultZoneLabel: 'Бар',
       addFloor: '+ Додати поверх',
       floorNameLabel: 'Назва поверху',
-      newFloorNamePh: 'Наприклад: Літня тераса',
+      newFloorNamePh: 'Наприклад: Основний зал',
       deleteFloor: 'Видалити поверх',
       deleteFloorConfirm: (name) => `Видалити поверх «${name}»? Усі столики на ньому також буде видалено.`,
       noFloorsTitle: 'Ще немає жодного поверху',

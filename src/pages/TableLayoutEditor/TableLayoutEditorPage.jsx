@@ -231,16 +231,18 @@ export default function TableLayoutEditorPage() {
           return { ...o, x, y }
         }
         if (mode === 'resize-br') {
-          // Bottom-right handle — top-left corner stays put, size grows down/right.
-          const width = clamp(snap(Math.round(orig.width + dx), snapOn), GRID_SIZE, 500)
-          const height = clamp(snap(Math.round(orig.height + dy), snapOn), GRID_SIZE, 500)
+          // Bottom-right handle — top-left corner stays put, size grows down/right,
+          // capped at the room's own edges (not an arbitrary fixed size) so a wide
+          // hall can still fit a wall-length "БАР"/"СЦЕНА" zone.
+          const width = clamp(snap(Math.round(orig.width + dx), snapOn), GRID_SIZE, layout.width - orig.x)
+          const height = clamp(snap(Math.round(orig.height + dy), snapOn), GRID_SIZE, layout.height - orig.y)
           return { ...o, width, height }
         }
         // resize-tl — bottom-right corner stays put, top-left corner is what you drag.
         const right = orig.x + orig.width
         const bottom = orig.y + orig.height
-        const x = clamp(snap(Math.round(orig.x + dx), snapOn), Math.max(0, right - 500), right - GRID_SIZE)
-        const y = clamp(snap(Math.round(orig.y + dy), snapOn), Math.max(0, bottom - 500), bottom - GRID_SIZE)
+        const x = clamp(snap(Math.round(orig.x + dx), snapOn), 0, right - GRID_SIZE)
+        const y = clamp(snap(Math.round(orig.y + dy), snapOn), 0, bottom - GRID_SIZE)
         return { ...o, x, y, width: right - x, height: bottom - y }
       }))
     }

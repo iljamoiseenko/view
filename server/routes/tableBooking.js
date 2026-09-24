@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken')
 const db = require('../db')
 const { requireAuth, JWT_SECRET } = require('../middleware/auth')
 const { expireIfPastDue } = require('../subscriptionTiers')
-const { notifyOwnerOfBooking, createLinkToken } = require('../telegram')
+const { notifyOwnerOfBooking, notifyGuestOfBooking, createLinkToken } = require('../telegram')
 const { kyivDateString, kyivMinutesNow } = require('../kyivDate')
 
 function isPastSlot(date, time) {
@@ -479,6 +479,12 @@ router.post('/:placeId/bookings', (req, res) => {
     id, date, time, partySize: Number(partySize) || 2, tableLabel: table.label,
     guestName: guestName.trim(), guestPhone: guestPhone.trim(), occasion: cleanedOccasion, note,
   })
+  if (existingChatId) {
+    const place = db.prepare('SELECT name FROM places WHERE id = ?').get(placeId)
+    notifyGuestOfBooking(existingChatId, {
+      date, time, partySize: Number(partySize) || 2, tableLabel: table.label,
+    }, place?.name || '')
+  }
   res.status(201).json({
     ...parseBooking(created),
     telegramLink: existingChatId ? null : createLinkToken('booking', id),
