@@ -2,6 +2,9 @@
   "name": "view-server",
   "version": "1.0.0",
   "type": "commonjs",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
