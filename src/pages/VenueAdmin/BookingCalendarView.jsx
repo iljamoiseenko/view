@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
 import { api } from '../../api/client'
+import PhoneInput from '../../components/PhoneInput/PhoneInput'
 import { computeFreeSlots } from '../../utils/tableSlots'
 import { BOOKING_OCCASIONS } from '../../data/initialData'
 import { kyivDateString, kyivMinutesNow } from '../../utils/kyivDate'
+import { unionOutline, zoneCentroid } from '../../utils/mergedZoneShape'
 import './BookingCalendarView.css'
 
 function today() {
@@ -25,6 +27,7 @@ export default function BookingCalendarView({ placeId, tableBookingPaused, onTog
   const [bookings, setBookings] = useState([])
   const [bookingsLoading, setBookingsLoading] = useState(true)
   const [cancellingId, setCancellingId] = useState(null)
+  const [confirmingId, setConfirmingId] = useState(null)
   const [cancellingAll, setCancellingAll] = useState(false)
   const [highlightId, setHighlightId] = useState(null)
   const [showManualModal, setShowManualModal] = useState(false)
@@ -145,7 +148,9 @@ export default function BookingCalendarView({ placeId, tableBookingPaused, onTog
   // locks the floor/table pickers to that table and shows its existing
   // bookings for the chosen date above the add-booking form. ─────────────────
   const bookingsForModalTable = useMemo(
-    () => bookings.filter(b => b.tableId === manualForm.tableId && b.date === manualForm.date),
+    () => bookings
+      .filter(b => b.tableId === manualForm.tableId && b.date === manualForm.date)
+      .sort((a, b) => (a.time || '').localeCompare(b.time || '')),
     [bookings, manualForm.tableId, manualForm.date]
   )
   const manualModalTableLabel = manualForm.tableId ? (tableLabelById[manualForm.tableId] || '—') : ''
@@ -219,6 +224,18 @@ export default function BookingCalendarView({ placeId, tableBookingPaused, onTog
       // silently fail — the row stays, owner can retry
     } finally {
       setCancellingId(null)
+    }
+  }
+
+  const confirmBooking = async (booking) => {
+    setConfirmingId(booking.id)
+    try {
+      const updated = await api.put(`/table-booking/bookings/${booking.id}/confirm`, {})
+      setBookings(prev => prev.map(b => b.id === booking.id ? updated : b))
+    } catch {
+      // silently fail — the row stays unconfirmed, owner can retry
+    } finally {
+      setConfirmingId(null)
     }
   }
 
@@ -337,14 +354,33 @@ export default function BookingCalendarView({ placeId, tableBookingPaused, onTog
               const isTable = o.kind === 'table'
               const count = isTable ? (bookingCountByTable[o.id] || 0) : 0
               const clickable = isTable && o.isBookable
+              // A 1-2 grid-cell-wide object (e.g. a "ВХІД" zone rotated to fit
+              // a narrow wall) can't fit a whole syllable per line — cap the
+              // label to about one character wide so it wraps letter by
+              // letter instead of packing 2-3 narrow glyphs onto one line.
+              const isNarrow = o.width <= 40
+              const isMerged = o.parts && o.parts.length > 1
+              const centroid = isMerged ? zoneCentroid(o.parts) : null
               return (
                 <div
                   key={o.id}
-                  className={`vbk-obj vbk-obj--${o.kind} vbk-obj--${o.shape} ${count > 0 ? 'is-booked' : ''} ${clickable ? 'is-clickable' : ''} ${highlightId && bookingsForDate.find(b => b.id === highlightId)?.tableId === o.id ? 'is-highlight' : ''}`}
-                  style={{ left: o.x, top: o.y, width: o.width, height: o.height, backgroundColor: count > 0 ? undefined : o.color || undefined }}
+                  className={`vbk-obj vbk-obj--${o.kind} vbk-obj--${o.shape} ${isMerged ? 'is-merged' : ''} ${count > 0 ? 'is-booked' : ''} ${clickable ? 'is-clickable' : ''} ${highlightId && bookingsForDate.find(b => b.id === highlightId)?.tableId === o.id ? 'is-highlight' : ''}`}
+                  style={{ left: o.x, top: o.y, width: o.width, height: o.height, backgroundColor: isMerged || count > 0 ? undefined : o.color || undefined }}
                   onClick={() => { if (clickable) openManualModal(o.id) }}
                 >
-                  <span className="vbk-obj__label">{o.label}</span>
+                  {isMerged && (
+                    <svg className="vbk-obj__outline" viewBox={`0 0 ${o.width} ${o.height}`} preserveAspectRatio="none">
+                      {unionOutline(o.parts).map((loop, i) => (
+                        <polygon key={i} points={loop.map(([px, py]) => `${px - o.x},${py - o.y}`).join(' ')} fill={o.color || '#DCE4F5'} />
+                      ))}
+                    </svg>
+                  )}
+                  <span
+                    className={`vbk-obj__label ${isMerged ? 'vbk-obj__label--merged' : isNarrow ? 'vbk-obj__label--narrow' : ''}`}
+                    style={centroid ? { left: centroid.x - o.x, top: centroid.y - o.y } : undefined}
+                  >
+                    {o.label}
+                  </span>
                   {count > 0 && <span className="vbk-obj__count" title={t('venueAdmin.bookingCountHint', count)}>{count}</span>}
                 </div>
               )
@@ -386,26 +422,40 @@ export default function BookingCalendarView({ placeId, tableBookingPaused, onTog
                 {bookingsForDate.map(b => (
                   <tr
                     key={b.id}
+                    className={b.ownerConfirmedAt ? 'vbk__row--confirmed' : ''}
                     onMouseEnter={() => setHighlightId(b.id)}
                     onMouseLeave={() => setHighlightId(null)}
                   >
                     <td className="va-table__main">{tableLabelById[b.tableId] || '—'}</td>
                     <td>{b.time || '—'}</td>
                     <td>
+                      {!b.ownerConfirmedAt && <span className="vbk__new-badge">{t('venueAdmin.bookingNewBadge')}</span>}
                       {b.guestName || '—'}
                       {b.source === 'phone' && <span className="vbk__source-badge" title={t('venueAdmin.bookingSourcePhone')}>📞</span>}
                     </td>
                     <td>{b.guestPhone ? <a href={`tel:${b.guestPhone}`} className="vbk__phone">{b.guestPhone}</a> : '—'}</td>
                     <td>{b.partySize}</td>
                     <td>
-                      <button
-                        type="button"
-                        className="btn btn-outline btn-sm vbk__cancel"
-                        disabled={cancellingId === b.id}
-                        onClick={() => cancelBooking(b)}
-                      >
-                        {cancellingId === b.id ? t('venueAdmin.bookingCancelling') : t('venueAdmin.bookingCancelBtn')}
-                      </button>
+                      <div className="va-actions">
+                        {!b.ownerConfirmedAt && (
+                          <button
+                            type="button"
+                            className="btn btn-dark btn-sm vbk__confirm"
+                            disabled={confirmingId === b.id}
+                            onClick={() => confirmBooking(b)}
+                          >
+                            {confirmingId === b.id ? t('venueAdmin.bookingConfirming') : t('venueAdmin.bookingConfirmBtn')}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm vbk__cancel"
+                          disabled={cancellingId === b.id}
+                          onClick={() => cancelBooking(b)}
+                        >
+                          {cancellingId === b.id ? t('venueAdmin.bookingCancelling') : t('venueAdmin.bookingCancelBtn')}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -428,10 +478,11 @@ export default function BookingCalendarView({ placeId, tableBookingPaused, onTog
                 {bookingsForModalTable.length > 0 ? (
                   <div className="vbk-popup vbk-popup--in-modal">
                     {bookingsForModalTable.map(b => (
-                      <div key={b.id} className="vbk-popup__row">
+                      <div key={b.id} className={`vbk-popup__row ${b.ownerConfirmedAt ? 'vbk__row--confirmed' : ''}`}>
                         <div className="vbk-popup__time">{b.time || '—'}</div>
                         <div className="vbk-popup__info">
                           <div className="vbk-popup__guest">
+                            {!b.ownerConfirmedAt && <span className="vbk__new-badge">{t('venueAdmin.bookingNewBadge')}</span>}
                             {b.guestName || '—'}
                             {b.source === 'phone' && <span className="vbk__source-badge" title={t('venueAdmin.bookingSourcePhone')}>📞</span>}
                           </div>
@@ -442,14 +493,26 @@ export default function BookingCalendarView({ placeId, tableBookingPaused, onTog
                             {b.note && <span> · {b.note}</span>}
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          className="btn btn-outline btn-sm vbk__cancel"
-                          disabled={cancellingId === b.id}
-                          onClick={() => cancelBooking(b)}
-                        >
-                          {cancellingId === b.id ? t('venueAdmin.bookingCancelling') : t('venueAdmin.bookingCancelBtn')}
-                        </button>
+                        <div className="va-actions">
+                          {!b.ownerConfirmedAt && (
+                            <button
+                              type="button"
+                              className="btn btn-dark btn-sm vbk__confirm"
+                              disabled={confirmingId === b.id}
+                              onClick={() => confirmBooking(b)}
+                            >
+                              {confirmingId === b.id ? t('venueAdmin.bookingConfirming') : t('venueAdmin.bookingConfirmBtn')}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm vbk__cancel"
+                            disabled={cancellingId === b.id}
+                            onClick={() => cancelBooking(b)}
+                          >
+                            {cancellingId === b.id ? t('venueAdmin.bookingCancelling') : t('venueAdmin.bookingCancelBtn')}
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -533,7 +596,7 @@ export default function BookingCalendarView({ placeId, tableBookingPaused, onTog
                     </label>
                     <label className="tle-props__field">
                       <span>{t('venueAdmin.bookingManualGuestPhone')}</span>
-                      <input className="input" type="tel" placeholder="+380 XX XXX-XX-XX" value={manualForm.guestPhone} onChange={e => setManualForm(f => ({ ...f, guestPhone: e.target.value }))} />
+                      <PhoneInput value={manualForm.guestPhone} onChange={v => setManualForm(f => ({ ...f, guestPhone: v }))} />
                     </label>
                     <label className="tle-props__field">
                       <span>{t('tableBooking.fieldPartySize')}</span>

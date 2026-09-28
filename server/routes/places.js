@@ -52,6 +52,8 @@ function parsePlace(row) {
     opening_date: undefined,
     tableBookingPaused: row.table_booking_paused === 1,
     table_booking_paused: undefined,
+    tableBookingFreeAccess: row.table_booking_free_access === 1,
+    table_booking_free_access: undefined,
   }
 }
 
@@ -277,6 +279,22 @@ router.delete('/:id/boost', requireAuth, requireRole('superadmin'), (req, res) =
   res.json(parsePlace(updated))
 })
 
+// PUT /api/places/:id/booking-access — superadmin only. Grants (or revokes)
+// full table-booking access to a venue regardless of its subscription tier —
+// for demoing/onboarding a venue onto booking before they've paid for
+// Premium, or as a one-off courtesy. Checked in server/routes/tableBooking.js
+// alongside the normal Premium-tier gate.
+router.put('/:id/booking-access', requireAuth, requireRole('superadmin'), (req, res) => {
+  const { id } = req.params
+  const existing = db.prepare('SELECT id FROM places WHERE id = ?').get(id)
+  if (!existing) return res.status(404).json({ error: 'Place not found' })
+
+  db.prepare('UPDATE places SET table_booking_free_access = ? WHERE id = ?').run(req.body?.enabled ? 1 : 0, id)
+
+  const updated = db.prepare('SELECT * FROM places WHERE id = ?').get(id)
+  res.json(parsePlace(updated))
+})
+
 // DELETE /api/places/:id  — superadmin only
 router.delete('/:id', requireAuth, requireRole('superadmin'), (req, res) => {
   const result = db.prepare('DELETE FROM places WHERE id = ?').run(req.params.id)
@@ -304,7 +322,7 @@ router.get('/:id/stats', requireAuth, (req, res) => {
   if (user.role !== 'superadmin') {
     expireIfPastDue(db, user.id)
     const owner = db.prepare('SELECT subscription_tier, subscription_status FROM users WHERE id = ?').get(user.id)
-    const hasAnalytics = owner?.subscription_status === 'active' && owner.subscription_tier === 'pro'
+    const hasAnalytics = owner?.subscription_status === 'active' && (owner.subscription_tier === 'pro' || owner.subscription_tier === 'premium')
     if (!hasAnalytics) {
       return res.status(403).json({ error: 'ANALYTICS_REQUIRES_UPGRADE' })
     }

@@ -4,9 +4,11 @@ import { useApp } from '../../context/AppContext'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { api } from '../../api/client'
+import PhoneInput from '../../components/PhoneInput/PhoneInput'
 import { computeFreeSlots } from '../../utils/tableSlots'
 import { BOOKING_OCCASIONS } from '../../data/initialData'
 import { kyivDateString, kyivMinutesNow } from '../../utils/kyivDate'
+import { unionOutline, zoneCentroid } from '../../utils/mergedZoneShape'
 import './TableBookingPage.css'
 
 const EMPTY_FORM = { guestName: '', guestPhone: '', partySize: 2, occasion: '', note: '', website: '' }
@@ -25,6 +27,7 @@ export default function TableBookingPage() {
   const place = places.find(p => p.id === placeId)
 
   const [floorsLoading, setFloorsLoading] = useState(true)
+  const [bookingUnavailable, setBookingUnavailable] = useState(false)
   const [floors, setFloors] = useState([])
   const [activeFloorId, setActiveFloorId] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -48,7 +51,9 @@ export default function TableBookingPage() {
         setFloors(list)
         if (list.length > 0) setActiveFloorId(list[0].id)
       })
-      .catch(() => {})
+      .catch(err => {
+        if (err.message === 'BOOKING_UNAVAILABLE') setBookingUnavailable(true)
+      })
       .finally(() => setFloorsLoading(false))
   }, [placeId])
 
@@ -177,7 +182,7 @@ export default function TableBookingPage() {
             </>
           )}
         </div>
-        {place.tableBookingPaused ? (
+        {place.tableBookingPaused || bookingUnavailable ? (
           <div className="empty-state">
             <h3>{t('tableBooking.pausedTitle')}</h3>
             <p>{t('tableBooking.pausedText')}</p>
@@ -229,16 +234,30 @@ export default function TableBookingPage() {
                   const isFullyBooked = isTable && o.isBookable && freeSlots.length === 0
                   const isBookable = isTable && o.isBookable
                   const isSelected = selectedTable?.id === o.id
+                  const isMerged = o.parts && o.parts.length > 1
+                  const centroid = isMerged ? zoneCentroid(o.parts) : null
                   return (
                     <button
                       key={o.id}
                       type="button"
-                      className={`tbk-obj tbk-obj--${o.kind} tbk-obj--${o.shape} ${isFullyBooked ? 'is-booked' : ''} ${!isBookable && isTable ? 'is-disabled' : ''} ${isSelected ? 'is-selected' : ''}`}
-                      style={{ left: o.x, top: o.y, width: o.width, height: o.height, backgroundColor: (isFullyBooked || isSelected) ? undefined : o.color || undefined }}
+                      className={`tbk-obj tbk-obj--${o.kind} tbk-obj--${o.shape} ${isMerged ? 'is-merged' : ''} ${isFullyBooked ? 'is-booked' : ''} ${!isBookable && isTable ? 'is-disabled' : ''} ${isSelected ? 'is-selected' : ''}`}
+                      style={{ left: o.x, top: o.y, width: o.width, height: o.height, backgroundColor: isMerged || isFullyBooked || isSelected ? undefined : o.color || undefined }}
                       onClick={() => openTable(o)}
                       disabled={!isTable || !isBookable || isFullyBooked}
                     >
-                      <span className="tbk-obj__label">{o.label}</span>
+                      {isMerged && (
+                        <svg className="tbk-obj__outline" viewBox={`0 0 ${o.width} ${o.height}`} preserveAspectRatio="none">
+                          {unionOutline(o.parts).map((loop, i) => (
+                            <polygon key={i} points={loop.map(([px, py]) => `${px - o.x},${py - o.y}`).join(' ')} fill={o.color || '#DCE4F5'} />
+                          ))}
+                        </svg>
+                      )}
+                      <span
+                        className={`tbk-obj__label ${isMerged ? 'tbk-obj__label--merged' : o.width <= 40 ? 'tbk-obj__label--narrow' : ''}`}
+                        style={centroid ? { left: centroid.x - o.x, top: centroid.y - o.y } : undefined}
+                      >
+                        {o.label}
+                      </span>
                       {isTable && o.seats != null && <span className="tbk-obj__seats">{t('tableBooking.seatsLabel', o.seats)}</span>}
                     </button>
                   )
@@ -298,7 +317,7 @@ export default function TableBookingPage() {
                     </label>
                     <label className="tbk-field">
                       <span>{t('tableBooking.fieldPhone')}</span>
-                      <input className="input" required type="tel" placeholder="+380 XX XXX-XX-XX" value={form.guestPhone} onChange={e => setForm(f => ({ ...f, guestPhone: e.target.value }))} />
+                      <PhoneInput required value={form.guestPhone} onChange={v => setForm(f => ({ ...f, guestPhone: v }))} />
                     </label>
                     <label className="tbk-field">
                       <span>{t('tableBooking.fieldPartySize')}</span>

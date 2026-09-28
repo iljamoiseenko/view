@@ -3,6 +3,11 @@
 const SUBSCRIPTION_TIERS = {
   standard: { price: 9.99, boostsPerMonth: 0, eventsPerMonth: 4 },
   pro: { price: 19.99, boostsPerMonth: 12, eventsPerMonth: 10 },
+  // Everything Pro has, plus table booking (floor editor, guest bookings,
+  // owner calendar) — the only tier that unlocks it, gated in
+  // routes/tableBooking.js by checking subscription_tier === 'premium' directly
+  // rather than just subscription_status, so Standard/Pro don't get it too.
+  premium: { price: 24.99, boostsPerMonth: 12, eventsPerMonth: 10, bookingEnabled: true },
 }
 
 const BOOST_DURATION_MS = 24 * 60 * 60 * 1000

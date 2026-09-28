@@ -177,7 +177,7 @@
   background: #DCE4F5;
   border-color: #B7C4E8;
   color: #33456E;
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   cursor: default;
@@ -188,7 +188,20 @@
 .tbk-obj.is-selected { border-color: var(--vivid); box-shadow: 0 0 0 3px rgba(252, 24, 248, 0.2); }
 
 .tbk-obj__label { pointer-events: none; line-height: 1.2; overflow: hidden; word-break: break-word; }
+/* Caps the label's own box to ~1 character wide so text wraps one letter per
+   line no matter how narrow-glyphed the word is (e.g. "ВХІД" wouldn't
+   otherwise break evenly, since "ХІ" alone is narrow enough to fit one line). */
+.tbk-obj__label--narrow { max-width: 1.15em; word-break: break-all; margin: 0 auto; }
 .tbk-obj__seats { pointer-events: none; font-size: 10px; font-weight: 600; color: var(--text-3); }
+
+/* Merged (Г/П-shaped) zone — the fill+outline comes entirely from the SVG
+   polygon below, so the plain rectangular border/background is switched off. */
+.tbk-obj.is-merged { border: none; background: none; }
+.tbk-obj__outline { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.tbk-obj__outline polygon { stroke: #B7C4E8; stroke-width: 1.5; }
+/* Bounding-box center would land in the shape's empty notch for an L/T/U —
+   position at the actual area centroid instead, computed in JS. */
+.tbk-obj__label--merged { position: absolute; transform: translate(-50%, -50%); max-width: none; }
 
 /* Modal */
 .tbk-modal-overlay {

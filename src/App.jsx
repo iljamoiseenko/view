@@ -83,7 +83,7 @@ export default function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/venue/tables" element={
-                  <ProtectedRoute role="venue">
+                  <ProtectedRoute role="venue" allowSuperadmin>
                     <TableLayoutEditorPage />
                   </ProtectedRoute>
                 } />

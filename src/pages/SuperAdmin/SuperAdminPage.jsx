@@ -829,6 +829,13 @@ export default function SuperAdminPage() {
     await reload()
   }
 
+  // Grants (or revokes) full table-booking access for this venue regardless
+  // of its subscription tier — for demos/onboarding, or as a one-off courtesy.
+  const handleToggleBookingAccess = async (p) => {
+    await api.put(`/places/${p.id}/booking-access`, { enabled: !p.tableBookingFreeAccess })
+    await reload()
+  }
+
   const handleToggleActive = async (u) => {
     const updated = await api.put(`/users/${u.id}`, { isActive: !u.isActive })
     setVenueUsers(prev => prev.map(x => x.id === u.id ? updated : x))
@@ -987,6 +994,20 @@ export default function SuperAdminPage() {
                             onClick={() => handleToggleBoost(p)}
                           >
                             {isTop ? '⬇️' : '🚀'}
+                          </button>
+                          <button
+                            className="sa-icon-btn"
+                            title={t('superAdmin.demoBookingButton')}
+                            onClick={() => navigate(`/venue/tables?placeId=${p.id}`)}
+                          >
+                            🪑
+                          </button>
+                          <button
+                            className="sa-icon-btn"
+                            title={p.tableBookingFreeAccess ? t('superAdmin.bookingAccessRevokeButton') : t('superAdmin.bookingAccessGrantButton')}
+                            onClick={() => handleToggleBookingAccess(p)}
+                          >
+                            {p.tableBookingFreeAccess ? '🔓' : '🔒'}
                           </button>
                           <button className="sa-icon-btn" onClick={() => setModal({ type: 'place', data: p })}>✏️</button>
                           <button className="sa-icon-btn" onClick={() => setConfirm({ type: 'place', id: p.id, name: p.name })}>🗑️</button>

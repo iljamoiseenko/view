@@ -12,10 +12,9 @@ import { ALL_DAY_TIME, isAllDay, formatEventTime } from '../../utils/eventTime'
 import BookingCalendarView from './BookingCalendarView'
 import './VenueAdminPage.css'
 
-// TEMP: table booking is free-to-test for now — flip back to true to require
-// an active subscription again (also revert the matching check server-side
-// in server/routes/tableBooking.js's PUT /:placeId/layout).
-const BOOKING_REQUIRES_SUBSCRIPTION = false
+// Table booking requires the Premium tier specifically — keep this in sync
+// with the equivalent gate in server/routes/tableBooking.js.
+const BOOKING_REQUIRES_SUBSCRIPTION = true
 
 const EMPTY_LOGIN_FORM = { currentPassword: '', username: '' }
 const EMPTY_PASSWORD_FORM = { currentPassword: '', newPassword: '', confirmPassword: '' }
@@ -629,7 +628,9 @@ export default function VenueAdminPage() {
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState('')
   const hasActiveSub = currentUser?.subscriptionStatus === 'active'
-  const hasBookingAccess = BOOKING_REQUIRES_SUBSCRIPTION ? hasActiveSub : true
+  const hasBookingAccess = BOOKING_REQUIRES_SUBSCRIPTION
+    ? ((hasActiveSub && currentUser?.subscriptionTier === 'premium') || !!place?.tableBookingFreeAccess)
+    : true
   const eventCredits = currentUser?.eventCredits || 0
   const canCreateEvent = hasActiveSub || eventCredits > 0
 
@@ -1052,7 +1053,7 @@ export default function VenueAdminPage() {
                   <div className="va-plan-card">
                     <div className="va-plan-card__name va-plan-card__name--vivid">{t('subscriptionTiers.event')}</div>
                     <div className="va-plan-card__price">
-                      <span className="va-plan-card__price-amount">$5</span>
+                      <span className="va-plan-card__price-amount">$3.99</span>
                       <span className="va-plan-card__price-period">{t('venueAdmin.oneTimeLabel')}</span>
                     </div>
                     <ul className="va-plan-card__features">
@@ -1076,7 +1077,8 @@ export default function VenueAdminPage() {
                         <ul className="va-plan-card__features">
                           <li><span className="va-plan-card__check">✓</span>{tierInfo.eventsPerMonth ? t('venueAdmin.eventsLimitText', tierInfo.eventsPerMonth) : t('venueAdmin.eventsUnlimitedText')}</li>
                           {tierInfo.boostsPerMonth > 0 && <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}</li>}
-                          {tierKey === 'pro' && <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.analyticsFeatureText')}</li>}
+                          {(tierKey === 'pro' || tierKey === 'premium') && <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.analyticsFeatureText')}</li>}
+                          {tierInfo.bookingEnabled && <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.bookingFeatureText')}</li>}
                           <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.supportFeatureText')}</li>
                         </ul>
                         <button type="button" className="btn btn-dark va-plan-card__btn" disabled={!!checkingOutTier} onClick={() => handleChoosePlan(tierKey)}>
@@ -1778,20 +1780,6 @@ export default function VenueAdminPage() {
               )}
             </div>
             <div className="va-plans">
-              <div className="va-plan-card">
-                <div className="va-plan-card__name va-plan-card__name--vivid">{t('subscriptionTiers.event')}</div>
-                <div className="va-plan-card__price">
-                  <span className="va-plan-card__price-amount">$5</span>
-                  <span className="va-plan-card__price-period">{t('venueAdmin.oneTimeLabel')}</span>
-                </div>
-                <ul className="va-plan-card__features">
-                  <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.eventCreditFeatureText')}</li>
-                </ul>
-                <button type="button" className="btn btn-dark va-plan-card__btn" disabled={buyingEventCredit} onClick={handleBuyEventCredit}>
-                  {buyingEventCredit ? t('venueAdmin.eventCreditBuying') : t('venueAdmin.choosePlanBtn')}
-                </button>
-                {eventCredits > 0 && <p className="va-plan-card__note">{t('venueAdmin.eventCreditsAvailable', eventCredits)}</p>}
-              </div>
               {Object.keys(SUBSCRIPTION_TIERS).map(tierKey => {
                 const tierInfo = SUBSCRIPTION_TIERS[tierKey]
                 const isCurrent = hasActiveSub && currentUser?.subscriptionTier === tierKey
@@ -1816,10 +1804,16 @@ export default function VenueAdminPage() {
                           {t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}
                         </li>
                       )}
-                      {tierKey === 'pro' && (
+                      {(tierKey === 'pro' || tierKey === 'premium') && (
                         <li>
                           <span className="va-plan-card__check">✓</span>
                           {t('venueAdmin.analyticsFeatureText')}
+                        </li>
+                      )}
+                      {tierInfo.bookingEnabled && (
+                        <li>
+                          <span className="va-plan-card__check">✓</span>
+                          {t('venueAdmin.bookingFeatureText')}
                         </li>
                       )}
                       <li>
@@ -1840,7 +1834,6 @@ export default function VenueAdminPage() {
               })}
             </div>
             {checkoutError && <p className="va-plans-notice va-plans-notice--error">{checkoutError}</p>}
-            {eventCreditError && <p className="va-plans-notice va-plans-notice--error">{eventCreditError}</p>}
             {hasActiveSub && currentUser?.subscriptionAutoRenew && (
               <div style={{ padding: '0 28px 28px' }}>
                 <button type="button" className="btn btn-outline" disabled={cancelling} onClick={handleCancelPlan}>

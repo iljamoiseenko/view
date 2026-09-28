@@ -232,7 +232,7 @@
   background: #DCE4F5;
   border-color: #B7C4E8;
   color: #33456E;
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -244,7 +244,21 @@
 }
 
 .tle-obj__label { pointer-events: none; line-height: 1.2; overflow: hidden; word-break: break-word; }
+/* Caps the label's own box to ~1 character wide so text wraps one letter per
+   line no matter how narrow-glyphed the word is (e.g. "ВХІД" wouldn't
+   otherwise break evenly, since "ХІ" alone is narrow enough to fit one line). */
+.tle-obj__label--narrow { max-width: 1.15em; word-break: break-all; margin: 0 auto; }
 .tle-obj__seats { pointer-events: none; font-size: 10px; font-weight: 600; color: var(--text-3); }
+
+/* Merged (Г/П-shaped) zone — the fill+outline comes entirely from the SVG
+   polygon below, so the plain rectangular border/background is switched off. */
+.tle-obj.is-merged { border: none; background: none; }
+.tle-obj__outline { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.tle-obj__outline polygon { stroke: #B7C4E8; stroke-width: 1.5; }
+.tle-obj.is-selected .tle-obj__outline polygon { stroke: var(--vivid); }
+/* Bounding-box center would land in the shape's empty notch for an L/T/U —
+   position at the actual area centroid instead, computed in JS. */
+.tle-obj__label--merged { position: absolute; transform: translate(-50%, -50%); max-width: none; }
 
 .tle-obj__resize {
   position: absolute;
@@ -258,6 +272,26 @@
 }
 .tle-obj__resize--br { right: -6px; bottom: -6px; }
 .tle-obj__resize--tl { left: -6px; top: -6px; }
+
+.tle-merge-prompt {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 8px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+  z-index: 10;
+  cursor: default;
+}
+.tle-merge-prompt .btn-sm { padding: 5px 10px; font-size: 12px; }
 
 .tle-props {
   width: 260px;

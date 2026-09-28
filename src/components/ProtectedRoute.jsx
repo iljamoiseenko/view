@@ -10,12 +10,16 @@ function homeFor(role) {
   return '/venue'
 }
 
-export default function ProtectedRoute({ role, children }) {
+// allowSuperadmin: a superadmin may also open this route (in addition to the
+// role it's meant for) — used for the handful of pages superadmin needs to
+// operate on someone else's behalf (e.g. building a demo venue's table
+// layout without that venue needing its own subscription).
+export default function ProtectedRoute({ role, allowSuperadmin, children }) {
   const { currentUser, loading } = useAuth()
 
   if (loading) return null
   if (!currentUser) return <Navigate to="/login" replace />
-  if (role && currentUser.role !== role) {
+  if (role && currentUser.role !== role && !(allowSuperadmin && currentUser.role === 'superadmin')) {
     return <Navigate to={homeFor(currentUser.role)} replace />
   }
 

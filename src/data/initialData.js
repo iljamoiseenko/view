@@ -51,6 +51,7 @@ export const COLLECTIONS = [
 export const SUBSCRIPTION_TIERS = {
   standard: { price: 9.99, boostsPerMonth: 0, eventsPerMonth: 4 },
   pro: { price: 19.99, boostsPerMonth: 12, eventsPerMonth: 10 },
+  premium: { price: 24.99, boostsPerMonth: 12, eventsPerMonth: 10, bookingEnabled: true },
 }
 
 export const BOOST_DURATION_HOURS = 24

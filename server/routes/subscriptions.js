@@ -56,7 +56,7 @@ router.post('/checkout', requireAuth, requireRole('venue'), (req, res) => {
 })
 
 // One-time price for publishing a single event without an active subscription.
-const EVENT_CREDIT_PRICE_USD = 5
+const EVENT_CREDIT_PRICE_USD = 3.99
 
 // POST /api/subscriptions/checkout-event — venue owner buys one event-publish
 // credit as a one-off (non-recurring) charge, for venues without a

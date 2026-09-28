@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken')
 const db = require('../db')
 const { requireAuth, JWT_SECRET } = require('../middleware/auth')
 const { expireIfPastDue } = require('../subscriptionTiers')
-const { notifyOwnerOfBooking, notifyGuestOfBooking, createLinkToken } = require('../telegram')
+const { notifyOwnerOfBooking, notifyGuestOfBooking, notifyGuestOfOwnerConfirm, createLinkToken } = require('../telegram')
 const { kyivDateString, kyivMinutesNow } = require('../kyivDate')
 
 function isPastSlot(date, time) {
@@ -27,12 +27,26 @@ function getOptionalGuestUserId(req) {
   }
 }
 
+// Lets a superadmin browse/demo the guest-facing booking flow on ANY venue
+// (sales demos, support) even if that venue itself doesn't have the Premium
+// tier — the frontend's api client already attaches whatever token is in
+// localStorage to every request, public routes included, so this needs no
+// frontend changes to kick in once a superadmin is logged in.
+function isSuperadminRequest(req) {
+  const header = req.headers['authorization']
+  if (!header?.startsWith('Bearer ')) return false
+  try {
+    return jwt.verify(header.slice(7), JWT_SECRET).role === 'superadmin'
+  } catch {
+    return false
+  }
+}
+
 const router = express.Router()
 
-// TEMP: table booking is free-to-test for now — flip back to true to require
-// an active subscription again (also revert the matching flag in
-// src/pages/VenueAdmin/VenueAdminPage.jsx).
-const BOOKING_REQUIRES_SUBSCRIPTION = false
+// Table booking requires the Premium tier specifically — keep this in sync
+// with the equivalent gate in src/pages/VenueAdmin/VenueAdminPage.jsx.
+const BOOKING_REQUIRES_SUBSCRIPTION = true
 
 // ── Abuse protection for the public "create booking" endpoint ──────────────
 // No login is required to book a table, so nothing stops a script (or a
@@ -77,8 +91,11 @@ setInterval(() => {
 
 // A believable phone number has a handful of digits — this isn't validating
 // a real number, just rejecting empty-ish garbage like "111" or "asdf".
+// Kept in sync with src/utils/phone.js's isValidUaPhone — the frontend's
+// PhoneInput builds exactly this shape, so this is the real gate against
+// anything else (a direct API call, a stale client) slipping through.
 function looksLikePhone(phone) {
-  return (String(phone).match(/\d/g) || []).length >= 7
+  return /^\+380\d{9}$/.test(String(phone || ''))
 }
 
 function parseFloor(row) {
@@ -112,6 +129,7 @@ function parseObject(row) {
     availableTo: row.available_to || '23:00',
     slotMinutes: row.slot_minutes || 90,
     color: row.color || null,
+    parts: row.parts ? JSON.parse(row.parts) : null,
   }
 }
 
@@ -131,6 +149,7 @@ function parseBooking(row) {
     status: row.status,
     source: row.source || 'online',
     userId: row.user_id || null,
+    ownerConfirmedAt: row.owner_confirmed_at || null,
     createdAt: row.created_at,
   }
 }
@@ -209,19 +228,37 @@ function assertOwnerOrSuperadmin(req, res, placeId) {
   return true
 }
 
+function placeHasFreeBookingAccess(placeId) {
+  return db.prepare('SELECT table_booking_free_access FROM places WHERE id = ?').get(placeId)?.table_booking_free_access === 1
+}
+
 function requireActiveSubIfVenue(req, res) {
   if (!BOOKING_REQUIRES_SUBSCRIPTION || req.user.role !== 'venue') return true
+  if (placeHasFreeBookingAccess(req.user.placeId)) return true
   expireIfPastDue(db, req.user.id)
-  const owner = db.prepare('SELECT subscription_status FROM users WHERE id = ?').get(req.user.id)
-  if (owner?.subscription_status !== 'active') {
+  const owner = db.prepare('SELECT subscription_status, subscription_tier FROM users WHERE id = ?').get(req.user.id)
+  if (owner?.subscription_status !== 'active' || owner?.subscription_tier !== 'premium') {
     res.status(403).json({ error: 'SUBSCRIPTION_REQUIRED' })
     return false
   }
   return true
 }
 
+// Same check as requireActiveSubIfVenue, but keyed by placeId instead of the
+// logged-in user — used on the public guest-facing routes (no req.user there)
+// to stop guests from booking (or even seeing table availability for) a venue
+// whose subscription doesn't include booking.
+function placeHasBookingAccess(placeId, req) {
+  if (!BOOKING_REQUIRES_SUBSCRIPTION) return true
+  if (req && isSuperadminRequest(req)) return true
+  if (placeHasFreeBookingAccess(placeId)) return true
+  const owner = db.prepare(`SELECT subscription_status, subscription_tier FROM users WHERE place_id = ? AND role = 'venue'`).get(placeId)
+  return owner?.subscription_status === 'active' && owner?.subscription_tier === 'premium'
+}
+
 // GET /api/table-booking/:placeId/floors — public, lightweight list for floor tabs
 router.get('/:placeId/floors', (req, res) => {
+  if (!placeHasBookingAccess(req.params.placeId, req)) return res.status(403).json({ error: 'BOOKING_UNAVAILABLE' })
   const rows = db.prepare(`
     SELECT l.*, (SELECT COUNT(*) FROM table_objects o WHERE o.layout_id = l.id AND o.kind = 'table') AS table_count
     FROM table_layouts l WHERE l.place_id = ? ORDER BY l.sort_order ASC, l.updated_at ASC
@@ -317,18 +354,29 @@ router.put('/floor/:layoutId', requireAuth, (req, res) => {
       const availableTo = /^\d{2}:\d{2}$/.test(o.availableTo) ? o.availableTo : '23:00'
       const slotMinutes = Math.max(15, Math.min(480, Number(o.slotMinutes) || 90))
       const color = /^#[0-9a-fA-F]{3,8}$/.test(o.color || '') ? o.color : null
+      // A merged Г/П-shaped zone carries its individual rectangles here (in
+      // absolute layout coordinates) so it can be redrawn as one seamless
+      // outline; a plain object has none, so this stays null.
+      const parts = Array.isArray(o.parts) && o.parts.length > 1
+        ? JSON.stringify(o.parts.map(p => ({
+            x: Math.round(Number(p.x)) || 0,
+            y: Math.round(Number(p.y)) || 0,
+            width: Math.max(1, Math.round(Number(p.width)) || 1),
+            height: Math.max(1, Math.round(Number(p.height)) || 1),
+          })))
+        : null
 
       if (isNew) {
         const id = 'tbl' + Date.now() + Math.random().toString(36).slice(2, 7)
         db.prepare(`
-          INSERT INTO table_objects (id, layout_id, kind, shape, x, y, width, height, label, seats, is_bookable, sort_order, available_from, available_to, slot_minutes, color)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(id, layoutId, kind, shape, x_, y_, width_, height_, label, seats, isBookable, sortOrder, availableFrom, availableTo, slotMinutes, color)
+          INSERT INTO table_objects (id, layout_id, kind, shape, x, y, width, height, label, seats, is_bookable, sort_order, available_from, available_to, slot_minutes, color, parts)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(id, layoutId, kind, shape, x_, y_, width_, height_, label, seats, isBookable, sortOrder, availableFrom, availableTo, slotMinutes, color, parts)
       } else {
         db.prepare(`
-          UPDATE table_objects SET kind=?, shape=?, x=?, y=?, width=?, height=?, label=?, seats=?, is_bookable=?, sort_order=?, available_from=?, available_to=?, slot_minutes=?, color=?
+          UPDATE table_objects SET kind=?, shape=?, x=?, y=?, width=?, height=?, label=?, seats=?, is_bookable=?, sort_order=?, available_from=?, available_to=?, slot_minutes=?, color=?, parts=?
           WHERE id = ? AND layout_id = ?
-        `).run(kind, shape, x_, y_, width_, height_, label, seats, isBookable, sortOrder, availableFrom, availableTo, slotMinutes, color, o.id, layoutId)
+        `).run(kind, shape, x_, y_, width_, height_, label, seats, isBookable, sortOrder, availableFrom, availableTo, slotMinutes, color, parts, o.id, layoutId)
       }
       sortOrder++
     }
@@ -379,6 +427,7 @@ router.delete('/floor/:layoutId', requireAuth, (req, res) => {
   const floor = db.prepare('SELECT * FROM table_layouts WHERE id = ?').get(layoutId)
   if (!floor) return res.status(404).json({ error: 'Floor not found' })
   if (!assertOwnerOrSuperadmin(req, res, floor.place_id)) return
+  if (!requireActiveSubIfVenue(req, res)) return
 
   const today = kyivDateString()
   const blocking = db.prepare(`
@@ -398,6 +447,7 @@ router.delete('/floor/:layoutId', requireAuth, (req, res) => {
 // details, just the booked time ranges (across all floors) so the client can
 // compute free slots per table.
 router.get('/:placeId/availability', (req, res) => {
+  if (!placeHasBookingAccess(req.params.placeId, req)) return res.status(403).json({ error: 'BOOKING_UNAVAILABLE' })
   const { date } = req.query
   if (!date) return res.status(400).json({ error: 'date is required' })
   const rows = db.prepare(`
@@ -413,6 +463,8 @@ router.get('/:placeId/availability', (req, res) => {
 router.post('/:placeId/bookings', (req, res) => {
   const { placeId } = req.params
   const { tableId, date, time, guestName, guestPhone, partySize, occasion, note, website } = req.body
+
+  if (!placeHasBookingAccess(placeId, req)) return res.status(403).json({ error: 'BOOKING_UNAVAILABLE' })
 
   const place = db.prepare('SELECT table_booking_paused FROM places WHERE id = ?').get(placeId)
   if (place?.table_booking_paused) {
@@ -520,6 +572,7 @@ router.get('/my/bookings', requireAuth, (req, res) => {
 router.post('/:placeId/bookings/manual', requireAuth, (req, res) => {
   const { placeId } = req.params
   if (!assertOwnerOrSuperadmin(req, res, placeId)) return
+  if (!requireActiveSubIfVenue(req, res)) return
 
   const { tableId, date, time, guestName, guestPhone, partySize, occasion, note } = req.body
   // Staff entering a booking they took over the phone don't always get (or
@@ -564,10 +617,35 @@ router.post('/:placeId/bookings/manual', requireAuth, (req, res) => {
 // GET /api/table-booking/:placeId/bookings — venue owner/superadmin, full guest details (all floors)
 router.get('/:placeId/bookings', requireAuth, (req, res) => {
   if (!assertOwnerOrSuperadmin(req, res, req.params.placeId)) return
+  if (!requireActiveSubIfVenue(req, res)) return
   const rows = db.prepare(`
     SELECT * FROM table_bookings WHERE place_id = ? AND status = 'confirmed' ORDER BY date ASC, time ASC
   `).all(req.params.placeId)
   res.json(rows.map(parseBooking))
+})
+
+// PUT /api/table-booking/bookings/:id/confirm — venue owner/superadmin
+// acknowledges a booking from the web admin (same effect as tapping
+// "✅ Підтвердити" on the Telegram notification) — marks it seen and, if the
+// guest has Telegram linked, tells them the venue confirmed it.
+router.put('/bookings/:id/confirm', requireAuth, (req, res) => {
+  const booking = db.prepare(`
+    SELECT b.*, o.label AS table_label, p.name AS place_name
+    FROM table_bookings b
+    JOIN table_objects o ON o.id = b.table_id
+    JOIN places p ON p.id = b.place_id
+    WHERE b.id = ?
+  `).get(req.params.id)
+  if (!booking) return res.status(404).json({ error: 'Booking not found' })
+  if (!assertOwnerOrSuperadmin(req, res, booking.place_id)) return
+  if (!requireActiveSubIfVenue(req, res)) return
+  if (booking.status === 'cancelled') return res.status(400).json({ error: 'Booking already cancelled' })
+
+  db.prepare('UPDATE table_bookings SET owner_confirmed_at = ? WHERE id = ?').run(Date.now(), booking.id)
+  notifyGuestOfOwnerConfirm(booking)
+
+  const updated = db.prepare('SELECT * FROM table_bookings WHERE id = ?').get(booking.id)
+  res.json(parseBooking(updated))
 })
 
 // DELETE /api/table-booking/bookings/:id — the venue owner/superadmin, or the

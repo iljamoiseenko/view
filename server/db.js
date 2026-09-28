@@ -243,6 +243,10 @@ if (!placesCols.includes('table_booking_paused')) {
   db.prepare('ALTER TABLE places ADD COLUMN table_booking_paused INTEGER NOT NULL DEFAULT 0').run()
   console.log('[db] Migration: added `table_booking_paused` column to places')
 }
+if (!placesCols.includes('table_booking_free_access')) {
+  db.prepare('ALTER TABLE places ADD COLUMN table_booking_free_access INTEGER NOT NULL DEFAULT 0').run()
+  console.log('[db] Migration: added `table_booking_free_access` column to places')
+}
 
 const eventsCols = db.prepare('PRAGMA table_info(events)').all().map(c => c.name)
 if (!eventsCols.includes('custom_type')) {
@@ -323,6 +327,13 @@ if (!tableObjectsCols.includes('available_from')) {
 if (!tableObjectsCols.includes('color')) {
   db.prepare('ALTER TABLE table_objects ADD COLUMN color TEXT').run()
   console.log('[db] Migration: added `color` column to table_objects')
+}
+if (!tableObjectsCols.includes('parts')) {
+  // JSON array of {x,y,width,height} in absolute layout coordinates — set only
+  // for a merged zone (e.g. two touching labels fused into one Г-shaped
+  // object); null for a plain single-rectangle object.
+  db.prepare('ALTER TABLE table_objects ADD COLUMN parts TEXT').run()
+  console.log('[db] Migration: added `parts` column to table_objects (merged multi-rect zones)')
 }
 
 const tableBookingsCols = db.prepare('PRAGMA table_info(table_bookings)').all().map(c => c.name)

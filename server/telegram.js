@@ -301,6 +301,23 @@ async function handleCancelCallback(chatId, bookingId) {
 // exists; the booking is already confirmed the moment a guest books it).
 // Only the venue's connected owner chat can do this, since the button only
 // ever appears in that notification.
+// Shared by the Telegram "✅ Підтвердити" button and the web admin's own
+// confirm button (server/routes/tableBooking.js) — whichever surface the
+// owner used, the guest hears about it the same way. `booking` needs
+// table_label/place_name joined in (see the two callers' queries).
+async function notifyGuestOfOwnerConfirm(booking) {
+  // Older bookings made before per-booking auto-linking may not carry their
+  // own chat_id even though the guest's account already has Telegram
+  // connected (from a later booking, say) — fall back to that.
+  const guestChatId = booking.telegram_chat_id ||
+    (booking.user_id && db.prepare('SELECT telegram_chat_id FROM users WHERE id = ?').get(booking.user_id)?.telegram_chat_id)
+  if (!guestChatId) return
+  const summary = formatBookingSummary({
+    date: booking.date, time: booking.time, partySize: booking.party_size, tableLabel: booking.table_label,
+  }, booking.place_name)
+  sendMessage(guestChatId, `✅ <b>Заклад підтвердив ваше бронювання</b>\n${summary}`)
+}
+
 async function handleOwnerConfirm(chatId, bookingId) {
   const booking = db.prepare(`
     SELECT b.*, o.label AS table_label, p.name AS place_name
@@ -318,18 +335,7 @@ async function handleOwnerConfirm(chatId, bookingId) {
   }
 
   db.prepare('UPDATE table_bookings SET owner_confirmed_at = ? WHERE id = ?').run(Date.now(), bookingId)
-
-  // Older bookings made before per-booking auto-linking may not carry their
-  // own chat_id even though the guest's account already has Telegram
-  // connected (from a later booking, say) — fall back to that.
-  const guestChatId = booking.telegram_chat_id ||
-    (booking.user_id && db.prepare('SELECT telegram_chat_id FROM users WHERE id = ?').get(booking.user_id)?.telegram_chat_id)
-  if (guestChatId) {
-    const summary = formatBookingSummary({
-      date: booking.date, time: booking.time, partySize: booking.party_size, tableLabel: booking.table_label,
-    }, booking.place_name)
-    sendMessage(guestChatId, `✅ <b>Заклад підтвердив ваше бронювання</b>\n${summary}`)
-  }
+  notifyGuestOfOwnerConfirm(booking)
 
   return { text: '✅ Підтверджено' }
 }
@@ -647,4 +653,4 @@ function startPolling() {
   console.log('[telegram] Bot polling started')
 }
 
-module.exports = { enabled, createLinkToken, notifyOwnerOfBooking, notifyGuestOfBooking, startPolling }
+module.exports = { enabled, createLinkToken, notifyOwnerOfBooking, notifyGuestOfBooking, notifyGuestOfOwnerConfirm, startPolling }
