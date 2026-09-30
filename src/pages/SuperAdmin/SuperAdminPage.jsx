@@ -9,6 +9,7 @@ import { getPlaceTypeLabel } from '../../utils/placeType'
 import { getEventTypeLabel } from '../../utils/eventType'
 import { ALL_DAY_TIME, isAllDay, formatEventTime } from '../../utils/eventTime'
 import { kyivDateString } from '../../utils/kyivDate'
+import SearchableSelect from '../../components/SearchableSelect/SearchableSelect'
 import './SuperAdminPage.css'
 
 const EMPTY_PLACE = {
@@ -21,7 +22,7 @@ const EMPTY_PLACE = {
 }
 const EMPTY_EVENT = {
   placeId: '', title: '', description: '', date: '',
-  time: '19:00', type: 'live_music', price: 0, image: '', customType: '', registrationUrl: null,
+  time: '19:00', type: 'live_music', price: 0, image: '', customType: '', registrationUrl: null, address: '',
 }
 const EMPTY_ACCOUNT = { name: '', username: '', password: '', placeId: '' }
 const EMPTY_BANNER = {
@@ -533,14 +534,34 @@ function PlaceForm({ initial, onSave, onClose }) {
 // ── Event Form ───────────────────────────────────────────────────────────────
 function EventForm({ initial, places, onSave, onClose }) {
   const { t } = useLanguage()
-  const [f, setF] = useState({ ...EMPTY_EVENT, placeId: places[0]?.id || '', ...initial })
+  const [f, setF] = useState({ ...EMPTY_EVENT, ...initial })
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
+  const venueOptions = [
+    { value: '', label: t('superAdmin.noVenueOption') },
+    ...places.map(p => ({ value: p.id, label: `${p.name} (${p.city})` })),
+  ]
   return (
     <form onSubmit={e => { e.preventDefault(); onSave({ ...f, price: Number(f.price) }) }} className="sa-form">
       <div className="sa-grid">
         <div className="sa-col2"><label className="sa-label">{t('superAdmin.fieldVenue')}</label>
-          <select className="input" required value={f.placeId} onChange={e => set('placeId', e.target.value)}>
-            {places.map(p => <option key={p.id} value={p.id}>{p.name} ({p.city})</option>)}</select></div>
+          <SearchableSelect
+            options={venueOptions}
+            value={f.placeId}
+            onChange={v => set('placeId', v)}
+            placeholder={t('superAdmin.noVenueOption')}
+            searchPlaceholder={t('superAdmin.searchVenuePh')}
+            noResultsText={t('superAdmin.noVenueMatch')}
+          />
+          {!f.placeId && (
+            <input
+              className="input"
+              style={{ marginTop: 8 }}
+              placeholder={t('superAdmin.eventAddressPh')}
+              value={f.address || ''}
+              onChange={e => set('address', e.target.value)}
+            />
+          )}
+        </div>
         <div className="sa-col2"><label className="sa-label">{t('superAdmin.fieldEventTitle')}</label>
           <input className="input" required value={f.title} onChange={e => set('title', e.target.value)} /></div>
         <div><label className="sa-label">{t('superAdmin.fieldType')}</label>
@@ -1027,7 +1048,7 @@ export default function SuperAdminPage() {
           <div className="sa-section">
             <div className="sa-section__head">
               <h2>{t('superAdmin.tabEvents')}</h2>
-              <button className="btn btn-dark btn-sm" onClick={() => setModal({ type: 'event', data: null })} disabled={places.length === 0}>
+              <button className="btn btn-dark btn-sm" onClick={() => setModal({ type: 'event', data: null })}>
                 {t('superAdmin.addEvent')}
               </button>
             </div>

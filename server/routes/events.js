@@ -46,15 +46,20 @@ router.post('/:id/view', (req, res) => {
   res.json({ ok: true })
 })
 
-// POST /api/events  — venue can only create for their own place
+// POST /api/events  — venue can only create for their own place; a venue-less
+// ("standalone") event — e.g. a one-off community event with no registered
+// place — can only be created by superadmin, since there's no venue owner to
+// scope it to.
 router.post('/', requireAuth, (req, res) => {
-  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome } = req.body
-  if (!placeId || !title || !date || !time || !type) {
-    return res.status(400).json({ error: 'placeId, title, date, time, type required' })
+  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome, address } = req.body
+  if (!title || !date || !time || !type) {
+    return res.status(400).json({ error: 'title, date, time, type required' })
   }
 
   const user = req.user
-  if (user.role !== 'superadmin' && user.placeId !== placeId) {
+  if (!placeId) {
+    if (user.role !== 'superadmin') return res.status(403).json({ error: 'Forbidden' })
+  } else if (user.role !== 'superadmin' && user.placeId !== placeId) {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
@@ -72,12 +77,13 @@ router.post('/', requireAuth, (req, res) => {
 
   const id = 'e' + Date.now()
   db.prepare(`
-    INSERT INTO events (id, place_id, title, description, date, time, type, price, image, custom_type, registration_url, featured_on_home)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO events (id, place_id, title, description, date, time, type, price, image, custom_type, registration_url, featured_on_home, address)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    id, placeId, title, description ?? '', date, time, type, Number(price) || 0, image ?? '', customType ?? null, registrationUrl || null,
+    id, placeId || null, title, description ?? '', date, time, type, Number(price) || 0, image ?? '', customType ?? null, registrationUrl || null,
     // Only superadmin can pin an event to the homepage slider.
-    user.role === 'superadmin' && featuredOnHome ? 1 : 0
+    user.role === 'superadmin' && featuredOnHome ? 1 : 0,
+    placeId ? null : (address || null)
   )
 
   if (spendEventCredit) {
@@ -98,18 +104,26 @@ router.put('/:id', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
-  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome } = req.body
+  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome, address } = req.body
 
-  // Only superadmin may reassign an event to a different venue — a venue
-  // owner's own placeId is fixed client-side anyway, but reject a mismatched
-  // one here too rather than silently ignoring it.
-  if (placeId && user.role !== 'superadmin' && placeId !== user.placeId) {
+  // A partial update (e.g. just toggling featuredOnHome) omits `placeId`
+  // entirely — that must leave the venue untouched, not clear it. Only an
+  // update that actually includes the field (even as '' / null, to detach
+  // the venue) should change it.
+  const placeIdProvided = 'placeId' in req.body
+  const nextPlaceId = placeIdProvided ? (placeId || null) : row.place_id
+
+  // Only superadmin may reassign an event to a different venue — or to/from
+  // no venue at all — a venue owner's own placeId is fixed client-side
+  // anyway, but reject a mismatched one here too rather than silently
+  // ignoring it.
+  if (placeIdProvided && nextPlaceId !== row.place_id && user.role !== 'superadmin' && nextPlaceId !== user.placeId) {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
   db.prepare(`
     UPDATE events SET
-      place_id = COALESCE(?, place_id),
+      place_id = ?,
       title = COALESCE(?, title),
       description = COALESCE(?, description),
       date = COALESCE(?, date),
@@ -119,15 +133,17 @@ router.put('/:id', requireAuth, (req, res) => {
       image = COALESCE(?, image),
       custom_type = COALESCE(?, custom_type),
       registration_url = ?,
-      featured_on_home = COALESCE(?, featured_on_home)
+      featured_on_home = COALESCE(?, featured_on_home),
+      address = ?
     WHERE id = ?
   `).run(
-    placeId ?? null, title ?? null, description ?? null, date ?? null,
+    nextPlaceId, title ?? null, description ?? null, date ?? null,
     time ?? null, type ?? null,
     price !== undefined ? Number(price) : null,
     image ?? null, customType ?? null, registrationUrl || null,
     // Only superadmin can change the homepage-slider pin.
     user.role === 'superadmin' && featuredOnHome !== undefined ? (featuredOnHome ? 1 : 0) : null,
+    nextPlaceId ? null : (placeIdProvided ? (address || null) : row.address),
     req.params.id
   )
 

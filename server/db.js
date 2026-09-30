@@ -262,6 +262,40 @@ if (!eventsCols.includes('featured_on_home')) {
   console.log('[db] Migration: added `featured_on_home` column to events')
 }
 
+// Events can now exist with no venue at all (e.g. a one-off community event
+// with no registered place) — place_id must become nullable, and the table
+// needs its own free-text `address` column to show a location when there's
+// no place to read one from. SQLite can't ALTER a column's NOT NULL/FK
+// constraint in place, so rebuild the table (same pattern as table_layouts
+// below).
+if (!eventsCols.includes('address')) {
+  db.pragma('foreign_keys = OFF')
+  db.exec(`
+    CREATE TABLE events_new (
+      id TEXT PRIMARY KEY,
+      place_id TEXT,
+      title TEXT NOT NULL,
+      description TEXT,
+      date TEXT NOT NULL,
+      time TEXT NOT NULL,
+      type TEXT NOT NULL,
+      price INTEGER NOT NULL DEFAULT 0,
+      image TEXT,
+      custom_type TEXT,
+      registration_url TEXT,
+      featured_on_home INTEGER NOT NULL DEFAULT 0,
+      address TEXT,
+      FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE
+    );
+    INSERT INTO events_new (id, place_id, title, description, date, time, type, price, image, custom_type, registration_url, featured_on_home, address)
+      SELECT id, place_id, title, description, date, time, type, price, image, custom_type, registration_url, featured_on_home, NULL FROM events;
+    DROP TABLE events;
+    ALTER TABLE events_new RENAME TO events;
+  `)
+  db.pragma('foreign_keys = ON')
+  console.log('[db] Migration: events.place_id is now nullable, added `address` column for standalone events')
+}
+
 const usersCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
 if (!usersCols.includes('username')) {
   db.prepare('ALTER TABLE users ADD COLUMN username TEXT').run()

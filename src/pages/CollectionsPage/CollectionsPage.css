@@ -6,7 +6,7 @@
 
 .coll-page .coll-page__inner {
   width: 100%;
-  padding: 80px 0 140px;
+  padding: 80px 24px 140px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -42,39 +42,41 @@
   margin-bottom: 56px;
 }
 
-/* ── Split: Авторські підбірки / По категоріям side by side ── */
-.coll-page__split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: start;
-  gap: 56px;
+.coll-page__body {
   width: 100%;
   text-align: left;
 }
 
-@media (max-width: 900px) {
-  .coll-page__split { grid-template-columns: 1fr; gap: 48px; }
+.coll-page__tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
 }
 
-.coll-page__curated {
-  width: 100%;
+.coll-page__tab {
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--border);
+  background: var(--bg-2);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: var(--transition);
 }
+.coll-page__tab:hover { border-color: var(--vivid); color: var(--dark); }
+.coll-page__tab.active { background: var(--dark); border-color: var(--dark); color: #fff; }
 
-.coll-page__section-title {
-  font-size: clamp(22px, 4vw, 30px);
-  font-weight: 900;
-  color: var(--dark);
-  margin-bottom: 24px;
-  line-height: 1.15;
-}
+.coll-page__curated { width: 100%; }
 
 .coll-page__curated-swiper-outer { position: relative; text-align: left; }
-.coll-page__curated-swiper { padding-bottom: 4px; }
+/* Swiper clips at its own box (overflow:hidden), which was cutting the
+   cards' hover lift+glow off flush at the top/bottom edge — padding here
+   gives that room, and the matching negative margin pulls the box back so
+   the extra padding doesn't push the surrounding layout around. */
+.coll-page__curated-swiper { padding: 24px 4px 56px; margin: -24px -4px -56px; }
 .coll-page__curated-slide { width: 300px; }
-
-@media (max-width: 540px) {
-  .coll-page__curated-slide { width: 240px; }
-}
 
 .coll-page__curated-swiper .swiper-button-next,
 .coll-page__curated-swiper .swiper-button-prev {
@@ -90,9 +92,13 @@
 .coll-page__curated-swiper .swiper-button-prev::after { font-size: 15px; font-weight: 900; }
 .coll-page__curated-swiper .swiper-button-disabled { opacity: 0.35; }
 
-@media (max-width: 700px) {
-  .coll-page__curated-swiper .swiper-button-next,
-  .coll-page__curated-swiper .swiper-button-prev { display: none; }
+/* Mobile (<700px) renders .coll-page__curated-grid instead of the swiper at
+   all — see MOBILE_BREAKPOINT in CollectionsPage.jsx — so a plain 2-up grid
+   here, matching every other venue list in the app on small screens. */
+.coll-page__curated-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
 .coll-page__cards {
@@ -145,7 +151,7 @@
 }
 
 @media (max-width: 600px) {
-  .coll-page .coll-page__inner { padding: 56px 0 100px; }
+  .coll-page .coll-page__inner { padding: 56px 16px 100px; }
 }
 
 @media (max-width: 420px) {

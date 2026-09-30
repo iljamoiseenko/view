@@ -33,7 +33,7 @@ export default function EventCard({ event }) {
         <h3 className="ecard__title">{event.title}</h3>
         <p className="ecard__desc">{event.description}</p>
 
-        {place && (
+        {place ? (
           <Link to={`/place/${place.id}`} className="ecard__place" onClick={e => e.stopPropagation()}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
@@ -41,7 +41,15 @@ export default function EventCard({ event }) {
             </svg>
             {place.name} <span className="ecard__place-city">· {place.city}</span>
           </Link>
-        )}
+        ) : event.address ? (
+          <span className="ecard__place">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            {event.address}
+          </span>
+        ) : null}
 
         <div className="ecard__footer">
           <span className="ecard__time">{formatEventTime(event.time, t)}</span>

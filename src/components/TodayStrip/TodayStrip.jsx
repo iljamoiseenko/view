@@ -29,20 +29,23 @@ export default function TodayStrip() {
   const navigate = useNavigate()
   const [swiperRef, setSwiperRef] = useState(null)
 
-  // Published place IDs (all cities) — used to filter out orphan events
+  // Published place IDs (all cities) — used to filter out orphan events (a
+  // deleted/unpublished venue's leftover events). A standalone event has no
+  // place at all to check, so it's always kept rather than filtered out.
   const publishedPlaceIds = useMemo(
     () => new Set(places.filter(p => p.published).map(p => p.id)),
     [places]
   )
+  const isEventVisible = e => !e.placeId || publishedPlaceIds.has(e.placeId)
 
   // Used only for the "events today" stat in the bar above the strip.
   const todayEvents = useMemo(() =>
-    events.filter(e => e.date === TODAY && publishedPlaceIds.has(e.placeId)),
+    events.filter(e => e.date === TODAY && isEventVisible(e)),
     [events, publishedPlaceIds]
   )
 
   const upcomingEvents = useMemo(() =>
-    events.filter(e => e.date >= TODAY && publishedPlaceIds.has(e.placeId)),
+    events.filter(e => e.date >= TODAY && isEventVisible(e)),
     [events, publishedPlaceIds]
   )
 
@@ -186,7 +189,7 @@ export default function TodayStrip() {
                       <div className="ts-card__body">
                         <p className="ts-card__title">{ev.title}</p>
                         <div className="ts-card__meta">
-                          {place && (
+                          {place ? (
                             <span className="ts-card__place">
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
@@ -194,7 +197,15 @@ export default function TodayStrip() {
                               </svg>
                               {place.name}
                             </span>
-                          )}
+                          ) : ev.address ? (
+                            <span className="ts-card__place">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                              </svg>
+                              {ev.address}
+                            </span>
+                          ) : null}
                           {!evIsToday && (
                             <span className="ts-card__time">
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

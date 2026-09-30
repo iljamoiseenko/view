@@ -218,6 +218,24 @@
   border-top: none;
 }
 
+/* Standalone (no-venue) event — same pin icon + address row as the venue
+   card's address, but as its own small bordered block since there's no
+   venue card to hang off of. */
+.edetail__standalone-address {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  transition: var(--transition);
+}
+.edetail__standalone-address:hover { border-color: var(--dark); color: var(--text); }
+
 /* ── Responsive ── */
 @media (max-width: 860px) {
   .edetail__layout {
