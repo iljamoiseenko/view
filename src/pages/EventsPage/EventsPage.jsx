@@ -6,7 +6,7 @@ import Pagination from '../../components/Pagination/Pagination'
 import { isEventActiveOn, isEventUpcoming, isEventPast, eventDisplayDate } from '../../utils/eventTime'
 import './EventsPage.css'
 
-const PER_PAGE = 8
+const PER_PAGE = 16
 
 const addDays = (n) => {
   const d = new Date()
