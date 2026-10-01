@@ -13,6 +13,8 @@ function parseEvent(row) {
     registrationUrl: row.registration_url, registration_url: undefined,
     featuredOnHome: row.featured_on_home === 1, featured_on_home: undefined,
     views: row.views_count ?? 0, views_count: undefined,
+    endDate: row.end_date, end_date: undefined,
+    endTime: row.end_time, end_time: undefined,
   }
 }
 
@@ -51,9 +53,16 @@ router.post('/:id/view', (req, res) => {
 // place — can only be created by superadmin, since there's no venue owner to
 // scope it to.
 router.post('/', requireAuth, (req, res) => {
-  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome, address } = req.body
+  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome, address, endDate, endTime } = req.body
   if (!title || !date || !time || !type) {
     return res.status(400).json({ error: 'title, date, time, type required' })
+  }
+  // endDate marks a multi-day event ("2-3 жовтня") — must not precede the
+  // start date. endTime (e.g. start 12:00, end 19:00) has no such check:
+  // it's the end-of-day wrap time on whichever day the event finishes, not
+  // required to be "later" than the start time string.
+  if (endDate && endDate < date) {
+    return res.status(400).json({ error: 'endDate must not be before date' })
   }
 
   const user = req.user
@@ -77,13 +86,14 @@ router.post('/', requireAuth, (req, res) => {
 
   const id = 'e' + Date.now()
   db.prepare(`
-    INSERT INTO events (id, place_id, title, description, date, time, type, price, image, custom_type, registration_url, featured_on_home, address)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO events (id, place_id, title, description, date, time, type, price, image, custom_type, registration_url, featured_on_home, address, end_date, end_time)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id, placeId || null, title, description ?? '', date, time, type, Number(price) || 0, image ?? '', customType ?? null, registrationUrl || null,
     // Only superadmin can pin an event to the homepage slider.
     user.role === 'superadmin' && featuredOnHome ? 1 : 0,
-    placeId ? null : (address || null)
+    placeId ? null : (address || null),
+    endDate || null, endTime || null
   )
 
   if (spendEventCredit) {
@@ -104,14 +114,19 @@ router.put('/:id', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
-  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome, address } = req.body
+  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome, address, endDate, endTime } = req.body
 
   // A partial update (e.g. just toggling featuredOnHome) omits `placeId`
   // entirely — that must leave the venue untouched, not clear it. Only an
   // update that actually includes the field (even as '' / null, to detach
-  // the venue) should change it.
+  // the venue) should change it. Same reasoning for endDate/endTime — a
+  // toggle-only PUT must not silently clear a multi-day range or end time.
   const placeIdProvided = 'placeId' in req.body
   const nextPlaceId = placeIdProvided ? (placeId || null) : row.place_id
+  const endDateProvided = 'endDate' in req.body
+  const nextEndDate = endDateProvided ? (endDate || null) : row.end_date
+  const endTimeProvided = 'endTime' in req.body
+  const nextEndTime = endTimeProvided ? (endTime || null) : row.end_time
 
   // Only superadmin may reassign an event to a different venue — or to/from
   // no venue at all — a venue owner's own placeId is fixed client-side
@@ -119,6 +134,10 @@ router.put('/:id', requireAuth, (req, res) => {
   // ignoring it.
   if (placeIdProvided && nextPlaceId !== row.place_id && user.role !== 'superadmin' && nextPlaceId !== user.placeId) {
     return res.status(403).json({ error: 'Forbidden' })
+  }
+
+  if (nextEndDate && nextEndDate < (date || row.date)) {
+    return res.status(400).json({ error: 'endDate must not be before date' })
   }
 
   db.prepare(`
@@ -134,7 +153,9 @@ router.put('/:id', requireAuth, (req, res) => {
       custom_type = COALESCE(?, custom_type),
       registration_url = ?,
       featured_on_home = COALESCE(?, featured_on_home),
-      address = ?
+      address = ?,
+      end_date = ?,
+      end_time = ?
     WHERE id = ?
   `).run(
     nextPlaceId, title ?? null, description ?? null, date ?? null,
@@ -144,6 +165,7 @@ router.put('/:id', requireAuth, (req, res) => {
     // Only superadmin can change the homepage-slider pin.
     user.role === 'superadmin' && featuredOnHome !== undefined ? (featuredOnHome ? 1 : 0) : null,
     nextPlaceId ? null : (placeIdProvided ? (address || null) : row.address),
+    nextEndDate, nextEndTime,
     req.params.id
   )
 

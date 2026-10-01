@@ -10,7 +10,7 @@ import { buildEventTimes, addToDeviceCalendar } from '../../utils/calendar'
 import ShareButton from '../../components/ShareButton/ShareButton'
 import { getPlaceTypeLabel } from '../../utils/placeType'
 import { getEventTypeLabel } from '../../utils/eventType'
-import { formatEventTime } from '../../utils/eventTime'
+import { formatEventTimeRange, formatEventDateRange, eventEndDate } from '../../utils/eventTime'
 import './EventDetailPage.css'
 
 export default function EventDetailPage() {
@@ -42,11 +42,16 @@ export default function EventDetailPage() {
     )
   }
 
+  const isMultiDay = eventEndDate(event) !== event.date
   const date = new Date(event.date)
-  const dateStr = `${date.getDate()} ${t('common.monthsFull')[date.getMonth()]} · ${t('common.weekdaysFull')[date.getDay()]}`
+  // The weekday suffix only makes sense for a single day — a range already
+  // reads as a range ("2–3 жовтня") without it.
+  const dateStr = isMultiDay
+    ? formatEventDateRange(event, t)
+    : `${date.getDate()} ${t('common.monthsFull')[date.getMonth()]} · ${t('common.weekdaysFull')[date.getDay()]}`
 
   const handleAddToCalendar = () => {
-    const { start, end, allDay } = buildEventTimes(event.date, event.time)
+    const { start, end, allDay } = buildEventTimes(event.date, event.time, { endDate: event.endDate, endTime: event.endTime })
     const location = place ? [place.name, place.address].filter(Boolean).join(', ') : (event.address || '')
     addToDeviceCalendar({ title: event.title, description: event.description, location, start, end, allDay })
   }
@@ -89,7 +94,7 @@ export default function EventDetailPage() {
           <div className="edetail__date-row">
             <span className="edetail__date">{dateStr}</span>
             <span className="edetail__sep">·</span>
-            <span className="edetail__time">{formatEventTime(event.time, t)}</span>
+            <span className="edetail__time">{formatEventTimeRange(event, t)}</span>
           </div>
 
           <h1 className="edetail__title">{event.title}</h1>

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { getEventTypeLabel } from '../../utils/eventType'
-import { formatEventTime } from '../../utils/eventTime'
+import { formatEventTimeRange, eventEndDate } from '../../utils/eventTime'
 import './EventCard.css'
 
 export default function EventCard({ event }) {
@@ -10,6 +10,14 @@ export default function EventCard({ event }) {
   const { t } = useLanguage()
   const place = places.find(p => p.id === event.placeId)
   const date = new Date(event.date)
+
+  // A multi-day event within the same month shows as "2–3" in the day slot;
+  // crossing a month boundary is rare enough to just show the start day
+  // rather than complicate this small badge further.
+  const endDateStr = eventEndDate(event)
+  const endDate = endDateStr !== event.date ? new Date(endDateStr) : null
+  const sameMonth = endDate && date.getMonth() === endDate.getMonth() && date.getFullYear() === endDate.getFullYear()
+  const dayLabel = sameMonth ? `${date.getDate()}–${endDate.getDate()}` : date.getDate()
 
   return (
     <Link to={`/event/${event.id}`} className="ecard" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
@@ -21,7 +29,7 @@ export default function EventCard({ event }) {
           loading="lazy"
         />
         <div className="ecard__date">
-          <span className="ecard__date-day">{date.getDate()}</span>
+          <span className="ecard__date-day">{dayLabel}</span>
           <span className="ecard__date-month">{t('common.monthsShort')[date.getMonth()]}</span>
         </div>
         <span className={`ecard__type badge badge-event-${event.type}`}>
@@ -52,7 +60,7 @@ export default function EventCard({ event }) {
         ) : null}
 
         <div className="ecard__footer">
-          <span className="ecard__time">{formatEventTime(event.time, t)}</span>
+          <span className="ecard__time">{formatEventTimeRange(event, t)}</span>
           <span className={`ecard__price ${event.price === 0 ? 'free' : ''}`}>
             {event.price === 0 ? t('common.free') : `${event.price} ${t('common.currency')}`}
           </span>

@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
 import EventCard from '../../components/EventCard/EventCard'
 import Pagination from '../../components/Pagination/Pagination'
+import { isEventActiveOn, isEventUpcoming, isEventPast, eventDisplayDate } from '../../utils/eventTime'
 import './EventsPage.css'
 
 const PER_PAGE = 8
@@ -32,11 +33,15 @@ export default function EventsPage() {
   const filtered = useMemo(() => {
     let r = events
 
-    if (dateFilter === 'today')    r = r.filter(e => e.date === today)
-    else if (dateFilter === 'tomorrow') r = r.filter(e => e.date === tomorrow)
-    else if (dateFilter === 'week') r = r.filter(e => e.date >= today && e.date <= weekEnd)
-    else if (dateFilter === 'past') r = r.filter(e => e.date < today)
-    else r = r.filter(e => e.date >= today)
+    // Range-aware throughout: a multi-day event counts as "today" on every
+    // day it's running (not just the day it started), stays out of "past"
+    // until its last day is over, and doesn't drop out of "all" the moment
+    // its start date passes.
+    if (dateFilter === 'today')    r = r.filter(e => isEventActiveOn(e, today))
+    else if (dateFilter === 'tomorrow') r = r.filter(e => isEventActiveOn(e, tomorrow))
+    else if (dateFilter === 'week') r = r.filter(e => e.date <= weekEnd && isEventUpcoming(e, today))
+    else if (dateFilter === 'past') r = r.filter(e => isEventPast(e, today))
+    else r = r.filter(e => isEventUpcoming(e, today))
 
     if (typeFilter !== 'all') r = r.filter(e => e.type === typeFilter)
 
@@ -54,12 +59,14 @@ export default function EventsPage() {
     return filtered.slice(start, start + PER_PAGE)
   }, [filtered, page])
 
-  // Group paginated events by date
+  // Group paginated events by date — a multi-day event already in progress
+  // groups under today's heading rather than the (earlier) date it started,
+  // so it doesn't appear to float above "today" out of chronological order.
   const grouped = useMemo(() => {
     const g = {}
-    paginatedEvents.forEach(e => { if (!g[e.date]) g[e.date] = []; g[e.date].push(e) })
+    paginatedEvents.forEach(e => { const d = eventDisplayDate(e, today); if (!g[d]) g[d] = []; g[d].push(e) })
     return g
-  }, [paginatedEvents])
+  }, [paginatedEvents, today])
 
   const formatDate = (ds) => {
     const d   = new Date(ds + 'T00:00:00')

@@ -6,7 +6,7 @@ import EventCard from '../../components/EventCard/EventCard'
 import TodayStrip from '../../components/TodayStrip/TodayStrip'
 import BannerSlider from '../../components/BannerSlider/BannerSlider'
 import Pagination from '../../components/Pagination/Pagination'
-import { isAllDay } from '../../utils/eventTime'
+import { isAllDay, isEventUpcoming } from '../../utils/eventTime'
 import { kyivDateString } from '../../utils/kyivDate'
 import './HomePage.css'
 
@@ -98,9 +98,11 @@ export default function HomePage() {
     return allFilteredPlaces.slice(start, start + PLACES_PER_PAGE)
   }, [allFilteredPlaces, placePage])
 
-  // Filtered events (full list)
+  // Filtered events (full list) — isEventUpcoming keeps a multi-day event
+  // around for the whole list until its last day is over, not just the day
+  // it started.
   const allFilteredEvents = useMemo(() => {
-    let r = events.filter(e => e.date >= TODAY)
+    let r = events.filter(e => isEventUpcoming(e, TODAY))
     if (evDate === 'today')    r = r.filter(e => e.date === TODAY)
     if (evDate === 'tomorrow') r = r.filter(e => e.date === TOMORROW)
     if (evDate === 'week')     r = r.filter(e => e.date <= WEEK_END)
@@ -243,7 +245,7 @@ export default function HomePage() {
               onClick={() => setActiveTab('events')}
             >
               {t('home.tabEvents')}
-              <span className="home__section-tab__count">{events.filter(e => e.date >= TODAY).length}</span>
+              <span className="home__section-tab__count">{events.filter(e => isEventUpcoming(e, TODAY)).length}</span>
             </button>
           </div>
 

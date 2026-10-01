@@ -7,20 +7,31 @@ import { useApp } from '../../context/AppContext'
 import { CITIES } from '../../data/initialData'
 import { useLanguage } from '../../context/LanguageContext'
 import { getEventTypeLabel } from '../../utils/eventType'
-import { isAllDay, formatEventTime } from '../../utils/eventTime'
+import { isAllDay, formatEventTimeRange, isEventActiveOn, isEventUpcoming, eventEndDate } from '../../utils/eventTime'
 import { kyivDateString } from '../../utils/kyivDate'
 import './TodayStrip.css'
 
 const TODAY = kyivDateString()
 
-function isHappeningNow(time) {
-  if (!time) return false
-  if (isAllDay(time)) return true
-  const now = new Date()
-  const [h, m] = time.split(':').map(Number)
-  const evMin = h * 60 + m
-  const nowMin = now.getHours() * 60 + now.getMinutes()
-  return evMin <= nowMin && nowMin <= evMin + 180
+const toMinutes = (hhmm) => {
+  const [h, m] = (hhmm || '0:0').split(':').map(Number)
+  return h * 60 + m
+}
+
+// Multi-day-aware: a 3-day festival is "happening now" all through its
+// middle day, and on its last day until endTime (or end of day if no
+// endTime was set) rather than just within 3h of its original start.
+function isHappeningNow(event) {
+  if (!isEventActiveOn(event, TODAY)) return false
+  if (isAllDay(event.time)) return true
+  const nowMin = new Date().getHours() * 60 + new Date().getMinutes()
+  const isStartDay = event.date === TODAY
+  const isEndDay = eventEndDate(event) === TODAY
+  if (!isStartDay && !isEndDay) return true
+  if (isStartDay && !isEndDay) return nowMin >= toMinutes(event.time)
+  const endMin = event.endTime ? toMinutes(event.endTime) : (isStartDay ? toMinutes(event.time) + 180 : 24 * 60)
+  if (!isStartDay && isEndDay) return nowMin <= endMin
+  return nowMin >= toMinutes(event.time) && nowMin <= endMin
 }
 
 export default function TodayStrip() {
@@ -38,14 +49,19 @@ export default function TodayStrip() {
   )
   const isEventVisible = e => !e.placeId || publishedPlaceIds.has(e.placeId)
 
-  // Used only for the "events today" stat in the bar above the strip.
+  // Used only for the "events today" stat in the bar above the strip —
+  // active-today, not just starting today, so day 2 of a multi-day event
+  // still counts.
   const todayEvents = useMemo(() =>
-    events.filter(e => e.date === TODAY && isEventVisible(e)),
+    events.filter(e => isEventActiveOn(e, TODAY) && isEventVisible(e)),
     [events, publishedPlaceIds]
   )
 
+  // "Hasn't ended yet" rather than "starts today or later" — otherwise an
+  // event already in progress (started yesterday, runs through tomorrow)
+  // would vanish from this strip the moment its start date passes.
   const upcomingEvents = useMemo(() =>
-    events.filter(e => e.date >= TODAY && isEventVisible(e)),
+    events.filter(e => isEventUpcoming(e, TODAY) && isEventVisible(e)),
     [events, publishedPlaceIds]
   )
 
@@ -63,9 +79,9 @@ export default function TodayStrip() {
     [...(featuredEvents.length > 0 ? featuredEvents : upcomingEvents)]
       .sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date)
-        if (a.date === TODAY) {
-          const aNow = isHappeningNow(a.time) ? 0 : 1
-          const bNow = isHappeningNow(b.time) ? 0 : 1
+        if (isEventActiveOn(a, TODAY)) {
+          const aNow = isHappeningNow(a) ? 0 : 1
+          const bNow = isHappeningNow(b) ? 0 : 1
           if (aNow !== bNow) return aNow - bNow
         }
         return (a.time || '').localeCompare(b.time || '')
@@ -154,9 +170,13 @@ export default function TodayStrip() {
               {nearestEvents.map(ev => {
                 const place = placeById[ev.placeId]
                 const typeName = getEventTypeLabel(ev, t)
-                const evIsToday = ev.date === TODAY
-                const happening = evIsToday && isHappeningNow(ev.time)
+                const evIsToday = isEventActiveOn(ev, TODAY)
+                const happening = isHappeningNow(ev)
                 const evDate = new Date(ev.date)
+                const evEndDateStr = eventEndDate(ev)
+                const evEndDate = evEndDateStr !== ev.date ? new Date(evEndDateStr) : null
+                const evSameMonth = evEndDate && evDate.getMonth() === evEndDate.getMonth() && evDate.getFullYear() === evEndDate.getFullYear()
+                const evDayLabel = evSameMonth ? `${evDate.getDate()}–${evEndDate.getDate()}` : evDate.getDate()
 
                 return (
                   <SwiperSlide key={ev.id} className="ts-slide">
@@ -180,7 +200,7 @@ export default function TodayStrip() {
                             <span className="ts-card__type">{typeName}</span>
                           </div>
                           <div className="ts-card__date">
-                            <span className="ts-card__date-day">{evDate.getDate()}</span>
+                            <span className="ts-card__date-day">{evDayLabel}</span>
                             <span className="ts-card__date-month">{t('common.monthsShort')[evDate.getMonth()]}</span>
                           </div>
                         </div>
@@ -220,7 +240,7 @@ export default function TodayStrip() {
                                 <circle cx="12" cy="12" r="10"/>
                                 <polyline points="12 6 12 12 16 14"/>
                               </svg>
-                              {formatEventTime(ev.time, t)}
+                              {formatEventTimeRange(ev, t)}
                             </span>
                           )}
                         </div>

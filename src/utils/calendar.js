@@ -22,16 +22,33 @@ function escapeICS(str) {
   return String(str).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n')
 }
 
-export function buildEventTimes(dateStr, timeStr, durationHours = 2) {
+// `endDate`/`endTime` are optional — a multi-day and/or explicit-duration
+// event ("2-3 жовтня", "12:00–19:00") passes its own; anything else falls
+// back to the old behavior (all-day = ends the next day, timed = a 2h
+// default length).
+export function buildEventTimes(dateStr, timeStr, { endDate, endTime } = {}) {
   if (isAllDay(timeStr)) {
     const start = new Date(`${dateStr}T00:00:00`)
-    // DTEND for an all-day ICS event is exclusive — the day after — so plain
-    // calendar-component arithmetic (not +24h in ms) keeps this DST-safe.
-    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1)
+    const lastDay = endDate && endDate >= dateStr ? new Date(`${endDate}T00:00:00`) : start
+    // DTEND for an all-day ICS event is exclusive — the day after the last
+    // day — so plain calendar-component arithmetic (not +24h in ms) keeps
+    // this DST-safe.
+    const end = new Date(lastDay.getFullYear(), lastDay.getMonth(), lastDay.getDate() + 1)
     return { start, end, allDay: true }
   }
+
   const start = new Date(`${dateStr}T${timeStr || '19:00'}:00`)
-  const end = new Date(start.getTime() + durationHours * 3600000)
+  let end
+  if (endDate || endTime) {
+    const finalDateStr = endDate && endDate >= dateStr ? endDate : dateStr
+    end = new Date(`${finalDateStr}T${endTime || timeStr || '19:00'}:00`)
+    // An end time that doesn't actually land after the start (e.g. a typo)
+    // would produce a negative/zero-length calendar entry — fall back to
+    // the default 2h length instead.
+    if (end <= start) end = new Date(start.getTime() + 2 * 3600000)
+  } else {
+    end = new Date(start.getTime() + 2 * 3600000)
+  }
   return { start, end, allDay: false }
 }
 

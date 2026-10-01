@@ -44,7 +44,13 @@ export default function SearchableSelect({ options, value, onChange, placeholder
     }
     // A scroll anywhere (the modal body, the page) can move the control out
     // from under a fixed-position panel — simplest correct fix is to close.
-    const close = () => setOpen(false)
+    // But scroll events don't bubble, only capture, so a capture-phase
+    // window listener also fires for scrolling *inside* the panel's own
+    // options list — that must not close it, or you can't scroll the list.
+    const close = (e) => {
+      if (panelRef.current?.contains(e.target)) return
+      setOpen(false)
+    }
     document.addEventListener('mousedown', onDocMouseDown)
     window.addEventListener('scroll', close, true)
     window.addEventListener('resize', close)

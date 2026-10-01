@@ -8,7 +8,7 @@ import { isNative, publicOrigin } from '../../native/platform'
 import DeleteAccount from '../../components/DeleteAccount/DeleteAccount'
 import { PLACE_TYPES, EVENT_TYPES, CITIES, CUISINE_LIST, TICKET_TYPES, COLLECTIONS, SUBSCRIPTION_TIERS } from '../../data/initialData'
 import { getEventTypeLabel } from '../../utils/eventType'
-import { ALL_DAY_TIME, isAllDay, formatEventTime } from '../../utils/eventTime'
+import { ALL_DAY_TIME, isAllDay, formatEventTimeRange } from '../../utils/eventTime'
 import BookingCalendarView from './BookingCalendarView'
 import './VenueAdminPage.css'
 
@@ -22,6 +22,7 @@ const EMPTY_PASSWORD_FORM = { currentPassword: '', newPassword: '', confirmPassw
 const EMPTY_EVENT = {
   title: '', description: '', date: '', time: '19:00',
   type: 'live_music', price: 0, image: '', customType: '', registrationUrl: null,
+  endDate: '', endTime: '',
 }
 
 // ── Photo input with file upload + URL fallback ──────────────────────────────
@@ -353,6 +354,21 @@ function EventModal({ initial, placeId, onSave, onClose }) {
                   <span className="toggle-switch__label">{t('venueAdmin.allDayToggle')}</span>
                 </label>
               </div>
+            </div>
+
+            <div className="va-field-group">
+              <div className="va-field">
+                <label className="va-label">{t('venueAdmin.fieldEventEndDate')}</label>
+                <input className="input" type="date" min={form.date || undefined} value={form.endDate || ''}
+                  onChange={e => set('endDate', e.target.value)} />
+              </div>
+              {!isAllDay(form.time) && (
+                <div className="va-field">
+                  <label className="va-label">{t('venueAdmin.fieldEventEndTime')}</label>
+                  <input className="input" type="time" value={form.endTime || ''}
+                    onChange={e => set('endTime', e.target.value)} />
+                </div>
+              )}
             </div>
 
             <div className="va-field-group">
@@ -1509,8 +1525,8 @@ export default function VenueAdminPage() {
                             {getEventTypeLabel(ev, t)}
                           </span>
                         </td>
-                        <td>{ev.date}</td>
-                        <td>{formatEventTime(ev.time, t)}</td>
+                        <td>{ev.date}{ev.endDate && ev.endDate !== ev.date ? ` – ${ev.endDate}` : ''}</td>
+                        <td>{formatEventTimeRange(ev, t)}</td>
                         <td>{ev.price === 0 ? <span className="va-free">{t('common.free')}</span> : `${ev.price} ${t('common.currency')}`}</td>
                         <td>👁 {ev.views || 0}</td>
                         <td>

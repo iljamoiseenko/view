@@ -7,7 +7,7 @@ import { api } from '../../api/client'
 import { PLACE_TYPES, EVENT_TYPES, CITIES, CUISINE_LIST, TICKET_TYPES, COLLECTIONS, SUBSCRIPTION_TIERS } from '../../data/initialData'
 import { getPlaceTypeLabel } from '../../utils/placeType'
 import { getEventTypeLabel } from '../../utils/eventType'
-import { ALL_DAY_TIME, isAllDay, formatEventTime } from '../../utils/eventTime'
+import { ALL_DAY_TIME, isAllDay, formatEventTimeRange, isEventPast } from '../../utils/eventTime'
 import { kyivDateString } from '../../utils/kyivDate'
 import SearchableSelect from '../../components/SearchableSelect/SearchableSelect'
 import './SuperAdminPage.css'
@@ -23,6 +23,7 @@ const EMPTY_PLACE = {
 const EMPTY_EVENT = {
   placeId: '', title: '', description: '', date: '',
   time: '19:00', type: 'live_music', price: 0, image: '', customType: '', registrationUrl: null, address: '',
+  endDate: '', endTime: '',
 }
 const EMPTY_ACCOUNT = { name: '', username: '', password: '', placeId: '' }
 const EMPTY_BANNER = {
@@ -578,6 +579,9 @@ function EventForm({ initial, places, onSave, onClose }) {
           <input className="input" type="number" min="0" value={f.price} onChange={e => set('price', e.target.value)} /></div>
         <div><label className="sa-label">{t('superAdmin.fieldDate')}</label>
           <input className="input" type="date" required value={f.date} onChange={e => set('date', e.target.value)} /></div>
+        <div><label className="sa-label">{t('superAdmin.fieldEndDate')}</label>
+          <input className="input" type="date" min={f.date || undefined} value={f.endDate || ''} onChange={e => set('endDate', e.target.value)} />
+        </div>
         <div><label className="sa-label">{t('superAdmin.fieldTime')}</label>
           {!isAllDay(f.time) && (
             <input className="input" type="time" required value={f.time} onChange={e => set('time', e.target.value)} />
@@ -588,6 +592,11 @@ function EventForm({ initial, places, onSave, onClose }) {
             <span className="toggle-switch__label">{t('superAdmin.allDayToggle')}</span>
           </label>
         </div>
+        {!isAllDay(f.time) && (
+          <div><label className="sa-label">{t('superAdmin.fieldEndTime')}</label>
+            <input className="input" type="time" value={f.endTime || ''} onChange={e => set('endTime', e.target.value)} />
+          </div>
+        )}
         <div className="sa-col2"><label className="sa-label">{t('superAdmin.fieldDescription')}</label>
           <textarea className="input textarea" rows={3} required value={f.description} onChange={e => set('description', e.target.value)} /></div>
         <div className="sa-col2">
@@ -1061,14 +1070,14 @@ export default function SuperAdminPage() {
                 </tr></thead>
                 <tbody>
                   {[...events].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)).map(ev => {
-                    const isPast = ev.date < today
+                    const isPast = isEventPast(ev, today)
                     return (
                       <tr key={ev.id} className={isPast ? 'sa-row--past' : ''}>
                         <td className="sa-main">{ev.title}</td>
                         <td className="sa-nowrap"><span className={`badge badge-event-${ev.type}`}>{getEventTypeLabel(ev, t)}</span></td>
                         <td className="sa-muted">{getPlaceName(ev.placeId)}</td>
-                        <td className="sa-nowrap">{ev.date}</td>
-                        <td className="sa-nowrap">{formatEventTime(ev.time, t)}</td>
+                        <td className="sa-nowrap">{ev.date}{ev.endDate && ev.endDate !== ev.date ? ` – ${ev.endDate}` : ''}</td>
+                        <td className="sa-nowrap">{formatEventTimeRange(ev, t)}</td>
                         <td className="sa-nowrap">{ev.price === 0 ? <span className="sa-free">{t('common.free')}</span> : `${ev.price} ${t('common.currency')}`}</td>
                         <td className="sa-nowrap">
                           <button

@@ -296,6 +296,16 @@ if (!eventsCols.includes('address')) {
   console.log('[db] Migration: events.place_id is now nullable, added `address` column for standalone events')
 }
 
+// An event can now span multiple days (end_date) and/or carry an explicit
+// end time (end_time) instead of just a start — both optional, so a plain
+// ADD COLUMN is enough (no NOT NULL/FK change needed, unlike the rebuild
+// above).
+if (!eventsCols.includes('end_date')) {
+  db.prepare('ALTER TABLE events ADD COLUMN end_date TEXT').run()
+  db.prepare('ALTER TABLE events ADD COLUMN end_time TEXT').run()
+  console.log('[db] Migration: added `end_date`/`end_time` columns to events (multi-day + duration support)')
+}
+
 const usersCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
 if (!usersCols.includes('username')) {
   db.prepare('ALTER TABLE users ADD COLUMN username TEXT').run()

@@ -10,6 +10,7 @@ import SocialLinks from '../../components/SocialLinks/SocialLinks'
 import { mapsUrl } from '../../utils/maps'
 import { parseAddresses } from '../../utils/address'
 import { getPlaceTypeLabel } from '../../utils/placeType'
+import { isEventUpcoming } from '../../utils/eventTime'
 import './PlaceDetailPage.css'
 
 export default function PlaceDetailPage() {
@@ -76,7 +77,7 @@ export default function PlaceDetailPage() {
       </div>
     )
   }
-  const events = getPlaceEvents(place.id).filter(e => e.date >= today)
+  const events = getPlaceEvents(place.id).filter(e => isEventUpcoming(e, today))
   const photos = place.photos?.length ? place.photos : ['https://picsum.photos/seed/default/800/600']
   const hasSocialLinks = !!(place.website || place.instagramUrl || place.facebookUrl || place.tiktokUrl || place.threadsUrl || place.telegramUrl || place.youtubeUrl)
   const addresses = parseAddresses(place.address)
