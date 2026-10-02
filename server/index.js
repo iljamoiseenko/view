@@ -46,6 +46,11 @@ app.get('/api/health', (_, res) => res.json({ ok: true }))
 if (isProd) {
   const distPath = path.join(__dirname, '../dist')
   app.use(express.static(distPath))
+  // Serves /place/:id, /event/:id, /curated/:id with real title/OG tags
+  // swapped in server-side (see server/seo.js), and /sitemap.xml — must sit
+  // before the catch-all below so those routes don't just fall through to
+  // the generic index.html.
+  app.use(require('./routes/seoPages')(distPath))
   // WayForPay's returnUrl redirect comes back as a POST, not GET — accept both
   app.all('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'))

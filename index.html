@@ -5,6 +5,23 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>View — Заклади та івенти</title>
+    <!-- Default meta — the server (server/routes/seoPages.js) swaps these
+         exact tags for real content on /place/:id, /event/:id and
+         /curated/:id before sending the HTML, so link-preview bots (which
+         don't run JS) see the right title/image without this SPA needing
+         full server-side rendering. Every other route keeps these defaults. -->
+    <meta name="description" content="View — афіша закладів та івентів у твоєму місті. Ресторани, бари, кав'ярні та заходи — знайди де провести час просто зараз.">
+    <link rel="canonical" href="https://viewtoday.site/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="View">
+    <meta property="og:title" content="View — Заклади та івенти">
+    <meta property="og:description" content="View — афіша закладів та івентів у твоєму місті. Ресторани, бари, кав'ярні та заходи — знайди де провести час просто зараз.">
+    <meta property="og:image" content="https://viewtoday.site/favicon.png">
+    <meta property="og:url" content="https://viewtoday.site/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="View — Заклади та івенти">
+    <meta name="twitter:description" content="View — афіша закладів та івентів у твоєму місті. Ресторани, бари, кав'ярні та заходи — знайди де провести час просто зараз.">
+    <meta name="twitter:image" content="https://viewtoday.site/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Non-blocking: a slow/unreachable Google Fonts must never hold up the first render (the iOS app hung on it). -->
