@@ -3,14 +3,13 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { api } from '../../api/client'
-import ShareButton from '../../components/ShareButton/ShareButton'
 import EventCard from '../../components/EventCard/EventCard'
 import PlaceMap from '../../components/PlaceMap/PlaceMap'
 import SocialLinks from '../../components/SocialLinks/SocialLinks'
 import { mapsUrl } from '../../utils/maps'
 import { parseAddresses } from '../../utils/address'
 import { getPlaceTypeLabel } from '../../utils/placeType'
-import { isEventUpcoming } from '../../utils/eventTime'
+import { isEventUpcoming, isEventPast } from '../../utils/eventTime'
 import './PlaceDetailPage.css'
 
 export default function PlaceDetailPage() {
@@ -78,6 +77,12 @@ export default function PlaceDetailPage() {
     )
   }
   const events = getPlaceEvents(place.id).filter(e => isEventUpcoming(e, today))
+  // Most recent first, capped to 4 — getPlaceEvents itself sorts ascending,
+  // so this list needs its own reverse.
+  const pastEvents = getPlaceEvents(place.id)
+    .filter(e => isEventPast(e, today))
+    .sort((a, b) => b.date.localeCompare(a.date) || (b.time || '').localeCompare(a.time || ''))
+    .slice(0, 4)
   const photos = place.photos?.length ? place.photos : ['https://picsum.photos/seed/default/800/600']
   const hasSocialLinks = !!(place.website || place.instagramUrl || place.facebookUrl || place.tiktokUrl || place.threadsUrl || place.telegramUrl || place.youtubeUrl)
   const addresses = parseAddresses(place.address)
@@ -195,8 +200,6 @@ export default function PlaceDetailPage() {
             </a>
           )}
 
-          <ShareButton title={place.name} text={place.name} path={`/place/${place.id}`} className="btn btn-outline detail__book-btn" />
-
           <div className="detail__info-list">
             {addresses.length === 1 && (
               <div className="detail__info-row">
@@ -292,6 +295,19 @@ export default function PlaceDetailPage() {
           </div>
           <div className="detail__events-grid">
             {events.map(e => <EventCard key={e.id} event={e} />)}
+          </div>
+        </div>
+      )}
+
+      {/* ── Past events ── */}
+      {pastEvents.length > 0 && (
+        <div className="container detail__events">
+          <div className="detail__events-head">
+            <h2 className="detail__events-title">{t('placeDetail.pastEvents')}</h2>
+            <span className="detail__events-count">{pastEvents.length}</span>
+          </div>
+          <div className="detail__events-grid">
+            {pastEvents.map(e => <EventCard key={e.id} event={e} />)}
           </div>
         </div>
       )}

@@ -517,7 +517,7 @@ export default function VenueAdminPage() {
     setTab(paymentTier === 'event' ? 'events' : 'subscription')
   }
 
-  const ONBOARDING_STEPS = 4
+  const ONBOARDING_STEPS = 3
   const [onboardingVisible, setOnboardingVisible] = useState(searchParams.get('onboarding') === '1')
   const [onboardingStep, setOnboardingStep] = useState(() => {
     const saved = Number(localStorage.getItem('view_onboarding_step'))
@@ -1060,65 +1060,21 @@ export default function VenueAdminPage() {
                 </div>
               </>
             )}
-
-            {onboardingStep === 4 && (
-              <>
-                <h1 className="va-onboarding__title">{t('venueAdmin.onboardingStep4Title')}</h1>
-                <p className="va-onboarding__sub">{t('venueAdmin.onboardingStep4Sub')}</p>
-                <div className="va-plans va-onboarding__plans">
-                  <div className="va-plan-card">
-                    <div className="va-plan-card__name va-plan-card__name--vivid">{t('subscriptionTiers.event')}</div>
-                    <div className="va-plan-card__price">
-                      <span className="va-plan-card__price-amount">$3.99</span>
-                      <span className="va-plan-card__price-period">{t('venueAdmin.oneTimeLabel')}</span>
-                    </div>
-                    <ul className="va-plan-card__features">
-                      <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.eventCreditFeatureText')}</li>
-                    </ul>
-                    <button type="button" className="btn btn-dark va-plan-card__btn" disabled={buyingEventCredit} onClick={handleBuyEventCredit}>
-                      {buyingEventCredit ? t('venueAdmin.eventCreditBuying') : t('venueAdmin.choosePlanBtn')}
-                    </button>
-                  </div>
-                  {Object.keys(SUBSCRIPTION_TIERS).map(tierKey => {
-                    const tierInfo = SUBSCRIPTION_TIERS[tierKey]
-                    const isPopular = tierKey === 'pro'
-                    return (
-                      <div key={tierKey} className={`va-plan-card ${isPopular ? 'popular' : ''}`}>
-                        {isPopular && <span className="va-plan-card__badge">{t('venueAdmin.popularBadge')}</span>}
-                        <div className="va-plan-card__name va-plan-card__name--vivid">{t(`subscriptionTiers.${tierKey}`)}</div>
-                        <div className="va-plan-card__price">
-                          <span className="va-plan-card__price-amount">${tierInfo.price}</span>
-                          <span className="va-plan-card__price-period">{t('venueAdmin.perMonth')}</span>
-                        </div>
-                        <ul className="va-plan-card__features">
-                          <li><span className="va-plan-card__check">✓</span>{tierInfo.eventsPerMonth ? t('venueAdmin.eventsLimitText', tierInfo.eventsPerMonth) : t('venueAdmin.eventsUnlimitedText')}</li>
-                          {tierInfo.boostsPerMonth > 0 && <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.boostsLimitText', tierInfo.boostsPerMonth)}</li>}
-                          {(tierKey === 'pro' || tierKey === 'premium') && <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.analyticsFeatureText')}</li>}
-                          {tierInfo.bookingEnabled && <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.bookingFeatureText')}</li>}
-                          <li><span className="va-plan-card__check">✓</span>{t('venueAdmin.supportFeatureText')}</li>
-                        </ul>
-                        <button type="button" className="btn btn-dark va-plan-card__btn" disabled={!!checkingOutTier} onClick={() => handleChoosePlan(tierKey)}>
-                          {t('venueAdmin.choosePlanBtn')}
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-                {checkoutError && <p className="va-plans-notice va-plans-notice--error">{checkoutError}</p>}
-                {eventCreditError && <p className="va-plans-notice va-plans-notice--error">{eventCreditError}</p>}
-              </>
-            )}
           </div>
 
           <div className="va-onboarding__actions">
             <button type="button" className="va-onboarding__skip" onClick={handleOnboardingSkip}>
               {onboardingStep < ONBOARDING_STEPS ? t('venueAdmin.onboardingSkip') : t('venueAdmin.onboardingSkipToDashboard')}
             </button>
-            {onboardingStep < ONBOARDING_STEPS && (
-              <button type="button" className="btn btn-dark va-onboarding__next" onClick={handleOnboardingNext} disabled={onboardingSaving}>
-                {onboardingSaving ? t('venueAdmin.onboardingSaving') : t('venueAdmin.onboardingNext')}
-              </button>
-            )}
+            {/* Was hidden on the last step back when that step was plan-selection
+                (choosing a plan itself finished onboarding) — now the last step
+                collects real form data, so it needs its own save-and-finish action
+                instead of only the no-save "Skip" button above. */}
+            <button type="button" className="btn btn-dark va-onboarding__next" onClick={handleOnboardingNext} disabled={onboardingSaving}>
+              {onboardingSaving
+                ? t('venueAdmin.onboardingSaving')
+                : (onboardingStep < ONBOARDING_STEPS ? t('venueAdmin.onboardingNext') : t('venueAdmin.onboardingFinish'))}
+            </button>
           </div>
         </div>
       </div>
