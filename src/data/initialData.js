@@ -74,6 +74,9 @@ export const EVENT_TYPES = {
   quiz: 'Квіз',
   standup: 'Стендап',
   market: 'Ярмарок',
+  gastro_event: 'Гастроивент',
+  movie_night: 'Кіновечір',
+  special: 'Спешл',
   other: 'Інше',
 }
 

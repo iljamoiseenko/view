@@ -170,12 +170,38 @@ router.post('/callback', (req, res) => {
       // on the next event the venue creates.
       db.prepare('UPDATE users SET event_credits = event_credits + 1 WHERE id = ?').run(payment.user_id)
     } else {
-      // wayforpay_rec_token stays the BASE orderReference — regularApi (status/suspend/remove)
-      // is keyed to the original order, not to each individual renewal's suffixed reference.
-      db.prepare(`
-        UPDATE users SET subscription_tier = ?, subscription_status = 'active', subscription_renews_at = ?, wayforpay_rec_token = ?
-        WHERE id = ?
-      `).run(payment.tier, renewsAt, baseOrderReference, payment.user_id)
+      const current = db.prepare('SELECT wayforpay_rec_token FROM users WHERE id = ?').get(payment.user_id)
+      const currentToken = current?.wayforpay_rec_token || null
+
+      if (isRenewal && currentToken && currentToken !== baseOrderReference) {
+        // This renewal belongs to a regular-payment rule that is no longer
+        // the one on file for this user (e.g. a resubscribe below closed a
+        // different rule and this one slipped through, or an earlier close
+        // attempt failed) — a stale rule renewing silently is exactly the
+        // bug that once let a real paid subscription keep charging a user
+        // well after they'd "cancelled". Don't let it hijack the user's
+        // actual subscription row; just shut this stray rule down.
+        wfp.regularRemove(baseOrderReference).catch(err =>
+          console.error('[wayforpay] Failed to close stale regular payment', baseOrderReference, 'for user', payment.user_id, err.message))
+      } else {
+        // A brand-new subscription replaces whatever rule was active before —
+        // only one regular-payment rule should ever be active per user, so
+        // close the old one at WayForPay too (not just overwrite our own
+        // wayforpay_rec_token column), or it keeps charging independently in
+        // the background even though "Cancel" can only ever act on the token
+        // we currently remember. Best-effort — WayForPay being slow/down
+        // here must never block activating this plan.
+        if (!isRenewal && currentToken && currentToken !== baseOrderReference) {
+          wfp.regularRemove(currentToken).catch(err =>
+            console.error('[wayforpay] Failed to close previous regular payment', currentToken, 'for user', payment.user_id, err.message))
+        }
+        // wayforpay_rec_token stays the BASE orderReference — regularApi (status/suspend/remove)
+        // is keyed to the original order, not to each individual renewal's suffixed reference.
+        db.prepare(`
+          UPDATE users SET subscription_tier = ?, subscription_status = 'active', subscription_renews_at = ?, wayforpay_rec_token = ?
+          WHERE id = ?
+        `).run(payment.tier, renewsAt, baseOrderReference, payment.user_id)
+      }
     }
 
     console.log(`[wayforpay] Approved ${body.orderReference} — user ${payment.user_id} → ${payment.tier}${isRenewal ? ' (renewal)' : ''}`)

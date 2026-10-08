@@ -10,7 +10,7 @@ server/*.db-shm
 server/*.db-wal
 server/uploads/*
 !server/uploads/.gitkeep
-data/
+/data/
 .idea/
 .DS_Store
 backups/
