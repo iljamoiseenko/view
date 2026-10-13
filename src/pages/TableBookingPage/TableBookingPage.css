@@ -15,16 +15,30 @@
 }
 .tbk-back:hover { color: #fff; }
 
-.tbk-hero__main { display: flex; gap: 20px; align-items: center; }
+.tbk-hero__main { display: flex; gap: 24px; align-items: flex-start; }
+
+.tbk-hero__photo-col { display: flex; flex-direction: column; gap: 10px; width: 220px; flex-shrink: 0; }
 
 .tbk-hero__photo {
-  width: 96px;
-  height: 96px;
+  width: 220px;
+  height: 160px;
   border-radius: var(--radius-lg);
   object-fit: cover;
   flex-shrink: 0;
   border: 1.5px solid rgba(255,255,255,0.12);
 }
+
+.tbk-hero__note {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.55);
+  white-space: pre-line;
+  margin: 0;
+}
+/* Same note rendered twice — once under the photo, once under the name —
+   so each breakpoint can show it in its own spot without reflowing the
+   rest of the hero; only one copy is ever visible at a time. */
+.tbk-hero__note--mobile { display: none; }
 
 .tbk-hero__info { min-width: 0; }
 
@@ -71,8 +85,11 @@
 
 @media (max-width: 560px) {
   .tbk-hero__main { flex-direction: column; align-items: flex-start; }
-  .tbk-hero__photo { width: 100%; height: 140px; }
+  .tbk-hero__photo-col { width: 100%; }
+  .tbk-hero__photo { width: 100%; height: 180px; }
   .tbk-hero__name { font-size: 26px; }
+  .tbk-hero__note--desktop { display: none; }
+  .tbk-hero__note--mobile { display: block; margin: 4px 0 0; }
 }
 
 .tbk-loading { color: var(--text-3); font-size: 14px; padding: 40px 0; text-align: center; }

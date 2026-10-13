@@ -33,6 +33,8 @@ function parsePlace(row) {
     booking_enabled: undefined,
     bookingPhone: row.booking_phone,
     booking_phone: undefined,
+    bookingNote: row.booking_note,
+    booking_note: undefined,
     menuUrl: row.menu_url,
     menu_url: undefined,
     petsFriendly: row.pets_friendly === 1,
@@ -117,7 +119,7 @@ router.put('/:id', requireAuth, async (req, res) => {
   const existing = db.prepare('SELECT * FROM places WHERE id = ?').get(id)
   if (!existing) return res.status(404).json({ error: 'Place not found' })
 
-  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, collections, rating, bookingEnabled, bookingPhone, menuUrl, petsFriendly, kidsRoom, ticketsUrl, customType, openingSoon, openingDate, tableBookingPaused, skipPublish } = req.body
+  const { name, type, city, address, description, cuisine, phone, workingHours, website, photos, tags, collections, rating, bookingEnabled, bookingPhone, bookingNote, menuUrl, petsFriendly, kidsRoom, ticketsUrl, customType, openingSoon, openingDate, tableBookingPaused, skipPublish } = req.body
 
   // Re-geocode only if the address or city actually changed
   let coords = null
@@ -152,6 +154,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       lng = COALESCE(?, lng),
       booking_enabled = COALESCE(?, booking_enabled),
       booking_phone = COALESCE(?, booking_phone),
+      booking_note = COALESCE(?, booking_note),
       menu_url = COALESCE(?, menu_url),
       pets_friendly = COALESCE(?, pets_friendly),
       kids_room = COALESCE(?, kids_room),
@@ -175,6 +178,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     coords?.lng ?? null,
     bookingEnabled !== undefined ? (bookingEnabled ? 1 : 0) : null,
     bookingPhone !== undefined ? bookingPhone : null,
+    bookingNote !== undefined ? bookingNote : null,
     menuUrl !== undefined ? menuUrl : null,
     petsFriendly !== undefined ? (petsFriendly ? 1 : 0) : null,
     kidsRoom !== undefined ? (kidsRoom ? 1 : 0) : null,

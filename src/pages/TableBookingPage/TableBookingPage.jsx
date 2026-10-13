@@ -157,7 +157,12 @@ export default function TableBookingPage() {
           <Link to={`/place/${place.id}`} className="tbk-back">← {t('tableBooking.backToVenue')}</Link>
           <div className="tbk-hero__main">
             {place.photos?.[0] && (
-              <img className="tbk-hero__photo" src={place.photos[0]} alt={place.name} />
+              <div className="tbk-hero__photo-col">
+                <img className="tbk-hero__photo" src={place.photos[0]} alt={place.name} />
+                {/* Shown under the photo on desktop; on mobile the sibling copy
+                    below (under the name) takes over instead — see CSS. */}
+                {place.bookingNote && <p className="tbk-hero__note tbk-hero__note--desktop">{place.bookingNote}</p>}
+              </div>
             )}
             <div className="tbk-hero__info">
               <span className="tbk-hero__badge">{t('tableBooking.title')}</span>
@@ -168,6 +173,7 @@ export default function TableBookingPage() {
                   {place.tags.map(tag => <span key={tag} className="tbk-hero__tag">#{tag}</span>)}
                 </div>
               )}
+              {place.bookingNote && <p className="tbk-hero__note tbk-hero__note--mobile">{place.bookingNote}</p>}
             </div>
           </div>
         </div>

@@ -93,5 +93,5 @@
 }
 
 @media (max-width: 480px) {
-  .cld-grid { grid-template-columns: 1fr; }
+  .cld-grid { gap: 10px; }
 }

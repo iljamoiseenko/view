@@ -1127,6 +1127,15 @@
 .va-booking-empty__title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
 .va-booking-empty .btn { margin-top: 8px; }
 
+.va-booking-note {
+  margin: 0 28px 28px;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.va-booking-note .btn { align-self: flex-start; }
+
 .va-booking-card {
   margin: 24px 28px 28px;
   padding: 24px;
@@ -1206,5 +1215,6 @@
 
 @media (max-width: 640px) {
   .va-booking-card { margin: 20px 16px; align-items: stretch; }
+  .va-booking-note { margin: 0 16px 20px; max-width: none; }
   .va-booking-card__actions { flex-direction: column; }
 }

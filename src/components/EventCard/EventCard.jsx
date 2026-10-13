@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { getEventTypeLabel } from '../../utils/eventType'
@@ -8,6 +8,7 @@ import './EventCard.css'
 export default function EventCard({ event }) {
   const { places } = useApp()
   const { t } = useLanguage()
+  const navigate = useNavigate()
   const place = places.find(p => p.id === event.placeId)
   const date = new Date(event.date)
 
@@ -42,13 +43,22 @@ export default function EventCard({ event }) {
         <p className="ecard__desc">{event.description}</p>
 
         {place ? (
-          <Link to={`/place/${place.id}`} className="ecard__place" onClick={e => e.stopPropagation()}>
+          // A real nested <a> inside the card's own <Link> is invalid HTML (React
+          // warns on it), so this is a span acting as a link instead — same visual
+          // and click behavior, reached via keyboard too, just without a second <a>.
+          <span
+            className="ecard__place"
+            role="link"
+            tabIndex={0}
+            onClick={e => { e.stopPropagation(); e.preventDefault(); navigate(`/place/${place.id}`) }}
+            onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); e.preventDefault(); navigate(`/place/${place.id}`) } }}
+          >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
               <circle cx="12" cy="10" r="3"/>
             </svg>
             {place.name} <span className="ecard__place-city">· {place.city}</span>
-          </Link>
+          </span>
         ) : event.address ? (
           <span className="ecard__place">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

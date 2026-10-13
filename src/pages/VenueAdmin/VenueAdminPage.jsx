@@ -682,6 +682,27 @@ export default function VenueAdminPage() {
 
   const bookingTablesCount = bookingFloors.reduce((sum, f) => sum + (f.tableCount || 0), 0)
 
+  const [bookingNoteDraft, setBookingNoteDraft] = useState('')
+  const [bookingNoteSaving, setBookingNoteSaving] = useState(false)
+  const [bookingNoteSaved, setBookingNoteSaved] = useState(false)
+  const bookingNoteInitialized = useRef(false)
+  useEffect(() => {
+    if (tab === 'booking' && place && !bookingNoteInitialized.current) {
+      bookingNoteInitialized.current = true
+      setBookingNoteDraft(place.bookingNote || '')
+    }
+  }, [tab, place])
+  const saveBookingNote = async () => {
+    setBookingNoteSaving(true)
+    try {
+      await updatePlace(place.id, { bookingNote: bookingNoteDraft, skipPublish: true })
+      setBookingNoteSaved(true)
+      setTimeout(() => setBookingNoteSaved(false), 2000)
+    } finally {
+      setBookingNoteSaving(false)
+    }
+  }
+
   const bookingLink = place?.id ? `${publicOrigin()}/book/${place.id}` : ''
   const copyBookingLink = () => {
     // Show the "copied" feedback right away rather than waiting on the
@@ -1615,6 +1636,22 @@ export default function VenueAdminPage() {
                     {t('venueAdmin.bookingViewPublicBtn')}
                   </a>
                 </div>
+              </div>
+            )}
+
+            {hasBookingAccess && !bookingLoading && bookingFloors.length > 0 && (
+              <div className="va-field va-booking-note">
+                <label className="va-label">{t('venueAdmin.fieldBookingNote')}</label>
+                <textarea
+                  className="input textarea"
+                  rows={4}
+                  value={bookingNoteDraft}
+                  onChange={e => setBookingNoteDraft(e.target.value)}
+                  placeholder={t('venueAdmin.bookingNotePh')}
+                />
+                <button type="button" className="btn btn-outline btn-sm" disabled={bookingNoteSaving} onClick={saveBookingNote}>
+                  {bookingNoteSaved ? '✅' : t('common.save')}
+                </button>
               </div>
             )}
 

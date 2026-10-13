@@ -96,6 +96,7 @@
   font-weight: 600;
   color: var(--text-2);
   text-decoration: none;
+  cursor: pointer;
   transition: color var(--transition);
 }
 .ecard__place:hover { color: var(--text); }

@@ -200,6 +200,10 @@ if (!placesCols.includes('booking_enabled')) {
   db.prepare('ALTER TABLE places ADD COLUMN booking_phone TEXT').run()
   console.log('[db] Migration: added `booking_enabled`/`booking_phone` columns to places')
 }
+if (!placesCols.includes('booking_note')) {
+  db.prepare('ALTER TABLE places ADD COLUMN booking_note TEXT').run()
+  console.log('[db] Migration: added `booking_note` column to places')
+}
 if (!placesCols.includes('menu_url')) {
   db.prepare('ALTER TABLE places ADD COLUMN menu_url TEXT').run()
   console.log('[db] Migration: added `menu_url` column to places')
