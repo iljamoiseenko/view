@@ -513,11 +513,18 @@ router.post('/:placeId/bookings', (req, res) => {
   const cleanedOccasion = cleanOccasion(occasion)
   // If this guest already linked Telegram on a previous booking, carry that
   // chat_id straight over — otherwise every single booking would need its
-  // own "Connect Telegram" click, and owner-confirm alerts silently never
-  // reach anyone who skips that step on booking #2 onward.
+  // own "Connect Telegram" click, and owner-confirm alerts (and /mybookings
+  // in the bot) silently never reach anyone who skips that step on booking
+  // #2 onward. Most bookings are anonymous (no account), so the lookup has
+  // to go by phone number, not just by user_id — checking user_id alone
+  // left this effectively dead for the common case.
   const existingChatId = userId
     ? db.prepare('SELECT telegram_chat_id FROM users WHERE id = ?').get(userId)?.telegram_chat_id
-    : null
+    : db.prepare(`
+        SELECT telegram_chat_id FROM table_bookings
+        WHERE guest_phone = ? AND telegram_chat_id IS NOT NULL
+        ORDER BY created_at DESC LIMIT 1
+      `).get(guestPhone.trim())?.telegram_chat_id
   db.prepare(`
     INSERT INTO table_bookings (id, place_id, table_id, date, time, duration_minutes, guest_name, guest_phone, party_size, occasion, note, status, source, user_id, telegram_chat_id, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'online', ?, ?, ?)

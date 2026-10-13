@@ -385,7 +385,10 @@ function formatBookingsList(bookings, moreButton) {
       keyboard: { inline_keyboard: [[moreButton]] },
     }
   }
-  const lines = bookings.map(b => `• <b>${b.place_name}</b> — ${b.date} о ${b.time}, стіл «${b.table_label}»`)
+  const lines = bookings.map(b => {
+    const status = b.owner_confirmed_at ? '✅ підтверджено закладом' : '⏳ очікує підтвердження закладу'
+    return `• <b>${b.place_name}</b> — ${b.date} о ${b.time}, стіл «${b.table_label}»\n  ${status}`
+  })
   return {
     text: `Ваші бронювання:\n\n${lines.join('\n')}`,
     keyboard: {

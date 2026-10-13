@@ -104,6 +104,13 @@
   gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
+  /* Flex items default to min-width:auto, which lets this row's own
+     non-shrinking thumbnails (flex-shrink:0 below) push .detail__gallery
+     itself wider than the viewport instead of clipping to it — with many
+     photos that showed up as strong page-level horizontal scroll on mobile.
+     This makes it respect the stretched parent width so overflow-x:auto
+     above can actually scroll the strip instead of never being reached. */
+  min-width: 0;
 }
 .detail__thumbs::-webkit-scrollbar { display: none; }
 
@@ -380,7 +387,12 @@
     grid-template-columns: 1fr;
     gap: 28px;
   }
-  .detail__gallery { position: static; max-width: 420px; margin: 0 auto; width: 100%; }
+  /* min-width:0 — as a grid item of .detail__layout's single 1fr track,
+     .detail__gallery otherwise contributes its unshrunk content's min-width
+     to that track's own auto-sizing, which can still force the track (and
+     this element's own width:100%) past the viewport even though the
+     overflowing content inside is itself already set to scroll/clip. */
+  .detail__gallery { position: static; max-width: 420px; margin: 0 auto; width: 100%; min-width: 0; }
   .detail__events-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 580px) {
