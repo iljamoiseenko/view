@@ -8,6 +8,7 @@ import { CITIES } from '../../data/initialData'
 import { useLanguage } from '../../context/LanguageContext'
 import { getEventTypeLabel } from '../../utils/eventType'
 import { isAllDay, formatEventTimeRange, isEventActiveOn, isEventUpcoming, eventEndDate } from '../../utils/eventTime'
+import { isEventFreeDisplay } from '../../utils/eventPrice'
 import { kyivDateString } from '../../utils/kyivDate'
 import './TodayStrip.css'
 
@@ -204,7 +205,9 @@ export default function TodayStrip() {
                             <span className="ts-card__date-month">{t('common.monthsShort')[evDate.getMonth()]}</span>
                           </div>
                         </div>
-                        {ev.price === 0 && <span className="ts-card__free">FREE</span>}
+                        {isEventFreeDisplay(ev) && (
+                          <span className="ts-card__free">{ev.isDonation ? t('common.donation') : t('common.free')}</span>
+                        )}
                       </div>
                       <div className="ts-card__body">
                         <p className="ts-card__title">{ev.title}</p>

@@ -309,6 +309,11 @@ if (!eventsCols.includes('end_date')) {
   db.prepare('ALTER TABLE events ADD COLUMN end_time TEXT').run()
   console.log('[db] Migration: added `end_date`/`end_time` columns to events (multi-day + duration support)')
 }
+if (!eventsCols.includes('is_donation')) {
+  db.prepare('ALTER TABLE events ADD COLUMN is_donation INTEGER NOT NULL DEFAULT 0').run()
+  db.prepare('ALTER TABLE events ADD COLUMN donation_min_amount INTEGER').run()
+  console.log('[db] Migration: added `is_donation`/`donation_min_amount` columns to events')
+}
 
 const usersCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
 if (!usersCols.includes('username')) {

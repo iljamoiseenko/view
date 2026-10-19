@@ -8,6 +8,7 @@ import { PLACE_TYPES, EVENT_TYPES, CITIES, CUISINE_LIST, TICKET_TYPES, COLLECTIO
 import { getPlaceTypeLabel } from '../../utils/placeType'
 import { getEventTypeLabel } from '../../utils/eventType'
 import { ALL_DAY_TIME, isAllDay, formatEventTimeRange, isEventPast } from '../../utils/eventTime'
+import { eventPriceLabel } from '../../utils/eventPrice'
 import { kyivDateString } from '../../utils/kyivDate'
 import SearchableSelect from '../../components/SearchableSelect/SearchableSelect'
 import './SuperAdminPage.css'
@@ -24,6 +25,7 @@ const EMPTY_EVENT = {
   placeId: '', title: '', description: '', date: '',
   time: '19:00', type: 'live_music', price: 0, image: '', customType: '', registrationUrl: null, address: '',
   endDate: '', endTime: '',
+  isDonation: false, donationMinAmount: '',
 }
 const EMPTY_ACCOUNT = { name: '', username: '', password: '', placeId: '' }
 const EMPTY_BANNER = {
@@ -542,7 +544,14 @@ function EventForm({ initial, places, onSave, onClose }) {
     ...places.map(p => ({ value: p.id, label: `${p.name} (${p.city})` })),
   ]
   return (
-    <form onSubmit={e => { e.preventDefault(); onSave({ ...f, price: Number(f.price) }) }} className="sa-form">
+    <form onSubmit={e => {
+      e.preventDefault()
+      onSave({
+        ...f,
+        price: Number(f.price),
+        donationMinAmount: f.isDonation && f.donationMinAmount ? Number(f.donationMinAmount) : null,
+      })
+    }} className="sa-form">
       <div className="sa-grid">
         <div className="sa-col2"><label className="sa-label">{t('superAdmin.fieldVenue')}</label>
           <SearchableSelect
@@ -576,7 +585,20 @@ function EventForm({ initial, places, onSave, onClose }) {
           )}
         </div>
         <div><label className="sa-label">{t('superAdmin.fieldPriceFree')}</label>
-          <input className="input" type="number" min="0" value={f.price} onChange={e => set('price', e.target.value)} /></div>
+          <input className="input" type="number" min="0" value={f.price} disabled={f.isDonation}
+            onChange={e => set('price', e.target.value)} />
+          <label className="toggle-switch" style={{ marginTop: 8 }}>
+            <input type="checkbox" checked={!!f.isDonation} onChange={e => set('isDonation', e.target.checked)} />
+            <span className="toggle-switch__track" />
+            <span className="toggle-switch__label">{t('superAdmin.donationToggle')}</span>
+          </label>
+          {f.isDonation && (
+            <input className="input" type="number" min="0" style={{ marginTop: 6 }}
+              placeholder={t('superAdmin.donationMinAmountPh')}
+              value={f.donationMinAmount || ''}
+              onChange={e => set('donationMinAmount', e.target.value)} />
+          )}
+        </div>
         <div><label className="sa-label">{t('superAdmin.fieldDate')}</label>
           <input className="input" type="date" required value={f.date} onChange={e => set('date', e.target.value)} /></div>
         <div><label className="sa-label">{t('superAdmin.fieldEndDate')}</label>
@@ -1078,7 +1100,7 @@ export default function SuperAdminPage() {
                         <td className="sa-muted">{getPlaceName(ev.placeId)}</td>
                         <td className="sa-nowrap">{ev.date}{ev.endDate && ev.endDate !== ev.date ? ` – ${ev.endDate}` : ''}</td>
                         <td className="sa-nowrap">{formatEventTimeRange(ev, t)}</td>
-                        <td className="sa-nowrap">{ev.price === 0 ? <span className="sa-free">{t('common.free')}</span> : `${ev.price} ${t('common.currency')}`}</td>
+                        <td className="sa-nowrap">{ev.price === 0 || ev.isDonation ? <span className="sa-free">{eventPriceLabel(ev, t)}</span> : eventPriceLabel(ev, t)}</td>
                         <td className="sa-nowrap">
                           <button
                             className={`sa-toggle ${ev.featuredOnHome ? 'sa-toggle--active' : 'sa-toggle--inactive'}`}

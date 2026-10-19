@@ -15,6 +15,8 @@ function parseEvent(row) {
     views: row.views_count ?? 0, views_count: undefined,
     endDate: row.end_date, end_date: undefined,
     endTime: row.end_time, end_time: undefined,
+    isDonation: row.is_donation === 1, is_donation: undefined,
+    donationMinAmount: row.donation_min_amount, donation_min_amount: undefined,
   }
 }
 
@@ -53,7 +55,7 @@ router.post('/:id/view', (req, res) => {
 // place — can only be created by superadmin, since there's no venue owner to
 // scope it to.
 router.post('/', requireAuth, (req, res) => {
-  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome, address, endDate, endTime } = req.body
+  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome, address, endDate, endTime, isDonation, donationMinAmount } = req.body
   if (!title || !date || !time || !type) {
     return res.status(400).json({ error: 'title, date, time, type required' })
   }
@@ -86,14 +88,15 @@ router.post('/', requireAuth, (req, res) => {
 
   const id = 'e' + Date.now()
   db.prepare(`
-    INSERT INTO events (id, place_id, title, description, date, time, type, price, image, custom_type, registration_url, featured_on_home, address, end_date, end_time)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO events (id, place_id, title, description, date, time, type, price, image, custom_type, registration_url, featured_on_home, address, end_date, end_time, is_donation, donation_min_amount)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id, placeId || null, title, description ?? '', date, time, type, Number(price) || 0, image ?? '', customType ?? null, registrationUrl || null,
     // Only superadmin can pin an event to the homepage slider.
     user.role === 'superadmin' && featuredOnHome ? 1 : 0,
     placeId ? null : (address || null),
-    endDate || null, endTime || null
+    endDate || null, endTime || null,
+    isDonation ? 1 : 0, isDonation && donationMinAmount ? Number(donationMinAmount) : null
   )
 
   if (spendEventCredit) {
@@ -114,7 +117,7 @@ router.put('/:id', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
-  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome, address, endDate, endTime } = req.body
+  const { placeId, title, description, date, time, type, price, image, customType, registrationUrl, featuredOnHome, address, endDate, endTime, isDonation, donationMinAmount } = req.body
 
   // A partial update (e.g. just toggling featuredOnHome) omits `placeId`
   // entirely — that must leave the venue untouched, not clear it. Only an
@@ -127,6 +130,12 @@ router.put('/:id', requireAuth, (req, res) => {
   const nextEndDate = endDateProvided ? (endDate || null) : row.end_date
   const endTimeProvided = 'endTime' in req.body
   const nextEndTime = endTimeProvided ? (endTime || null) : row.end_time
+  const isDonationProvided = 'isDonation' in req.body
+  const nextIsDonation = isDonationProvided ? (isDonation ? 1 : 0) : row.is_donation
+  const donationMinAmountProvided = 'donationMinAmount' in req.body
+  const nextDonationMinAmount = donationMinAmountProvided
+    ? (nextIsDonation && donationMinAmount ? Number(donationMinAmount) : null)
+    : row.donation_min_amount
 
   // Only superadmin may reassign an event to a different venue — or to/from
   // no venue at all — a venue owner's own placeId is fixed client-side
@@ -155,7 +164,9 @@ router.put('/:id', requireAuth, (req, res) => {
       featured_on_home = COALESCE(?, featured_on_home),
       address = ?,
       end_date = ?,
-      end_time = ?
+      end_time = ?,
+      is_donation = ?,
+      donation_min_amount = ?
     WHERE id = ?
   `).run(
     nextPlaceId, title ?? null, description ?? null, date ?? null,
@@ -166,6 +177,7 @@ router.put('/:id', requireAuth, (req, res) => {
     user.role === 'superadmin' && featuredOnHome !== undefined ? (featuredOnHome ? 1 : 0) : null,
     nextPlaceId ? null : (placeIdProvided ? (address || null) : row.address),
     nextEndDate, nextEndTime,
+    nextIsDonation, nextDonationMinAmount,
     req.params.id
   )
 

@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { getEventTypeLabel } from '../../utils/eventType'
 import { formatEventTimeRange, eventEndDate } from '../../utils/eventTime'
+import { eventPriceLabel, isEventFreeDisplay } from '../../utils/eventPrice'
 import './EventCard.css'
 
 export default function EventCard({ event }) {
@@ -71,8 +72,8 @@ export default function EventCard({ event }) {
 
         <div className="ecard__footer">
           <span className="ecard__time">{formatEventTimeRange(event, t)}</span>
-          <span className={`ecard__price ${event.price === 0 ? 'free' : ''}`}>
-            {event.price === 0 ? t('common.free') : `${event.price} ${t('common.currency')}`}
+          <span className={`ecard__price ${isEventFreeDisplay(event) ? 'free' : ''}`}>
+            {eventPriceLabel(event, t)}
           </span>
         </div>
       </div>

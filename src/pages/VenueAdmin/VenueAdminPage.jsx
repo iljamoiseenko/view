@@ -9,6 +9,7 @@ import DeleteAccount from '../../components/DeleteAccount/DeleteAccount'
 import { PLACE_TYPES, EVENT_TYPES, CITIES, CUISINE_LIST, TICKET_TYPES, COLLECTIONS, SUBSCRIPTION_TIERS } from '../../data/initialData'
 import { getEventTypeLabel } from '../../utils/eventType'
 import { ALL_DAY_TIME, isAllDay, formatEventTimeRange } from '../../utils/eventTime'
+import { eventPriceLabel } from '../../utils/eventPrice'
 import BookingCalendarView from './BookingCalendarView'
 import './VenueAdminPage.css'
 
@@ -23,6 +24,7 @@ const EMPTY_EVENT = {
   title: '', description: '', date: '', time: '19:00',
   type: 'live_music', price: 0, image: '', customType: '', registrationUrl: null,
   endDate: '', endTime: '',
+  isDonation: false, donationMinAmount: '',
 }
 
 // ── Photo input with file upload + URL fallback ──────────────────────────────
@@ -305,7 +307,14 @@ function EventModal({ initial, placeId, onSave, onClose }) {
           <h2>{initial?.id ? t('venueAdmin.modalEditEvent') : t('venueAdmin.modalNewEvent')}</h2>
           <button className="va-modal__close" onClick={onClose}>✕</button>
         </div>
-        <form className="va-modal__form" onSubmit={e => { e.preventDefault(); onSave({ ...form, price: Number(form.price) }) }}>
+        <form className="va-modal__form" onSubmit={e => {
+          e.preventDefault()
+          onSave({
+            ...form,
+            price: Number(form.price),
+            donationMinAmount: form.isDonation && form.donationMinAmount ? Number(form.donationMinAmount) : null,
+          })
+        }}>
           <div className="va-modal-body">
             <div className="va-field-group">
               <div className="va-field va-field--full">
@@ -331,7 +340,20 @@ function EventModal({ initial, placeId, onSave, onClose }) {
               <div className="va-field">
                 <label className="va-label">{t('venueAdmin.fieldPrice')}</label>
                 <input className="input" type="number" min="0" value={form.price}
+                  disabled={form.isDonation}
                   onChange={e => set('price', e.target.value)} />
+                <label className="toggle-switch" style={{ marginTop: 8 }}>
+                  <input type="checkbox" checked={!!form.isDonation}
+                    onChange={e => set('isDonation', e.target.checked)} />
+                  <span className="toggle-switch__track" />
+                  <span className="toggle-switch__label">{t('venueAdmin.donationToggle')}</span>
+                </label>
+                {form.isDonation && (
+                  <input className="input" type="number" min="0" style={{ marginTop: 6 }}
+                    placeholder={t('venueAdmin.donationMinAmountPh')}
+                    value={form.donationMinAmount || ''}
+                    onChange={e => set('donationMinAmount', e.target.value)} />
+                )}
               </div>
             </div>
 
@@ -1504,7 +1526,7 @@ export default function VenueAdminPage() {
                         </td>
                         <td>{ev.date}{ev.endDate && ev.endDate !== ev.date ? ` – ${ev.endDate}` : ''}</td>
                         <td>{formatEventTimeRange(ev, t)}</td>
-                        <td>{ev.price === 0 ? <span className="va-free">{t('common.free')}</span> : `${ev.price} ${t('common.currency')}`}</td>
+                        <td>{ev.price === 0 || ev.isDonation ? <span className="va-free">{eventPriceLabel(ev, t)}</span> : eventPriceLabel(ev, t)}</td>
                         <td>👁 {ev.views || 0}</td>
                         <td>
                           <div className="va-actions">

@@ -11,6 +11,7 @@ import ShareButton from '../../components/ShareButton/ShareButton'
 import { getPlaceTypeLabel } from '../../utils/placeType'
 import { getEventTypeLabel } from '../../utils/eventType'
 import { formatEventTimeRange, formatEventDateRange, eventEndDate } from '../../utils/eventTime'
+import { eventPriceLabel, isEventFreeDisplay } from '../../utils/eventPrice'
 import './EventDetailPage.css'
 
 export default function EventDetailPage() {
@@ -100,10 +101,7 @@ export default function EventDetailPage() {
           <h1 className="edetail__title">{event.title}</h1>
 
           <div className="edetail__price-row">
-            {event.price === 0
-              ? <span className="edetail__price free">{t('common.free')}</span>
-              : <span className="edetail__price">{event.price} {t('common.currency')}</span>
-            }
+            <span className={`edetail__price ${isEventFreeDisplay(event) ? 'free' : ''}`}>{eventPriceLabel(event, t)}</span>
           </div>
 
           <div className="edetail__actions">
