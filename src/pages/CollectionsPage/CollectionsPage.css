@@ -93,11 +93,12 @@
 .coll-page__curated-swiper .swiper-button-disabled { opacity: 0.35; }
 
 /* Mobile (<700px) renders .coll-page__curated-grid instead of the swiper at
-   all — see MOBILE_BREAKPOINT in CollectionsPage.jsx — so a plain 2-up grid
-   here, matching every other venue list in the app on small screens. */
+   all — see MOBILE_BREAKPOINT in CollectionsPage.jsx. One column: unlike the
+   plain venue cards elsewhere, each curated card carries a badge + title +
+   author row that needs the full width — 2-up here overlaps and clips. */
 .coll-page__curated-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
