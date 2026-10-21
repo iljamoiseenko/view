@@ -2,6 +2,7 @@ const path = require('path')
 const express = require('express')
 const db = require('../db')
 const { renderPageHtml, buildSitemapXml, APP_URL } = require('../seo')
+const { placeJsonLd, eventJsonLd } = require('../structuredData')
 
 const router = express.Router()
 
@@ -32,6 +33,7 @@ module.exports = function seoPagesRouter(distPath) {
       description: place.description || `${place.name} у ${place.city} — фото, адреса та контакти на View.`,
       image: photos[0],
       url: `${APP_URL}/place/${place.id}`,
+      jsonLd: placeJsonLd(place),
     })
     res.send(html)
   })
@@ -39,12 +41,14 @@ module.exports = function seoPagesRouter(distPath) {
   router.get('/event/:id', (req, res) => {
     const event = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id)
     if (!event) return sendDefault(res)
+    const place = event.place_id ? db.prepare('SELECT * FROM places WHERE id = ?').get(event.place_id) : null
     const html = renderPageHtml(distPath, {
       title: `${event.title} | View`,
       description: event.description || 'Подія на View — дата, час та деталі заходу.',
       image: event.image,
       url: `${APP_URL}/event/${event.id}`,
       type: 'article',
+      jsonLd: eventJsonLd(event, place),
     })
     res.send(html)
   })

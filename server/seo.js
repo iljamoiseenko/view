@@ -41,14 +41,14 @@ function toAbsoluteUrl(url) {
 // execute JS, so this has to happen before the HTML leaves the server; a
 // client-side-only fix (e.g. updating document.title in React) would not
 // have worked for link previews, only for the browser tab/search indexing.
-function renderPageHtml(distPath, { title, description, image, url, type = 'website' }) {
+function renderPageHtml(distPath, { title, description, image, url, type = 'website', jsonLd }) {
   const html = loadIndexHtml(distPath)
   const safeTitle = escapeHtml(title)
   const safeDesc = escapeHtml(toPlainSummary(description))
   const safeImage = escapeHtml(toAbsoluteUrl(image))
   const safeUrl = escapeHtml(url)
 
-  return html
+  let result = html
     .replace(/<title>.*?<\/title>/, `<title>${safeTitle}</title>`)
     .replace(/<meta name="description" content=".*?">/, `<meta name="description" content="${safeDesc}">`)
     .replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="${safeUrl}">`)
@@ -60,6 +60,18 @@ function renderPageHtml(distPath, { title, description, image, url, type = 'webs
     .replace(/<meta name="twitter:title" content=".*?">/, `<meta name="twitter:title" content="${safeTitle}">`)
     .replace(/<meta name="twitter:description" content=".*?">/, `<meta name="twitter:description" content="${safeDesc}">`)
     .replace(/<meta name="twitter:image" content=".*?">/, `<meta name="twitter:image" content="${safeImage}">`)
+
+  // Structured data (schema.org) for Google rich results — a separate
+  // <script> block, not a meta-tag swap, so it's inserted rather than
+  // replaced. `</script` inside the JSON (e.g. a venue description
+  // containing that literal text) would otherwise prematurely close the
+  // tag, so it's escaped the same way a browser-embedded JSON blob needs.
+  if (jsonLd) {
+    const safeJson = JSON.stringify(jsonLd).replace(/</g, '\\u003c')
+    result = result.replace('</head>', `<script type="application/ld+json">${safeJson}</script>\n  </head>`)
+  }
+
+  return result
 }
 
 function escapeXml(str) {
