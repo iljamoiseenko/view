@@ -199,6 +199,7 @@ img { display: block; max-width: 100%; }
 .badge-event-gastro_event,
 .badge-event-movie_night,
 .badge-event-special,
+.badge-event-board_games,
 .badge-event-other {
   background: rgba(0,0,0,0.72);
   color: #fff;

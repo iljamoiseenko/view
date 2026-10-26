@@ -955,7 +955,7 @@ export const translations = {
       beer: 'Пивний фест', master_class: 'Майстер-клас', theme_night: 'Тематична вечірка',
       cocktail: 'Коктейльний вечір', cultural_event: 'Культурний захід',
       anniversary: 'День народження закладу', quiz: 'Квіз', standup: 'Стендап',
-      market: 'Ярмарок', gastro_event: 'Гастроивент', movie_night: 'Кіновечір', special: 'Спешл', other: 'Інше',
+      market: 'Ярмарок', gastro_event: 'Гастроивент', movie_night: 'Кіновечір', special: 'Спешл', board_games: 'Настільні ігри', other: 'Інше',
     },
   },
   en: {
@@ -1914,7 +1914,7 @@ export const translations = {
       beer: 'Beer fest', master_class: 'Workshop', theme_night: 'Theme party',
       cocktail: 'Cocktail night', cultural_event: 'Cultural event',
       anniversary: "Venue anniversary", quiz: 'Quiz night', standup: 'Stand-up',
-      market: 'Market', gastro_event: 'Gastro event', movie_night: 'Movie night', special: 'Special', other: 'Other',
+      market: 'Market', gastro_event: 'Gastro event', movie_night: 'Movie night', special: 'Special', board_games: 'Board games', other: 'Other',
     },
   },
 }

@@ -77,6 +77,7 @@ export const EVENT_TYPES = {
   gastro_event: 'Гастроивент',
   movie_night: 'Кіновечір',
   special: 'Спешл',
+  board_games: 'Настільні ігри',
   other: 'Інше',
 }
 

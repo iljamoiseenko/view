@@ -15,7 +15,7 @@ const addDays = (n) => {
 }
 
 const DATE_TAB_VALUES = ['all', 'today', 'tomorrow', 'week', 'past']
-const EVENT_TYPE_VALUES = ['live_music', 'dj', 'jazz', 'wine', 'beer', 'master_class', 'theme_night', 'cocktail', 'cultural_event', 'anniversary', 'quiz', 'standup', 'market', 'gastro_event', 'movie_night', 'special', 'other']
+const EVENT_TYPE_VALUES = ['live_music', 'dj', 'jazz', 'wine', 'beer', 'master_class', 'theme_night', 'cocktail', 'cultural_event', 'anniversary', 'quiz', 'standup', 'market', 'gastro_event', 'movie_night', 'special', 'board_games', 'other']
 
 export default function EventsPage() {
   const { events, places } = useApp()
