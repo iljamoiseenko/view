@@ -165,11 +165,13 @@
   padding: 20px;
   /* Canvas is narrower than the wrap on most screens — center it so the
      left/right padding stays equal instead of the canvas hugging the left
-     edge and leaving a lopsided gap on the right. justify-content:center
-     falls back to "safe" start-alignment on its own once the canvas is wide
-     enough to overflow, so scrolling still works. */
+     edge and leaving a lopsided gap on the right. Plain `center` does NOT
+     reliably fall back to start-alignment once the canvas overflows — it
+     clips the left/top instead of scrolling to it, while the right/bottom
+     stay reachable; the explicit `safe` keyword is what actually makes it
+     fall back to start alignment (scrollable, nothing clipped) on overflow. */
   display: flex;
-  justify-content: center;
+  justify-content: safe center;
   align-items: flex-start;
 }
 
@@ -275,7 +277,6 @@
 
 .tle-merge-prompt {
   position: absolute;
-  transform: translate(-50%, calc(-100% - 8px));
   display: flex;
   align-items: center;
   gap: 8px;

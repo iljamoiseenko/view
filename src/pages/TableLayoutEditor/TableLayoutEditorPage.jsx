@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
@@ -61,6 +61,13 @@ function objectsTouch(a, b) {
 // Matches the faint grid line spacing drawn on the canvas — Alt/Option while
 // dragging or resizing temporarily turns snapping off for free placement.
 const GRID_SIZE = 20
+
+// An object placed flush against x/y 0 (or the far width/height edge) has
+// its own border sitting exactly on top of the canvas's own border, so one
+// visually swallows the other and the object's edge looks clipped/missing.
+// Keeping every placement/drag/resize bound this many px shy of the true
+// edge leaves a sliver of canvas background around it instead.
+const EDGE_MARGIN = 3
 
 function snap(v, enabled) {
   return enabled ? Math.round(v / GRID_SIZE) * GRID_SIZE : v
@@ -199,8 +206,8 @@ export default function TableLayoutEditorPage() {
       id: newId(),
       kind: isLabel ? 'label' : 'table',
       shape,
-      x: clamp(40 + offset, 0, Math.max(0, layout.width - size.width)),
-      y: clamp(40 + offset, 0, Math.max(0, layout.height - size.height)),
+      x: clamp(40 + offset, EDGE_MARGIN, Math.max(EDGE_MARGIN, layout.width - size.width - EDGE_MARGIN)),
+      y: clamp(40 + offset, EDGE_MARGIN, Math.max(EDGE_MARGIN, layout.height - size.height - EDGE_MARGIN)),
       width: size.width,
       height: size.height,
       label: isLabel ? t('tableEditor.defaultZoneLabel') : t('tableEditor.defaultTableLabel', nextTableNumber(objects)),
@@ -232,8 +239,8 @@ export default function TableLayoutEditorPage() {
 
   const duplicateSelected = () => {
     if (!selected) return
-    const x = clamp(selected.x + GRID_SIZE * 2, 0, layout.width - selected.width)
-    const y = clamp(selected.y + GRID_SIZE * 2, 0, layout.height - selected.height)
+    const x = clamp(selected.x + GRID_SIZE * 2, EDGE_MARGIN, layout.width - selected.width - EDGE_MARGIN)
+    const y = clamp(selected.y + GRID_SIZE * 2, EDGE_MARGIN, layout.height - selected.height - EDGE_MARGIN)
     const clone = { ...selected, id: newId(), x, y }
     // Shift every part by the same amount the bounding box actually moved
     // (not just +GRID_SIZE*2) so a merged Г-shape keeps its exact form even
@@ -273,10 +280,10 @@ export default function TableLayoutEditorPage() {
         if (o.id !== obj.id) return o
         let next
         if (mode === 'move') {
-          const maxX = Math.max(0, layout.width - o.width)
-          const maxY = Math.max(0, layout.height - o.height)
-          const x = clamp(snap(Math.round(orig.x + dx), snapOn), 0, maxX)
-          const y = clamp(snap(Math.round(orig.y + dy), snapOn), 0, maxY)
+          const maxX = Math.max(EDGE_MARGIN, layout.width - o.width - EDGE_MARGIN)
+          const maxY = Math.max(EDGE_MARGIN, layout.height - o.height - EDGE_MARGIN)
+          const x = clamp(snap(Math.round(orig.x + dx), snapOn), EDGE_MARGIN, maxX)
+          const y = clamp(snap(Math.round(orig.y + dy), snapOn), EDGE_MARGIN, maxY)
           next = { ...o, x, y }
           // A merged object moves as a rigid whole — shift every part by the
           // exact amount the (clamped, snapped) bounding box moved.
@@ -289,15 +296,15 @@ export default function TableLayoutEditorPage() {
           // capped at the room's own edges (not an arbitrary fixed size) so a wide
           // hall can still fit a wall-length "БАР"/"СЦЕНА" zone. Merged (multi-part)
           // objects don't expose resize handles, so this branch never runs for them.
-          const width = clamp(snap(Math.round(orig.width + dx), snapOn), GRID_SIZE, layout.width - orig.x)
-          const height = clamp(snap(Math.round(orig.height + dy), snapOn), GRID_SIZE, layout.height - orig.y)
+          const width = clamp(snap(Math.round(orig.width + dx), snapOn), GRID_SIZE, layout.width - orig.x - EDGE_MARGIN)
+          const height = clamp(snap(Math.round(orig.height + dy), snapOn), GRID_SIZE, layout.height - orig.y - EDGE_MARGIN)
           next = { ...o, width, height }
         } else {
           // resize-tl — bottom-right corner stays put, top-left corner is what you drag.
           const right = orig.x + orig.width
           const bottom = orig.y + orig.height
-          const x = clamp(snap(Math.round(orig.x + dx), snapOn), 0, right - GRID_SIZE)
-          const y = clamp(snap(Math.round(orig.y + dy), snapOn), 0, bottom - GRID_SIZE)
+          const x = clamp(snap(Math.round(orig.x + dx), snapOn), EDGE_MARGIN, right - GRID_SIZE)
+          const y = clamp(snap(Math.round(orig.y + dy), snapOn), EDGE_MARGIN, bottom - GRID_SIZE)
           next = { ...o, x, y, width: right - x, height: bottom - y }
         }
         latestRects = objectRects(next)
@@ -319,13 +326,46 @@ export default function TableLayoutEditorPage() {
     window.addEventListener('mouseup', onUp)
   }
 
-  const mergePromptRects = mergePrompt
-    ? (() => {
-        const a = objects.find(o => o.id === mergePrompt.aId)
-        const b = objects.find(o => o.id === mergePrompt.bId)
-        return a && b ? { a, b } : null
-      })()
-    : null
+  // Memoized (not just a plain per-render computation) so its identity only
+  // changes when the actual merge candidates do — the position effect below
+  // depends on it, and recomputing on every unrelated render would otherwise
+  // re-trigger that effect's setState in a loop.
+  const mergePromptRects = useMemo(() => {
+    if (!mergePrompt) return null
+    const a = objects.find(o => o.id === mergePrompt.aId)
+    const b = objects.find(o => o.id === mergePrompt.bId)
+    return a && b ? { a, b } : null
+  }, [mergePrompt, objects])
+
+  // The prompt's natural spot — centered above the touching pair — can land
+  // partly outside the canvas when that pair sits near an edge (seen with
+  // objects placed flush against the top, as in a bar counter against the
+  // wall). Measuring the rendered popup and clamping it to the canvas
+  // bounds, with a flip below the pair when there's no room above, keeps it
+  // fully visible instead of being clipped by the canvas wrap's overflow.
+  const mergePromptRef = useRef(null)
+  const [mergePromptPos, setMergePromptPos] = useState({ left: 0, top: 0 })
+  useLayoutEffect(() => {
+    if (!mergePromptRects || !mergePromptRef.current) return
+    const { a, b } = mergePromptRects
+    const el = mergePromptRef.current
+    const w = el.offsetWidth
+    const h = el.offsetHeight
+    const pairLeft = Math.min(a.x, b.x)
+    const pairRight = Math.max(a.x + a.width, b.x + b.width)
+    const pairTop = Math.min(a.y, b.y)
+    const pairBottom = Math.max(a.y + a.height, b.y + b.height)
+    const margin = 4
+
+    let left = (pairLeft + pairRight) / 2 - w / 2
+    left = clamp(left, margin, Math.max(margin, layout.width - w - margin))
+
+    let top = pairTop - h - 8
+    if (top < margin) top = pairBottom + 8
+    top = clamp(top, margin, Math.max(margin, layout.height - h - margin))
+
+    setMergePromptPos({ left, top })
+  }, [mergePromptRects, layout.width, layout.height])
 
   const confirmMerge = () => {
     if (!mergePromptRects) { setMergePrompt(null); return }
@@ -578,8 +618,9 @@ export default function TableLayoutEditorPage() {
                   })}
                   {mergePromptRects && (
                     <div
+                      ref={mergePromptRef}
                       className="tle-merge-prompt"
-                      style={{ left: Math.min(mergePromptRects.a.x, mergePromptRects.b.x) + (Math.max(mergePromptRects.a.x + mergePromptRects.a.width, mergePromptRects.b.x + mergePromptRects.b.width) - Math.min(mergePromptRects.a.x, mergePromptRects.b.x)) / 2, top: Math.min(mergePromptRects.a.y, mergePromptRects.b.y) }}
+                      style={{ left: mergePromptPos.left, top: mergePromptPos.top }}
                       onMouseDown={e => e.stopPropagation()}
                     >
                       <span>{t('tableEditor.mergeHint')}</span>
