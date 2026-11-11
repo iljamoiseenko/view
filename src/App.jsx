@@ -14,6 +14,7 @@ import SuperAdminPage from './pages/SuperAdmin/SuperAdminPage'
 import VenueAdminPage from './pages/VenueAdmin/VenueAdminPage'
 import RegisterPage from './pages/RegisterPage/RegisterPage'
 import AboutPage from './pages/AboutPage/AboutPage'
+import PricingPage from './pages/PricingPage/PricingPage'
 import CollectionsPage from './pages/CollectionsPage/CollectionsPage'
 import CollectionDetailPage from './pages/CollectionDetailPage/CollectionDetailPage'
 import CuratedListDetailPage from './pages/CuratedListDetailPage/CuratedListDetailPage'
@@ -53,6 +54,7 @@ export default function App() {
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/about" element={<AboutPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/account" element={<AccountPage />} />
                 <Route path="/collections" element={<CollectionsPage />} />
                 <Route path="/collections/:slug" element={<CollectionDetailPage />} />

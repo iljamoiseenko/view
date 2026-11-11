@@ -1814,7 +1814,7 @@ export default function VenueAdminPage() {
               {Object.keys(SUBSCRIPTION_TIERS).map(tierKey => {
                 const tierInfo = SUBSCRIPTION_TIERS[tierKey]
                 const isCurrent = hasActiveSub && currentUser?.subscriptionTier === tierKey
-                const isPopular = tierKey === 'pro'
+                const isPopular = tierKey === 'premium'
                 return (
                   <div key={tierKey} className={`va-plan-card ${isCurrent ? 'current' : ''} ${isPopular ? 'popular' : ''}`}>
                     {isPopular && <span className="va-plan-card__badge">{t('venueAdmin.popularBadge')}</span>}

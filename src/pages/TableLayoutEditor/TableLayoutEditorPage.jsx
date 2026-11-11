@@ -566,9 +566,17 @@ export default function TableLayoutEditorPage() {
                 <label>{t('tableEditor.floorNameLabel')}</label>
                 <input type="text" className="tle-toolbar__name" value={layout.name} onChange={e => { setLayout(l => ({ ...l, name: e.target.value })); markDirty() }} />
                 <label>{t('tableEditor.widthLabel')}</label>
-                <input type="number" min="300" step="10" value={layout.width} onChange={e => { setLayout(l => ({ ...l, width: Number(e.target.value) || l.width })); markDirty() }} />
+                <input type="number" min="300" step="10" value={layout.width}
+                  // Allow the field to go empty while editing (e.g. selecting all
+                  // and retyping) — coercing '' to the old value here made it
+                  // impossible to ever clear the digits. Falls back to the
+                  // minimum on blur if left empty.
+                  onChange={e => { const v = e.target.value; setLayout(l => ({ ...l, width: v === '' ? '' : Number(v) })); markDirty() }}
+                  onBlur={() => setLayout(l => ({ ...l, width: Number(l.width) || 300 }))} />
                 <label>{t('tableEditor.heightLabel')}</label>
-                <input type="number" min="300" step="10" value={layout.height} onChange={e => { setLayout(l => ({ ...l, height: Number(e.target.value) || l.height })); markDirty() }} />
+                <input type="number" min="300" step="10" value={layout.height}
+                  onChange={e => { const v = e.target.value; setLayout(l => ({ ...l, height: v === '' ? '' : Number(v) })); markDirty() }}
+                  onBlur={() => setLayout(l => ({ ...l, height: Number(l.height) || 300 }))} />
               </div>
             </div>
 

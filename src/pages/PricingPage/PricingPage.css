@@ -1,0 +1,95 @@
+.pp-page { padding: 56px 24px 100px; }
+
+.pp-head { max-width: 640px; margin: 0 auto 40px; text-align: center; }
+.pp-head h1 {
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin: 0 0 12px;
+}
+.pp-head p {
+  font-size: 15px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.pp-plans {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.pp-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px 24px;
+  transition: var(--transition);
+}
+.pp-card.popular {
+  border-color: var(--dark);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+}
+
+.pp-card__badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--dark);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+}
+
+.pp-card__name {
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--vivid);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+}
+
+.pp-card__price { display: flex; align-items: baseline; gap: 5px; }
+.pp-card__price-amount { font-size: 38px; font-weight: 900; letter-spacing: -0.02em; color: var(--dark); }
+.pp-card__price-period { font-size: 13px; font-weight: 600; color: var(--text-3); }
+
+.pp-card__features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  margin: 4px 0;
+  padding: 0;
+}
+.pp-card__features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+.pp-card__check { color: #16a34a; font-weight: 800; flex-shrink: 0; }
+
+.pp-card__btn { width: 100%; justify-content: center; text-align: center; }
+
+@media (max-width: 860px) {
+  .pp-plans { grid-template-columns: 1fr; }
+}
